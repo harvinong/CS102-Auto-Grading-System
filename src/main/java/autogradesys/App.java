@@ -1,10 +1,10 @@
 package autogradesys;
 
-import java.util.Scanner;
-import java.io.IOException;
 import java.io.File;
+import java.util.Scanner;
 
 import autogradesys.filesys.FileUtil;
+
 
 
 public class App {
