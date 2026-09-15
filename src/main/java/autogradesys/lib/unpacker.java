@@ -10,7 +10,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
-import java.util.zip.ZipFile;
 public class unpacker {
 
     //getAllZip() is entry function
@@ -28,11 +27,8 @@ public class unpacker {
     // gets all zipped files of submission final arraylist will not include anything that is not a zip
     public static ArrayList<String> getAllZip() {
         ArrayList<String> nameOfAllFile = new ArrayList<>();
-        String p = System.getProperty("user.dir");
-        String c =new File("").getAbsolutePath();
-        System.out.println(p);
-        String tmp = p + "\\student-submission";
-        File subFolder = new File(tmp); //you would put path to student-submission here instead
+        String tmp = System.getProperty("user.dir") + "\\student-submission";  
+        File subFolder = new File(tmp); 
         File[] allSub = subFolder.listFiles();
         if (allSub != null) {
             for (File stuSub : allSub) {
@@ -44,10 +40,10 @@ public class unpacker {
         return nameOfAllFile;
         
     }
-    //unpacks the zip file and returns a folder with the zip's name
+    //unpacks the zip file and creates a folder with the zip's name
+    // can do error checking here for like fucked up zip or smth
     public static void unpack(String srcPath){
         try {
-            ZipFile zipFile = new ZipFile(srcPath);
             Path zipPath = Path.of(srcPath);
             String folderName = srcPath.endsWith(".zip") 
                 ? srcPath.substring(0, srcPath.length() - 4)
