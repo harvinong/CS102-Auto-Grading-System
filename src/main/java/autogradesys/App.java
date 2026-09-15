@@ -13,7 +13,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
-/** CLI entry point for interactive grading and the non-interactive demo. */
+/** CLI entry point for interactive grading and the non-interactive demo.
+ *
+ * <p>The Maven entry point keeps interactive use and the checked-in demo on the
+ * same grading implementation so they exercise identical error handling.</p>
+ */
 public final class App {
     public static final String SUBMISSIONS_PROMPT = "Enter submissions folder path  : ";
     public static final String TESTERS_PROMPT = "Enter tester files folder path : ";
@@ -22,10 +26,18 @@ public final class App {
     private App() {
     }
 
+    /** Launches the CLI using standard output. */
     public static void main(String[] args) {
         run(args, System.out);
     }
 
+    /**
+     * Runs the CLI and returns a process-style status code.
+     *
+     * @param args command-line arguments
+     * @param output destination for user-facing messages
+     * @return zero when grading completes without a fatal error
+     */
     public static int run(String[] args, PrintStream output) {
         if (args.length == 1 && args[0].equals("demo")) {
             return DemoRunner.run(Path.of("demo"), output);

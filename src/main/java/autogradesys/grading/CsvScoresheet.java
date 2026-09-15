@@ -13,11 +13,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Reads and atomically updates a CSV scoresheet while preserving existing rows. */
+/** Reads and atomically updates a CSV scoresheet while preserving existing rows.
+ *
+ * <p>Only known student score cells are changed; unrelated columns and rows
+ * remain part of the rendered file.</p>
+ */
 public final class CsvScoresheet {
     private CsvScoresheet() {
     }
 
+    /**
+     * Applies the supplied scores and replaces the file only after rendering succeeds.
+     *
+     * @param path scoresheet to read and update
+     * @param scores scores keyed by student and question
+     * @param reporter destination for recoverable and fatal diagnostics
+     * @return {@code true} when the updated scoresheet is safely written
+     */
     public static boolean update(Path path, Map<String, Map<String, Integer>> scores,
             ErrorReporter reporter) {
         Path absolute = path.toAbsolutePath().normalize();
@@ -56,6 +68,7 @@ public final class CsvScoresheet {
             }
         }
 
+        // Build a complete copy first so pre-existing rows survive score updates.
         List<List<String>> writableRows = new ArrayList<>();
         writableRows.add(header);
         Set<String> seenStudents = new LinkedHashSet<>();
@@ -116,6 +129,7 @@ public final class CsvScoresheet {
             temporary = Files.createTempFile(parent, absolute.getFileName().toString() + ".", ".tmp");
             Files.writeString(temporary, render(writableRows), StandardCharsets.UTF_8,
                     StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+            // Replace only the completed temporary file, preserving the original on failure.
             try {
                 Files.move(temporary, absolute, StandardCopyOption.ATOMIC_MOVE,
                         StandardCopyOption.REPLACE_EXISTING);

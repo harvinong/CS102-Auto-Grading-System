@@ -12,11 +12,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-/** Local Java-source grader. Every student/question failure is recoverable unless setup is invalid. */
+/** Local Java-source grader.
+ *
+ * <p>Submission and question defects are recorded as recoverable so grading
+ * can continue; missing or unreadable grading setup is fatal.</p>
+ */
 public final class JavaGrader {
     private JavaGrader() {
     }
 
+    /**
+     * Grades each discovered student against each discovered question.
+     *
+     * @param submissionsRoot directory containing one directory per student
+     * @param questionsRoot directory containing question fixtures
+     * @param scoresheet CSV file to update, or {@code null} to report a fatal setup error
+     * @param timeout maximum duration for each compile or execution process
+     * @param reporter destination for recoverable and fatal diagnostics
+     * @return counts, scores, and fatal status for the grading session
+     */
     public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             Duration timeout, ErrorReporter reporter) {
         List<String> questions = questionNames(questionsRoot, reporter);
@@ -138,6 +152,7 @@ public final class JavaGrader {
             build = Files.createTempDirectory("cs102-grader-");
             List<String> compile = List.of("javac", "-encoding", "UTF-8", "-d",
                     build.toAbsolutePath().toString(), source.toAbsolutePath().toString());
+            // Compile and execute independently: one broken submission must not stop later questions.
             ProcessRunner.Result compilation = ProcessRunner.run(compile, "", timeout, build);
             if (compilation.timedOut()) {
                 reporter.recoverable("question", "timeout",
@@ -194,6 +209,7 @@ public final class JavaGrader {
             return 0;
         } finally {
             if (build != null) {
+                // A per-question directory prevents generated classes from leaking between submissions.
                 deleteTree(build);
             }
         }
@@ -205,7 +221,7 @@ public final class JavaGrader {
                 try {
                     Files.deleteIfExists(path);
                 } catch (IOException ignored) {
-                    // Temporary cleanup must not hide the grading result.
+                    // Cleanup is secondary: it must not hide the grading result already recorded.
                 }
             });
         } catch (IOException ignored) {

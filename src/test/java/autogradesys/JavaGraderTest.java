@@ -139,6 +139,7 @@ class JavaGraderTest {
     void checkedInDemoCommandUsesFixturesAndGeneratedOutputs() throws Exception {
         requireJdk();
         ByteArrayOutputStream output = new ByteArrayOutputStream();
+        // Keep the Maven test boundary aligned with the command users run from the repository root.
         int status = App.run(new String[] {"demo"}, new PrintStream(output, true, StandardCharsets.UTF_8));
         String text = output.toString(StandardCharsets.UTF_8);
         assertEquals(0, status);

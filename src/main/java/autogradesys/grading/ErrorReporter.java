@@ -6,18 +6,28 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Prints an actionable error and persists the identical structured record. */
+/** Prints an actionable error and persists the identical structured record.
+ *
+ * <p>Recoverability belongs to each record, allowing the grader to continue
+ * through submission issues while still stopping on fatal setup failures.</p>
+ */
 public final class ErrorReporter {
     private final ErrorHistory history;
     private final PrintStream output;
     private final List<ErrorRecord> records = new ArrayList<>();
     private boolean historyFailure;
 
+    /** Creates a reporter backed by durable history and user-facing output. */
     public ErrorReporter(ErrorHistory history, PrintStream output) {
         this.history = history;
         this.output = output;
     }
 
+    /**
+     * Records, prints, and persists one diagnostic.
+     *
+     * @return the structured record retained for the session summary
+     */
     public ErrorRecord error(String stage, String category, String severity, String message,
             String guidance, String student, String submission, String question,
             boolean canContinue) {
@@ -36,23 +46,28 @@ public final class ErrorReporter {
         return record;
     }
 
+    /** Records an issue that should not prevent other submissions from grading. */
     public ErrorRecord recoverable(String stage, String category, String message, String guidance,
             String student, String submission, String question) {
         return error(stage, category, "error", message, guidance, student, submission, question, true);
     }
 
+    /** Records a setup or infrastructure issue that makes the result untrustworthy. */
     public ErrorRecord fatal(String stage, String category, String message, String guidance) {
         return error(stage, category, "error", message, guidance, null, null, null, false);
     }
 
+    /** Prints non-error progress information without adding history. */
     public void info(String message) {
         output.println(message);
     }
 
+    /** Returns the diagnostics emitted during this grading session. */
     public List<ErrorRecord> records() {
         return Collections.unmodifiableList(records);
     }
 
+    /** Returns whether grading encountered a fatal issue, including history failure. */
     public boolean hasFatalError() {
         return records.stream().anyMatch(record -> !record.canContinue()) || historyFailure;
     }

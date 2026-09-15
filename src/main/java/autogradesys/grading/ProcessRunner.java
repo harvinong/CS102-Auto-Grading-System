@@ -8,16 +8,27 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/** Runs a bounded child process without invoking a shell. */
+/** Runs a bounded child process without invoking a shell.
+ *
+ * <p>Arguments stay as a list so submitted paths and source text cannot be
+ * reinterpreted as shell syntax.</p>
+ */
 final class ProcessRunner {
     private ProcessRunner() {
     }
 
+    /** Runs a command with no working-directory override. */
     static Result run(List<String> command, String input, Duration timeout)
             throws IOException, InterruptedException {
         return run(command, input, timeout, null);
     }
 
+    /**
+     * Runs a command, captures both output streams, and enforces a deadline.
+     *
+     * <p>Output is drained concurrently so a noisy child cannot block waiting
+     * for a pipe that the parent has not yet read.</p>
+     */
     static Result run(List<String> command, String input, Duration timeout, java.nio.file.Path workingDirectory)
             throws IOException, InterruptedException {
         ProcessBuilder builder = new ProcessBuilder(command);
@@ -52,10 +63,12 @@ final class ProcessRunner {
             long timeoutMillis = Math.max(1L, timeout.toMillis());
             finished = process.waitFor(timeoutMillis, TimeUnit.MILLISECONDS);
             if (!finished) {
+                // Kill the whole process tree: a timed-out submission must not survive grading.
                 terminate(process);
                 process.getOutputStream().close();
             }
         } catch (InterruptedException interrupted) {
+            // Preserve cancellation while still cleaning up the child we started.
             terminate(process);
             Thread.currentThread().interrupt();
             throw interrupted;

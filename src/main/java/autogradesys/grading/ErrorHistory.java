@@ -6,18 +6,30 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-/** Append-only JSON Lines storage for reported grading errors. */
+/** Append-only JSON Lines storage for reported grading errors.
+ *
+ * <p>Appending preserves earlier sessions as an audit trail; records are not
+ * rewritten when a later grading session reports another issue.</p>
+ */
 public final class ErrorHistory {
     private final Path path;
 
+    /** Creates history storage at the supplied JSONL path. */
     public ErrorHistory(Path path) {
         this.path = path;
     }
 
+    /** Returns the configured history path for diagnostics and callers. */
     public Path path() {
         return path;
     }
 
+    /**
+     * Appends one complete JSON object followed by a newline.
+     *
+     * @param record diagnostic to persist
+     * @throws IOException when the history cannot be created or written
+     */
     public void append(ErrorRecord record) throws IOException {
         Path absolute = path.toAbsolutePath().normalize();
         Path parent = absolute.getParent();

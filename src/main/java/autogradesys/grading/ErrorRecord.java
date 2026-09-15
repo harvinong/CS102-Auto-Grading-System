@@ -2,7 +2,10 @@ package autogradesys.grading;
 
 import java.util.Objects;
 
-/** A durable, contextual description of one grading problem. */
+/** A durable, contextual description of one grading problem.
+ *
+ * @param canContinue whether grading may safely proceed after this problem
+ */
 public record ErrorRecord(
         String stage,
         String category,

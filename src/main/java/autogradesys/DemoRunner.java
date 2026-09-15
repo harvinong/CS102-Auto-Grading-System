@@ -12,11 +12,23 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 
-/** Runs the checked-in, credential-free demonstration fixtures. */
+/** Runs the checked-in, credential-free demonstration fixtures.
+ *
+ * <p>This is deliberately a Maven-run entry point rather than a second grader;
+ * it verifies the product path using only repository fixtures.</p>
+ */
 public final class DemoRunner {
     private DemoRunner() {
     }
 
+    /**
+     * Grades the fixtures below {@code demoRoot} and writes generated artifacts
+     * beneath its target directory.
+     *
+     * @param demoRoot root containing the checked-in demo fixtures
+     * @param output destination for demo progress and grading messages
+     * @return zero when the demo has no fatal error
+     */
     public static int run(Path demoRoot, PrintStream output) {
         Path fixtures = demoRoot.resolve("fixtures");
         Path submissions = fixtures.resolve("submissions");
