@@ -1,10 +1,11 @@
 package autogradesys;
 
 import java.util.Scanner;
-import java.io.IOException;
 import java.io.File;
 
 import autogradesys.filesys.FileUtil;
+import autogradesys.display.Cli;
+import autogradesys.display.Prompt;
 
 
 public class App {
@@ -19,36 +20,12 @@ public class App {
 
         // Prompt user for dirpaths
         // TODO: Improve the UX by making a save file and config.
-        // TODO: Clean the code
         Scanner sc = new Scanner(System.in);
 
-        File submissions = null;
-        while (submissions == null) {
-            try {
-                submissions = FileUtil.getFile(FileUtil.promptPath(SUBMISSIONS_PROMPT, sc));
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-            }
-        }
+        File submissions = Cli.promptFile(Prompt.SUBMISSIONS_PROMPT, sc);
+        File testers = Cli.promptFile(Prompt.TESTERS_PROMPT, sc);
+        File scoresheet = Cli.promptFile(Prompt.SCORESHEET_PROMPT, sc);
         
-        File testers = null;
-        while (testers == null) {
-            try {
-                testers     = FileUtil.getFile(FileUtil.promptPath(TESTERS_PROMPT, sc));
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-            }
-        }
-        
-        File scoresheet = null;
-        while (scoresheet == null) {
-            try {
-                scoresheet  = FileUtil.getFile(FileUtil.promptPath(SCORESHEET_PROMPT, sc));
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-            }
-        }
-
         // TODO: Put the function that passes in the three file objects.
 
         // Close the scanner after the user exits the program.
