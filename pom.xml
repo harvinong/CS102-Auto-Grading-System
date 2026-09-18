@@ -9,7 +9,7 @@
 
   <name>CS102-Auto-Grading-System</name>
   <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+  <url>https://github.com/harvinong/CS102-Auto-Grading-System</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -29,7 +29,13 @@
   </dependencyManagement>
 
   <dependencies>
-  
+    <!-- Program Dependencies -->
+    <dependency>
+      <groupId>com.opencsv</groupId>
+      <artifactId>opencsv</artifactId>
+      <version>4.1</version>
+    </dependency>
+
     <!-- Dependencies for Test -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
