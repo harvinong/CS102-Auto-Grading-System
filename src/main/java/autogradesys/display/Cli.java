@@ -3,6 +3,7 @@ package autogradesys.display;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Scanner;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -27,6 +28,7 @@ public class Cli {
      * - the user enters a non-absolute (relative) path;
      * - the file/directory does not exist; and
      * - the prompt ask for directory and user inputs a file, and vice versa.
+     * - the file extension is invalid.
      * 
      * @param prompt The prompt to be printed out to the user.
      * @param reader The scanner object to read user input.
@@ -103,7 +105,6 @@ public class Cli {
         return file;
     }
 
-
     /**
      * Validate the file object if it is a directory.
      * 
@@ -119,9 +120,10 @@ public class Cli {
     /**
      * Validate the file object if it is a file with correct extensions.
      * 
-     * @param file the file object to be the file.
+     * @param file           the file object to be the file.
      * @param fileExtensions the supported file extensions.
-     * @throws IllegalArgumentException if the file object is not a file, or has invalid extensions.
+     * @throws IllegalArgumentException if the file object is not a file, or has
+     *                                  invalid extensions.
      */
     private static void validateFile(File file, String... fileExtensions) throws IllegalArgumentException {
         if (!file.isFile()) {
@@ -129,22 +131,24 @@ public class Cli {
         }
 
         if (!ArrayUtils.contains(fileExtensions, getExtension(file))) {
-            throw new IllegalArgumentException("Please enter a file with extensions: " + String.join(", ", fileExtensions));
+            throw new IllegalArgumentException(
+                    "Please enter a file with extensions: " + String.join(", ", fileExtensions));
         }
-
 
     }
 
     /**
      * Get the extension of the file.
      * 
-     * If the file is a directory, or the file has no extension, it will return an empty string.
+     * If the file is a directory, or the file has no extension, it will return an
+     * empty string.
      * 
      * @param file the file object.
      * @return the extension without the dot separator. E.g. "pdf", "csv".
      */
     private static String getExtension(File file) {
-        // Ref: https://www.geeksforgeeks.org/java/how-to-get-the-file-extension-in-java/
+        // Ref:
+        // https://www.geeksforgeeks.org/java/how-to-get-the-file-extension-in-java/
         String fileName = file.getName();
         int dotIndex = fileName.lastIndexOf('.');
 

@@ -2,15 +2,15 @@ package autogradesys.display;
 
 public enum Prompt {
     SUBMISSIONS_PROMPT(
-        "Enter submissions folder path  : ", 
-        true),
+            "Enter submissions folder path  : ",
+            true),
     TESTERS_PROMPT(
-        "Enter tester files folder path : ", 
-        true),
+            "Enter tester files folder path : ",
+            true),
     SCORESHEET_PROMPT(
-        "Enter scoresheet file path     : ", 
-        false, 
-        "csv", "xls");
+            "Enter scoresheet file path     : ",
+            false,
+            "csv", "xls");
 
     private String field;
     private boolean isDir;
