@@ -86,7 +86,7 @@ public class StudentFileExec {
 
         return studentDirs.stream().map(studentDir ->
             DynamicContainer.dynamicContainer(
-                    "Student: " + studentDir.getFileName(),
+                    "2023-2024-" + studentDir.getFileName(),
                     buildQuestionContainers(studentDir)
             )
         );
