@@ -38,8 +38,8 @@ class PerStudentListener implements TestExecutionListener {
         }
     }
 
-    // Walk UP the tree from a leaf test until we find the container
-    // whose display name looks like "Student: alice" — that's our target level.
+    // Walk up the tree from a leaf test until container found
+    
     private Optional<String> findStudentContainerName(TestIdentifier identifier) {
         Optional<TestIdentifier> current = testPlan.getParent(identifier);
 
@@ -47,8 +47,8 @@ class PerStudentListener implements TestExecutionListener {
             TestIdentifier node = current.get();
             String displayName = node.getDisplayName();
 
-            if (displayName.startsWith("Student: ")) {
-                return Optional.of(displayName.substring("Student: ".length()));
+            if (displayName.startsWith("2023-2024-")) {
+                return Optional.of(displayName.substring("2023-2024-".length()));
             }
 
             current = testPlan.getParent(node); // climb one more level up
