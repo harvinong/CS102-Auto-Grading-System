@@ -35,6 +35,11 @@
     <artifactId>junit-platform-launcher</artifactId>
     <scope>test</scope>
 </dependency>
+<dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <scope>test</scope>
+    </dependency>
     <!-- Dependencies for Test -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>

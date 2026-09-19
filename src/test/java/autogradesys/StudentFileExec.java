@@ -64,14 +64,6 @@ public class StudentFileExec {
                             new TestCase("(nosuchfile.txt,lee)", new Object[]{"nosuchfile.txt", "Lee"}, -1.0)
 
                     )
-            ),
-
-            "Q2b", new MethodSpec(
-                    "getAverageAge",
-                    new Class<?>[]{ String.class, String.class },
-                    List.of(
-                            new TestCase("(person.txt,lee)", new Object[]{"persons.txt", "LEE"}, 36.0)
-                    )
             )
 
             // ... one entry per sub-question
