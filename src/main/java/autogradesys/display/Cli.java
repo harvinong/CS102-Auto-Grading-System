@@ -40,22 +40,37 @@ public class Cli {
         while (file == null) {
             try {
 
-                Path filepath = Cli.promptPath(prompt.getNewPathField(), reader);
-                file = Cli.getFile(filepath);
+                Path filepath = Cli.promptPath(prompt.getField(), reader);
 
-                if (prompt.isDir()) {
-                    validateDirectory(file);
-                } else {
-                    validateFile(file, prompt.getExtensions());
+                if (!filepath.isAbsolute()) {
+                    // the user enters a non-absolute (relative) path.
+                    System.out.println("The path must be absolute.");
+                    file = null;
+                    continue;
                 }
 
-            } catch (IllegalArgumentException e) {
-                // the user enters a non-absolute (relative) path.
-                // the user enters a directory path when prompted for a file path.
-                // the user enters a file path when prompted for a directory path.
-                // the user enters a file path with invalid extensions.
-                System.out.println("Invalid input: " + e.getMessage() + "\n");
-                file = null;
+                file = Cli.getFile(filepath);
+
+                // Case 1: prompt asks for a directory
+                if (prompt.isDir()) {
+                    if (!file.isDirectory()) {
+                        // the user enters a directory path when prompted for a file path.
+                        System.out.println("Invalid input: Please input a directory path.\n");
+                        file = null;
+                    }
+                // Case 2: prompt asks for a file
+                } else {
+                    if (!file.isFile()) {
+                        // the user enters a file path when prompted for a directory path.
+                        System.out.println("Invalid input: Please input a file path.\n");
+                        file = null;
+                    } else if (!validExtension(file, prompt.getExtensions())) {
+                        // the user enters a file path with invalid extensions.
+                        System.out.println("Please enter a file with extensions: " + String.join(", ", prompt.getExtensions()) + "\n");
+                        file = null;
+                    }
+                }
+                
             } catch (FileNotFoundException e) {
                 // the file/directory does not exist.
                 System.out.println("File not found: " + e.getMessage() + "\n");
@@ -73,19 +88,14 @@ public class Cli {
      * 
      * @param prompt The prompt that is printed in the terminal.
      * @param reader The reader to reads the user input.
-     * @return The path the user has input in absolute form.
-     * @throws IllegalArgumentException If the path is not absolute.
+     * @return The path the user has input.
      */
-    private static Path promptPath(String prompt, Scanner reader) throws IllegalArgumentException {
+    private static Path promptPath(String prompt, Scanner reader) {
         System.out.print(prompt);
         String pathString = reader.nextLine();
-        Path dirpath = Paths.get(pathString);
+        Path filepath = Paths.get(pathString);
 
-        if (!dirpath.isAbsolute()) {
-            throw new IllegalArgumentException("The path must be absolute.");
-        }
-
-        return dirpath;
+        return filepath;
     }
 
     /**
@@ -106,38 +116,6 @@ public class Cli {
     }
 
     /**
-     * Validate the file object if it is a directory.
-     * 
-     * @param file the file object to be the directory.
-     * @throws IllegalArgumentException if the file object is not a directory.
-     */
-    private static void validateDirectory(File file) throws IllegalArgumentException {
-        if (!file.isDirectory()) {
-            throw new IllegalArgumentException("Please enter a directory path.");
-        }
-    }
-
-    /**
-     * Validate the file object if it is a file with correct extensions.
-     * 
-     * @param file           the file object to be the file.
-     * @param fileExtensions the supported file extensions.
-     * @throws IllegalArgumentException if the file object is not a file, or has
-     *                                  invalid extensions.
-     */
-    private static void validateFile(File file, String... fileExtensions) throws IllegalArgumentException {
-        if (!file.isFile()) {
-            throw new IllegalArgumentException("Please enter a file path.");
-        }
-        
-        if (!Arrays.asList(fileExtensions).contains(getExtension(file))) {
-            throw new IllegalArgumentException(
-                    "Please enter a file with extensions: " + String.join(", ", fileExtensions));
-        }
-
-    }
-
-    /**
      * Get the extension of the file.
      * 
      * If the file is a directory, or the file has no extension, it will return an
@@ -154,10 +132,21 @@ public class Cli {
 
         // if there is no dot or ends with a dot
         if (dotIndex == -1 || dotIndex == fileName.length() - 1) {
-            return ""; // No file extension found
+            return null; // No file extension found
         } else {
             return fileName.substring(dotIndex + 1);
         }
+    }
+
+    /**
+     * Check if a file has a valid extension.
+     * 
+     * @param file file with the extension to be checked.
+     * @param extensions a list of valid extensions.
+     * @return `true` if `file`'s extension is in `extensions`, false otherwise.
+     */
+    private static boolean validExtension(File file, String... extensions) {
+        return Arrays.asList(extensions).contains(getExtension(file));
     }
 
 }
