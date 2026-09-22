@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
 
-import org.apache.commons.lang3.ArrayUtils;
+import java.util.Arrays;
 
 /**
  * 
@@ -40,7 +40,7 @@ public class Cli {
         while (file == null) {
             try {
 
-                Path filepath = Cli.promptPath(prompt.getField(), reader);
+                Path filepath = Cli.promptPath(prompt.getNewPathField(), reader);
                 file = Cli.getFile(filepath);
 
                 if (prompt.isDir()) {
@@ -129,8 +129,8 @@ public class Cli {
         if (!file.isFile()) {
             throw new IllegalArgumentException("Please enter a file path.");
         }
-
-        if (!ArrayUtils.contains(fileExtensions, getExtension(file))) {
+        
+        if (!Arrays.asList(fileExtensions).contains(getExtension(file))) {
             throw new IllegalArgumentException(
                     "Please enter a file with extensions: " + String.join(", ", fileExtensions));
         }
