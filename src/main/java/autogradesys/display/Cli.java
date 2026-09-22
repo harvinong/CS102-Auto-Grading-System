@@ -40,7 +40,7 @@ public class Cli {
         while (file == null) {
             try {
 
-                Path filepath = Cli.promptPath(prompt.getNewPathField(), reader);
+                Path filepath = Cli.promptPath(prompt.getField(), reader);
                 file = Cli.getFile(filepath);
 
                 if (prompt.isDir()) {
