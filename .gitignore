@@ -26,4 +26,8 @@ replay_pid*
 # Maven and IDE files
 .mvn
 .vscode
-target/*
+target/
+
+# Project specific files
+config.json
+cache/

@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
 
-import org.apache.commons.lang3.ArrayUtils;
+import java.util.Arrays;
 
 /**
  * 
@@ -31,16 +31,16 @@ public class Cli {
      * - the file extension is invalid.
      * 
      * @param prompt The prompt to be printed out to the user.
-     * @param reader The scanner object to read user input.
+     * @param sc The scanner object to read user input.
      * @return The file/directory object.
      */
-    public static File promptFile(Prompt prompt, Scanner reader) {
+    public static File promptFile(Prompt prompt, Scanner sc) {
         File file = null;
 
         while (file == null) {
             try {
 
-                Path filepath = Cli.promptPath(prompt.getField(), reader);
+                Path filepath = Cli.promptPath(prompt.getField(), sc);
                 file = Cli.getFile(filepath);
 
                 if (prompt.isDir()) {
@@ -72,13 +72,13 @@ public class Cli {
      * Ask user for the filepath.
      * 
      * @param prompt The prompt that is printed in the terminal.
-     * @param reader The reader to reads the user input.
+     * @param sc The reader to reads the user input.
      * @return The path the user has input in absolute form.
      * @throws IllegalArgumentException If the path is not absolute.
      */
-    private static Path promptPath(String prompt, Scanner reader) throws IllegalArgumentException {
+    private static Path promptPath(String prompt, Scanner sc) throws IllegalArgumentException {
         System.out.print(prompt);
-        String pathString = reader.nextLine();
+        String pathString = sc.nextLine();
         Path dirpath = Paths.get(pathString);
 
         if (!dirpath.isAbsolute()) {
@@ -129,8 +129,8 @@ public class Cli {
         if (!file.isFile()) {
             throw new IllegalArgumentException("Please enter a file path.");
         }
-
-        if (!ArrayUtils.contains(fileExtensions, getExtension(file))) {
+        
+        if (!Arrays.asList(fileExtensions).contains(getExtension(file))) {
             throw new IllegalArgumentException(
                     "Please enter a file with extensions: " + String.join(", ", fileExtensions));
         }
