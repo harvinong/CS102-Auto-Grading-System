@@ -4,16 +4,21 @@ import java.util.Scanner;
 import java.io.File;
 
 import autogradesys.config.Config;
-import autogradesys.display.Cli;
-import autogradesys.display.Prompt;
+import autogradesys.display.CLI;
+import autogradesys.display.Field;
 
 public class App {
 
-    private static Config promptConfig(Scanner sc) {
-        File submissions = Cli.promptFile(Prompt.SUBMISSIONS_PROMPT, sc);
-        File testers = Cli.promptFile(Prompt.TESTERS_PROMPT, sc);
-        File scoresheet = Cli.promptFile(Prompt.SCORESHEET_PROMPT, sc);
-        return new Config(submissions, testers, scoresheet);
+    private static Config appConfig;
+
+    private static Config promptConfig(Scanner sc, boolean askNewFiles) {
+        if (askNewFiles) {
+            appConfig = Config.get(null, null, null);
+        }
+        File starting_folder = CLI.promptFile(Field.STARTING_FOLDER, appConfig.getStartingFolderPath(), sc);
+        File testers = CLI.promptFile(Field.TESTERS, appConfig.getTestersPath(), sc);
+        File scoresheet = CLI.promptFile(Field.SCORESHEET, appConfig.getScoresheetPath(), sc);
+        return Config.get(starting_folder, testers, scoresheet);
     }
 
     private static void displayMenu() {
@@ -25,7 +30,7 @@ public class App {
 
     public static void displayConfig(Config config) {
         System.out.println("__Configuration____");
-        System.out.println("Submissions folder: " + config.getSubmissionsPath());
+        System.out.println("Starting folder: " + config.getStartingFolderPath());
         System.out.println("Testers folder: " + config.getTestersPath());
         System.out.println("Scoresheet file: " + config.getScoresheetPath());
     }
@@ -38,25 +43,21 @@ public class App {
         // Prompt user for dirpaths
         Scanner sc = new Scanner(System.in);
 
-        // TODO: Improve the UX by making a save file and config.
-        Config config;
+        appConfig = Config.loadConfig();
 
-        if (!Config.configInitialized()) {
-            config = promptConfig(sc);
-            boolean saveSuccess = config.saveConfig();
+        if (appConfig == null) {
+            appConfig = promptConfig(sc, true);
+            boolean saveSuccess = appConfig.saveConfig();
             if (saveSuccess) {
                 System.out.println("Saved successfully");
             } else {
                 System.out.println("Save unsuccessful");
             }
-        } else {
-            config = Config.loadConfig();
         }
-
         
         int menuOption;
         do {
-            displayConfig(config);
+            displayConfig(appConfig);
             System.out.println();
             displayMenu();
             System.out.print("Enter option: ");
@@ -65,8 +66,8 @@ public class App {
 
             switch (menuOption) {
                 case 1:
-                    config = promptConfig(sc);
-                    boolean saveSuccess = config.saveConfig();
+                    appConfig = promptConfig(sc, false);
+                    boolean saveSuccess = appConfig.saveConfig();
                     if (saveSuccess) {
                         System.out.println("\nPreference saved!\n");
                     } else {
@@ -74,6 +75,7 @@ public class App {
                     }
                     break;
                 case 2:
+                    CLI.promptFile(Field.SUBMISSIONS, null, sc); // Freshly prompted so instructor can input folder of submissions.
                     // TODO: Put the function that passes in the three file objects.
                     System.out.println("\nRunning autograder!\n");
                     break;
@@ -91,8 +93,6 @@ public class App {
 
         // TODO: Display exit messages
         System.out.println("\nThank you for using!");
-        // System.out.println();
-        // System.out.printf("\"%s\"%n\"%s\"%n\"%s\"%n", submissions, testers, scoresheet);
 
     }
 
