@@ -10,7 +10,7 @@ import autogradesys.filemanager.FileValidator;
 
 /**
  * 
- * autogradesys.display.Cli (Command Line Interface)
+ * autogradesys.display.CLI (Command Line Interface)
  * provides utilities to facilitate user input and configuration
  * through a command line terminal.
  * 
@@ -44,8 +44,8 @@ public class CLI {
                 String prompt = String.format("Enter %s%s: ",
                         fileField.getName(), defaultFile != null ? " (" + defaultFile.getName() + ")" : "");
 
-                Path filepath = CLI.promptPath(prompt, defaultFile != null? defaultFile.toPath(): null, sc);
-                file = CLI.getFile(filepath);
+                Path filepath = promptPath(prompt, defaultFile != null ? defaultFile.toPath() : null, sc);
+                file = getFile(filepath);
 
                 if (fileField.isDir()) {
                     FileValidator.validateDirectory(file);
