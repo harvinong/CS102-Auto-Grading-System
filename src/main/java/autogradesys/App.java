@@ -54,10 +54,11 @@ public class App {
                 System.out.println("Save unsuccessful");
             }
         }
+
+        displayConfig(appConfig);
         
         int menuOption;
         do {
-            displayConfig(appConfig);
             System.out.println();
             displayMenu();
             System.out.print("Enter option: ");
@@ -73,6 +74,7 @@ public class App {
                     } else {
                         System.out.println("\nSave unsuccessful\n");
                     }
+                    displayConfig(appConfig);
                     break;
                 case 2:
                     CLI.promptFile(Field.SUBMISSIONS, null, sc); // Freshly prompted so instructor can input folder of submissions.
