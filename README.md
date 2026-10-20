@@ -1,56 +1,48 @@
 # CS102 Auto-Grading System
 
-This repository contains a small, local Java auto-grader demo. It compiles the grader with Maven, then executes each raw student `Main.java` with bounded `javac` and `java` subprocesses. The demo needs no credentials, network access, or external service.
+This repository contains a local Java/Maven auto-grader. It compiles raw student `Main.java` files with `javac`, executes them with `java`, updates CSV scores, records JSONL diagnostics, and writes a current-run HTML grading report.
 
-## Prerequisites
-
-- JDK 17 or newer, with both `java` and `javac` on `PATH`
-- Maven 3.9 or newer
-
-## Build and test the grader
+## Build and test
 
 ```sh
 mvn test
 mvn package
 ```
 
-A student submission is source-file based. The grader passes a source path to bounded `javac` and runs the resulting `Main` class with bounded `java`; neither subprocess uses a shell.
+## Two current-run features
 
-## Output limit
+### Current-run HTML grading report
 
-Each compile or execution process has a **combined stdout plus stderr capture budget**, 1 MiB by default. Capture is bounded while streams are read, not truncated after an unbounded allocation. When the combined byte total exceeds the budget, the process tree is terminated, retained output is marked truncated in an `output-limit` diagnostic, and grading continues with the next question/student. This is output control only, not a sandbox or arbitrary-code security boundary.
+`src/main/java/autogradesys/grading/HtmlReportWriter.java` renders the current `GradeResult` and current `ErrorReporter.records()` into a self-contained `grading-report.html`. It includes run metadata, summary counts, every student/question score, escaped diagnostics, context, severity, and guidance. It is overwritten per run, so append-only history does not leak into the report. This is inherited from the earlier HTML-report feature.
 
-For a path-based run, configure a positive finite budget:
-
-```sh
-mvn -q exec:java -Dexec.mainClass=autogradesys.App \
-  -Dexec.args="--non-interactive --submissions-dir /path/submissions --questions-dir /path/questions --scoresheet /path/scores.csv --output-limit-bytes 1048576"
-```
-
-Invalid or non-positive limits are rejected before grading. The diagnostic includes student and question context, the configured byte budget, retained stream totals, truncation, termination, and remediation guidance.
-
-## Run the checked-in demo
+Run the inherited six-student demonstration:
 
 ```sh
+rm -rf demo/target
 mvn -q exec:java -Dexec.mainClass=autogradesys.App -Dexec.args=demo
 ```
 
-The command uses `demo/fixtures` and writes `demo/target/run/scores.csv`, `error-history.jsonl`, and `grading-report.html`. Existing demo counts and report behavior are unchanged. For a dedicated bounded-output proof, run the focused test:
+Its presentation remains 19 passes, 5 failures, and one extra warning in the generated report/history.
+
+### Bounded student-program output
+
+`src/main/java/autogradesys/grading/ProcessRunner.java` captures stdout and stderr concurrently under one combined finite byte budget. The default is 1 MiB; configure a positive value with `--output-limit-bytes`. The limit is enforced while reading, retaining at most the budget rather than allocating unbounded output. On overflow, the existing process-tree lifecycle terminates the process and descendants, and `JavaGrader` emits a contextual recoverable `output-limit` diagnostic labeled truncated. Timeout, runtime error, and wrong answer remain separate categories, and grading continues.
+
+Reproduce the trusted finite flood fixture from the repository root:
 
 ```sh
-mvn -q -Dtest=JavaGraderTest#outputLimitStopsFloodingRetainsBoundedBytesAndContinues test
+rm -rf demo/output-limit/target
+mkdir -p demo/output-limit/target
+cp demo/output-limit/fixtures/scores.csv demo/output-limit/target/scores.csv
+mvn -q exec:java -Dexec.mainClass=autogradesys.App -Dexec.args="--non-interactive --submissions-dir $(pwd)/demo/output-limit/fixtures/submissions --questions-dir $(pwd)/demo/output-limit/fixtures/questions --scoresheet $(pwd)/demo/output-limit/target/scores.csv --history $(pwd)/demo/output-limit/target/history.jsonl --report $(pwd)/demo/output-limit/target/grading-report.html --timeout-ms 2000 --output-limit-bytes 128"
 ```
 
-The test uses the actual Java grader path, a finite configured 128-byte budget, a controlled flooding fixture, and a healthy later question. It proves termination, bounded retained output, contextual reporting, and continuation without exhausting host memory.
+Observed result: `flood/q1` gets `output-limit` with retained `stdout=128 bytes`, while `flood/q2` and both healthy questions pass. The generated CSV is `flood,0,1` and `healthy,1,1`; report and history are under `demo/output-limit/target/`.
+
+This is output robustness only, not a sandbox, container platform, network/filesystem policy, or arbitrary-code security claim.
 
 ## Other non-interactive sessions
 
-The CLI accepts `--timeout` or `--timeout-ms`, `--history`, `--report`, and `--output-limit-bytes`. Invalid setup and scoresheet failures remain fatal; per-question failures, including timeout, runtime error, wrong answer, and output-limit, remain recoverable.
+The CLI accepts `--timeout` or `--timeout-ms`, `--history`, `--report`, and `--output-limit-bytes`. Invalid setup and scoresheet failures remain fatal; per-question failures remain recoverable. Neither subprocess uses a shell.
 
-## Fixture layout
-
-`demo/fixtures/questions/<question>` contains `expected.txt` and optional `input.txt`; submissions are `demo/fixtures/submissions/<student>/<question>/Main.java`. Expected output is compared exactly. Each question gets a fresh temporary build directory.
-
-## Generated files
-
-Maven output is under `target/`; demo output is under `demo/target/`. Before reporting a change, run `mvn test`, `mvn package`, and `git diff --check`.
+Before reporting changes, run `mvn test`, `mvn package`, and `git diff --check`.
