@@ -93,6 +93,43 @@ class JavaGraderTest {
     }
 
     @Test
+    void outputLimitStopsFloodingRetainsBoundedBytesAndContinues() throws Exception {
+        requireJdk();
+        Path questions = createQuestions();
+        Path submissions = temporary.resolve("output-submissions");
+        createSource(submissions.resolve("flood/q1/Main.java"),
+                "public class Main { public static void main(String[] a) { while (true) System.out.print(\"0123456789\"); } }");
+        createSource(submissions.resolve("flood/q2/Main.java"), passingSource("next"));
+        createSource(submissions.resolve("healthy/q1/Main.java"), passingSource("ok"));
+        createSource(submissions.resolve("healthy/q2/Main.java"), passingSource("next"));
+        Path scoresheet = temporary.resolve("output-scores.csv");
+        Files.writeString(scoresheet, "student,q1,q2\nflood,,\nhealthy,,\n", StandardCharsets.UTF_8);
+        ErrorReporter reporter = reporter("output-errors.jsonl");
+
+        GradeResult result = JavaGrader.grade(submissions, questions, scoresheet,
+                Duration.ofSeconds(2), 128, reporter);
+
+        ErrorRecord limit = reporter.records().stream()
+                .filter(record -> record.category().equals("output-limit")).findFirst()
+                .orElseThrow(() -> new AssertionError(reporter.records().toString()));
+        assertTrue(limit.message().contains("128 byte(s)"));
+        assertTrue(limit.message().contains("truncated"));
+        assertTrue(limit.message().contains("stdout=128 bytes, stderr=0 bytes"));
+        assertEquals(1, result.scores().get("flood").get("q2"));
+        assertEquals(1, result.scores().get("healthy").get("q1"));
+        assertTrue(Files.readString(scoresheet).contains("healthy,1,1"));
+    }
+
+    @Test
+    void invalidOutputLimitIsRejectedBeforeGrading() throws Exception {
+        ErrorReporter reporter = reporter("invalid-output.jsonl");
+        GradeResult result = JavaGrader.grade(temporary, temporary, null,
+                Duration.ofSeconds(1), 0, reporter);
+        assertTrue(result.fatal());
+        assertEquals("output-limit", reporter.records().get(0).category());
+    }
+
+    @Test
     void htmlReportUsesCurrentRunScoresAndEscapesDynamicDiagnostics() throws Exception {
         Path report = temporary.resolve("report.html");
         GradeResult result = new GradeResult(1, 1, false,

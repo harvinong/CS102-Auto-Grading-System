@@ -7,96 +7,50 @@ This repository contains a small, local Java auto-grader demo. It compiles the g
 - JDK 17 or newer, with both `java` and `javac` on `PATH`
 - Maven 3.9 or newer
 
-Check the tools with:
-
-```sh
-java -version
-javac -version
-mvn -version
-```
-
 ## Build and test the grader
-
-From the repository root:
 
 ```sh
 mvn test
 mvn package
 ```
 
-Maven builds and tests the auto-grader itself. A student submission is deliberately not a Maven project: the assignment fixture is source-file based, so the grader passes a source path to bounded `javac` and runs the resulting `Main` class with bounded `java`. Neither subprocess uses a shell, so student-controlled paths and text are not interpolated into shell commands.
+A student submission is source-file based. The grader passes a source path to bounded `javac` and runs the resulting `Main` class with bounded `java`; neither subprocess uses a shell.
+
+## Output limit
+
+Each compile or execution process has a **combined stdout plus stderr capture budget**, 1 MiB by default. Capture is bounded while streams are read, not truncated after an unbounded allocation. When the combined byte total exceeds the budget, the process tree is terminated, retained output is marked truncated in an `output-limit` diagnostic, and grading continues with the next question/student. This is output control only, not a sandbox or arbitrary-code security boundary.
+
+For a path-based run, configure a positive finite budget:
+
+```sh
+mvn -q exec:java -Dexec.mainClass=autogradesys.App \
+  -Dexec.args="--non-interactive --submissions-dir /path/submissions --questions-dir /path/questions --scoresheet /path/scores.csv --output-limit-bytes 1048576"
+```
+
+Invalid or non-positive limits are rejected before grading. The diagnostic includes student and question context, the configured byte budget, retained stream totals, truncation, termination, and remediation guidance.
 
 ## Run the checked-in demo
 
-The non-interactive Maven command is:
-
 ```sh
 mvn -q exec:java -Dexec.mainClass=autogradesys.App -Dexec.args=demo
 ```
 
-The command uses `demo/fixtures` and writes generated state to `demo/target/run`:
-
-```text
-demo/target/run/scores.csv
-demo/target/run/error-history.jsonl
-demo/target/run/grading-report.html
-```
-
-The first run copies `demo/fixtures/scores.template.csv` to the generated scoresheet. It never changes the source-controlled template or expected outputs. The history is append-only, and rerunning the demo retains the generated scoresheet and appends new JSONL records. To intentionally start a new local demo session, remove only the generated directory and run the command again:
+The command uses `demo/fixtures` and writes `demo/target/run/scores.csv`, `error-history.jsonl`, and `grading-report.html`. Existing demo counts and report behavior are unchanged. For a dedicated bounded-output proof, run the focused test:
 
 ```sh
-rm -rf demo/target
-mvn -q exec:java -Dexec.mainClass=autogradesys.App -Dexec.args=demo
+mvn -q -Dtest=JavaGraderTest#outputLimitStopsFloodingRetainsBoundedBytesAndContinues test
 ```
 
-Open `demo/target/run/grading-report.html` directly in a browser for a self-contained report of this run. It includes a run ID and timestamp, summary counts, every student/question score, and escaped error messages with guidance. It is overwritten for each run, so older JSONL history cannot leak into the current report.
-
-The output includes `PASS` lines and contextual errors for:
-
-- a passing student and question
-- a compiler failure for Bob
-- a runtime exception for Frank
-- a hung program for Carol, terminated after the per-question timeout
-- an output mismatch for Dave
-- Erin's missing question directory
-- the blank student row in the scoresheet
-
-The run continues with other questions and students after each recoverable error. Human-readable errors include stage, category, severity, guidance, and available student, submission, and question context. The same fields are written as one JSON object per line in `error-history.jsonl`. Scores are updated atomically in `scores.csv`, while the existing `legacy` row and other prior rows remain intact.
-
-## Fixture layout
-
-```text
-demo/fixtures/
-  questions/q1/expected.txt
-  questions/q2/expected.txt
-  questions/q3/expected.txt
-  questions/q4/expected.txt
-  submissions/<student>/<question>/Main.java
-  scores.template.csv
-```
-
-Question directories define the required question set. `input.txt` is optional and is sent to the student's standard input when present. `expected.txt` is compared exactly with standard output, including whitespace and line endings. Each question is compiled into a fresh temporary build directory, which is deleted after that question.
+The test uses the actual Java grader path, a finite configured 128-byte budget, a controlled flooding fixture, and a healthy later question. It proves termination, bounded retained output, contextual reporting, and continuation without exhausting host memory.
 
 ## Other non-interactive sessions
 
-The same Java CLI accepts explicit paths:
+The CLI accepts `--timeout` or `--timeout-ms`, `--history`, `--report`, and `--output-limit-bytes`. Invalid setup and scoresheet failures remain fatal; per-question failures, including timeout, runtime error, wrong answer, and output-limit, remain recoverable.
 
-```sh
-mvn -q exec:java \
-  -Dexec.mainClass=autogradesys.App \
-  -Dexec.args="--non-interactive --submissions-dir /path/submissions --questions-dir /path/questions --scoresheet /path/scores.csv --history /path/errors.jsonl --report /path/grading-report.html --timeout-ms 2000"
-```
+## Fixture layout
 
-Use `--timeout` for seconds instead of `--timeout-ms`. Invalid arguments return a nonzero status. Invalid setup and scoresheet read/write failures are reported as fatal, return a nonzero status, and stop before student programs or scoresheet writes run. A per-student or per-question failure is recoverable and does not stop unrelated work.
+`demo/fixtures/questions/<question>` contains `expected.txt` and optional `input.txt`; submissions are `demo/fixtures/submissions/<student>/<question>/Main.java`. Expected output is compared exactly. Each question gets a fresh temporary build directory.
 
 ## Generated files
 
-Maven's normal build output is under `target/`. The demo output is under `demo/target/`, which is ignored by Git. `scores.template.csv` and all question expected outputs are fixtures and are never rewritten by the demo.
-
-Before reporting a change, run:
-
-```sh
-mvn test
-mvn package
-git diff --check
-```
+Maven output is under `target/`; demo output is under `demo/target/`. Before reporting a change, run `mvn test`, `mvn package`, and `git diff --check`.
