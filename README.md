@@ -39,6 +39,7 @@ The command uses `demo/fixtures` and writes generated state to `demo/target/run`
 ```text
 demo/target/run/scores.csv
 demo/target/run/error-history.jsonl
+demo/target/run/grading-report.html
 ```
 
 The first run copies `demo/fixtures/scores.template.csv` to the generated scoresheet. It never changes the source-controlled template or expected outputs. The history is append-only, and rerunning the demo retains the generated scoresheet and appends new JSONL records. To intentionally start a new local demo session, remove only the generated directory and run the command again:
@@ -47,6 +48,8 @@ The first run copies `demo/fixtures/scores.template.csv` to the generated scores
 rm -rf demo/target
 mvn -q exec:java -Dexec.mainClass=autogradesys.App -Dexec.args=demo
 ```
+
+Open `demo/target/run/grading-report.html` directly in a browser for a self-contained report of this run. It includes a run ID and timestamp, summary counts, every student/question score, and escaped error messages with guidance. It is overwritten for each run, so older JSONL history cannot leak into the current report.
 
 The output includes `PASS` lines and contextual errors for:
 
@@ -81,7 +84,7 @@ The same Java CLI accepts explicit paths:
 ```sh
 mvn -q exec:java \
   -Dexec.mainClass=autogradesys.App \
-  -Dexec.args="--non-interactive --submissions-dir /path/submissions --questions-dir /path/questions --scoresheet /path/scores.csv --history /path/errors.jsonl --timeout-ms 2000"
+  -Dexec.args="--non-interactive --submissions-dir /path/submissions --questions-dir /path/questions --scoresheet /path/scores.csv --history /path/errors.jsonl --report /path/grading-report.html --timeout-ms 2000"
 ```
 
 Use `--timeout` for seconds instead of `--timeout-ms`. Invalid arguments return a nonzero status. Invalid setup and scoresheet read/write failures are reported as fatal, return a nonzero status, and stop before student programs or scoresheet writes run. A per-student or per-question failure is recoverable and does not stop unrelated work.

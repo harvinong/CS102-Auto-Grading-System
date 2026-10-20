@@ -1,8 +1,10 @@
 package autogradesys;
 
 import autogradesys.grading.ErrorHistory;
+import autogradesys.grading.ErrorRecord;
 import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
+import autogradesys.grading.HtmlReportWriter;
 import autogradesys.grading.JavaGrader;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -22,6 +24,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JavaGraderTest {
@@ -87,6 +90,38 @@ class JavaGraderTest {
         long pid = Long.parseLong(Files.readString(pidFile));
         assertFalse(ProcessHandle.of(pid).map(ProcessHandle::isAlive).orElse(false),
                 "a timed-out student process must be terminated");
+    }
+
+    @Test
+    void htmlReportUsesCurrentRunScoresAndEscapesDynamicDiagnostics() throws Exception {
+        Path report = temporary.resolve("report.html");
+        GradeResult result = new GradeResult(1, 1, false,
+                Map.of("<student>", Map.of("q1", 1, "q2", 0)));
+        ErrorRecord error = new ErrorRecord("question", "compile", "error",
+                "bad <source> & \"quote\"", "Fix & retry", "<student>",
+                "/tmp/<submission>", "q2", true);
+        HtmlReportWriter.write(report, result, List.of(error));
+        String first = Files.readString(report);
+        assertTrue(first.contains("&lt;student&gt;"));
+        assertTrue(first.contains("bad &lt;source&gt; &amp; &quot;quote&quot;"));
+        assertTrue(first.contains("PASS"));
+        assertTrue(first.contains("FAIL"));
+        assertFalse(first.contains("<student>"));
+
+        HtmlReportWriter.write(report, new GradeResult(1, 0, false,
+                Map.of("second", Map.of("q1", 1))), List.of());
+        String second = Files.readString(report);
+        assertTrue(second.contains("second"));
+        assertFalse(second.contains("<student>"), "a report must not include prior runs");
+    }
+
+    @Test
+    void htmlReportWriteFailureIsClear() throws Exception {
+        Path parentFile = temporary.resolve("not-a-directory");
+        Files.writeString(parentFile, "occupied", StandardCharsets.UTF_8);
+        IOException failure = assertThrows(IOException.class, () -> HtmlReportWriter.write(
+                parentFile.resolve("report.html"), new GradeResult(0, 0, false, Map.of()), List.of()));
+        assertTrue(failure.getMessage() != null && !failure.getMessage().isBlank());
     }
 
     @Test

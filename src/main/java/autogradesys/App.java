@@ -5,9 +5,11 @@ import autogradesys.display.Prompt;
 import autogradesys.grading.ErrorHistory;
 import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
+import autogradesys.grading.HtmlReportWriter;
 import autogradesys.grading.JavaGrader;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -60,9 +62,10 @@ public final class App {
         String questions = options.get("--questions-dir");
         String scoresheet = options.get("--scoresheet");
         String history = options.getOrDefault("--history", ".grader-error-history.jsonl");
+        String report = options.getOrDefault("--report", ".grader-report.html");
         if (submissions == null || questions == null || scoresheet == null) {
             output.println("Usage: --non-interactive --submissions-dir PATH --questions-dir PATH "
-                    + "--scoresheet PATH [--history PATH] [--timeout-ms MILLIS]");
+                    + "--scoresheet PATH [--history PATH] [--report PATH] [--timeout-ms MILLIS]");
             return 2;
         }
 
@@ -85,6 +88,13 @@ public final class App {
         ErrorReporter reporter = new ErrorReporter(new ErrorHistory(Path.of(history)), output);
         GradeResult result = JavaGrader.grade(Path.of(submissions), Path.of(questions),
                 Path.of(scoresheet), timeout, reporter);
+        try {
+            HtmlReportWriter.write(Path.of(report), result, reporter.records());
+            output.println("HTML report: " + Path.of(report).toAbsolutePath().normalize());
+        } catch (IOException exception) {
+            output.println("Could not write HTML report: " + exception.getMessage());
+            return 1;
+        }
         output.printf("Completed: %d submission(s), %d reported issue(s).%n",
                 result.studentCount(), result.issueCount());
         return result.fatal() ? 1 : 0;
