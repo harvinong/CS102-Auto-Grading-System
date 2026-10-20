@@ -1,4 +1,4 @@
-package autogradesys.display;
+package autogradesys.input;
 
 import java.io.File;
 import java.io.FileNotFoundException;
