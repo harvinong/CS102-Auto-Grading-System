@@ -5,8 +5,7 @@ package autogradesys.config;
  */
 enum ConfigKey {
 
-    STARTING_FOLDER("starting_folder_path"), 
-    SUBMISSIONS("submissions_path"), 
+    STARTING_FOLDER("starting_folder_path"),
     TESTERS("testers_path"), 
     SCORESHEET("scoresheet_path");
 

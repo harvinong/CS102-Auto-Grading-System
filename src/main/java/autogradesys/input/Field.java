@@ -1,4 +1,4 @@
-package autogradesys.display;
+package autogradesys.input;
 
 public enum Field {
     STARTING_FOLDER(
