@@ -28,3 +28,4 @@ replay_pid*
 .vscode
 target/*
 demo/target/
+demo/output-limit/target/
