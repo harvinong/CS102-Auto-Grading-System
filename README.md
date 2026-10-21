@@ -77,6 +77,8 @@ demo/fixtures/
 
 Question directories define the required question set. `input.txt` is optional and is sent to the student's standard input when present. `expected.txt` is compared exactly with standard output, including whitespace and line endings. Each question is compiled into a fresh temporary build directory, which is deleted after that question.
 
+The interactive path also writes `.grader-report.html` in the working directory after grading. The report is a local output file and does not require Lavish or a server.
+
 ## Other non-interactive sessions
 
 The same Java CLI accepts explicit paths:

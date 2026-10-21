@@ -112,6 +112,8 @@ public final class App {
                     new ErrorHistory(Path.of(".grader-error-history.jsonl")), output);
             GradeResult result = JavaGrader.grade(submissions.toPath(), questions.toPath(),
                     scoresheet.toPath(), Duration.ofSeconds(2), reporter);
+            HtmlReportWriter.write(Path.of(".grader-report.html"), result, reporter.records());
+            output.println("HTML report: " + Path.of(".grader-report.html").toAbsolutePath().normalize());
             output.printf("Completed: %d submission(s), %d reported issue(s).%n",
                     result.studentCount(), result.issueCount());
             return result.fatal() ? 1 : 0;
