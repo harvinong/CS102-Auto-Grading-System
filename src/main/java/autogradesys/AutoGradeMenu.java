@@ -5,6 +5,7 @@ import java.util.Scanner;
 
 import autogradesys.input.CLI;
 import autogradesys.input.Field;
+import autogradesys.preflight.SubmissionPreflight;
 
 public class AutoGradeMenu {
 
@@ -98,7 +99,10 @@ public class AutoGradeMenu {
 
     public void runGrader() {
         // Freshly prompted so instructor can input folder of submissions.
-        CLI.promptFile(Field.SUBMISSIONS, null, sc);
+        File submissions = CLI.promptFile(Field.SUBMISSIONS, null, sc);
+
+        // Read-only layout check. Assumes the Starting Folder is the starter template (e.g. RenameToYourStudentID).
+        SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), submissions.toPath()).print(System.out);
 
         // TODO: Put the function that passes in the three file objects.
         System.out.println("\nRunning autograder!\n");
