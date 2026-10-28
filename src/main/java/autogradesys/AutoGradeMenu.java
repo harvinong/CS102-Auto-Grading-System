@@ -5,6 +5,7 @@ import java.util.Scanner;
 
 import autogradesys.input.CLI;
 import autogradesys.input.Field;
+// Feature import: the read-only submission check.
 import autogradesys.preflight.SubmissionPreflight;
 
 public class AutoGradeMenu {
@@ -99,9 +100,14 @@ public class AutoGradeMenu {
 
     public void runGrader() {
         // Freshly prompted so instructor can input folder of submissions.
+        // Keep the folder the instructor typed (the original call discarded it) so the check can scan it.
         File submissions = CLI.promptFile(Field.SUBMISSIONS, null, sc);
 
-        // Read-only layout check. Assumes the Starting Folder is the starter template (e.g. RenameToYourStudentID).
+        // Feature: read-only layout check before grading. It ASSUMES the Starting Folder is the starter
+        // template (e.g. RenameToYourStudentID); this is the only place that assumption is made.
+        // check(...) compares every submission with the template and returns a report (it changes nothing);
+        // the template path comes from the saved configuration, the submissions path from the prompt above;
+        // print(...) writes the report to the console.
         SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), submissions.toPath()).print(System.out);
 
         // TODO: Put the function that passes in the three file objects.

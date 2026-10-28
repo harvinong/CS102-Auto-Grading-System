@@ -21,4 +21,6 @@ Try it on the synthetic data in `demo/preflight` (build first with `compile.bat`
 ```
 sh demo/preflight/run-demo.sh
 ```
+If the Starting Folder is the folder *above* the template, the check stops with the exact folder to choose instead. A `.zip` sitting next to the folder it was extracted into is noted, not counted as a second student.
+
 The script runs from a throwaway working directory, so it never creates or overwrites your own `config.json`.
