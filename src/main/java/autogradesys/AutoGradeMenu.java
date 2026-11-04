@@ -8,6 +8,7 @@ import java.util.Scanner;
 import autogradesys.grading.ErrorHistory;
 import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
+import autogradesys.grading.HtmlReportWriter;
 import autogradesys.grading.JavaGrader;
 import autogradesys.input.CLI;
 import autogradesys.input.Field;
@@ -122,6 +123,13 @@ public class AutoGradeMenu {
         GradeResult result = JavaGrader.grade(submissions.toPath(),
                 ctrl.getTestersFolder().toPath(), ctrl.getScoresheetFile().toPath(),
                 Duration.ofSeconds(2), reporter);
+        try {
+            Path report = Path.of(".grader-report.html");
+            HtmlReportWriter.write(report, result, reporter.records());
+            System.out.println("HTML report: " + report.toAbsolutePath().normalize());
+        } catch (java.io.IOException exception) {
+            System.out.println("Could not write HTML report: " + exception.getMessage());
+        }
         System.out.printf("Completed: %d submission(s), %d reported issue(s).%n",
                 result.studentCount(), result.issueCount());
     }

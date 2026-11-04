@@ -18,7 +18,16 @@ import java.util.stream.Stream;
  * can continue; missing or unreadable grading setup is fatal.</p>
  */
 public final class JavaGrader {
+    public static final long DEFAULT_OUTPUT_LIMIT_BYTES = 1024 * 1024L;
+
     private JavaGrader() {
+    }
+
+    /** Backward-compatible entry point using a 1 MiB combined stdout/stderr limit. */
+    public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
+            Duration timeout, ErrorReporter reporter) {
+        return grade(submissionsRoot, questionsRoot, scoresheet, timeout,
+                DEFAULT_OUTPUT_LIMIT_BYTES, reporter);
     }
 
     /**
@@ -32,7 +41,13 @@ public final class JavaGrader {
      * @return counts, scores, and fatal status for the grading session
      */
     public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
-            Duration timeout, ErrorReporter reporter) {
+            Duration timeout, long outputLimitBytes, ErrorReporter reporter) {
+        if (outputLimitBytes <= 0) {
+            reporter.fatal("configuration", "output-limit",
+                    "Output limit must be positive bytes: " + outputLimitBytes,
+                    "Pass a positive --output-limit-bytes value.");
+            return new GradeResult(0, reporter.records().size(), true, Map.of());
+        }
         if (!validSetup(submissionsRoot, questionsRoot, scoresheet, reporter)) {
             return new GradeResult(0, reporter.records().size(), true, Map.of());
         }
@@ -63,7 +78,7 @@ public final class JavaGrader {
                     continue;
                 }
                 studentScores.put(question, runQuestion(student.name(), student.directory(), question,
-                        questionsRoot, source, timeout, reporter));
+                        questionsRoot, source, timeout, outputLimitBytes, reporter));
             }
         }
 
@@ -154,7 +169,7 @@ public final class JavaGrader {
     }
 
     private static int runQuestion(String student, Path submission, String question, Path questionsRoot,
-            Path source, Duration timeout, ErrorReporter reporter) {
+            Path source, Duration timeout, long outputLimitBytes, ErrorReporter reporter) {
         Path spec = questionsRoot.resolve(question);
         Path expectedPath = spec.resolve("expected.txt");
         if (!Files.isRegularFile(expectedPath)) {
@@ -186,7 +201,16 @@ public final class JavaGrader {
             List<String> compile = List.of("javac", "-encoding", "UTF-8", "-d",
                     build.toAbsolutePath().toString(), source.toAbsolutePath().toString());
             // Compile and execute independently: one broken submission must not stop later questions.
-            ProcessRunner.Result compilation = ProcessRunner.run(compile, "", timeout, build);
+            ProcessRunner.Result compilation = ProcessRunner.run(compile, "", timeout, build, outputLimitBytes);
+            // An output cap breach is distinct from a deadline breach and gets actionable guidance.
+            if (compilation.outputLimitExceeded()) {
+                reporter.recoverable("question", "output-limit",
+                        "Compiler output exceeded the combined stdout/stderr limit of "
+                                + outputLimitDescription(outputLimitBytes) + "; retained output is truncated.",
+                        "Reduce compiler diagnostics or increase --output-limit-bytes.",
+                        student, display(submission), question);
+                return 0;
+            }
             if (compilation.timedOut()) {
                 reporter.recoverable("question", "timeout",
                         "Compilation exceeded " + timeoutDescription(timeout) + ".",
@@ -203,7 +227,18 @@ public final class JavaGrader {
             }
 
             List<String> execute = List.of("java", "-cp", build.toAbsolutePath().toString(), "Main");
-            ProcessRunner.Result execution = ProcessRunner.run(execute, input, timeout, build);
+            ProcessRunner.Result execution = ProcessRunner.run(execute, input, timeout, build, outputLimitBytes);
+            // Check the cap before timeout because stopping after a cap also ends the process wait.
+            if (execution.outputLimitExceeded()) {
+                reporter.recoverable("question", "output-limit",
+                        "Program output exceeded the combined stdout/stderr limit of "
+                                + outputLimitDescription(outputLimitBytes) + "; retained output is truncated. "
+                                + "stdout=" + execution.stdout().getBytes(StandardCharsets.UTF_8).length
+                                + " bytes, stderr=" + execution.stderr().getBytes(StandardCharsets.UTF_8).length + " bytes.",
+                        "Reduce or remove diagnostic output; the process was terminated.",
+                        student, display(submission), question);
+                return 0;
+            }
             if (execution.timedOut()) {
                 reporter.recoverable("question", "timeout",
                         "Program exceeded " + timeoutDescription(timeout) + " and was terminated.",
@@ -270,6 +305,10 @@ public final class JavaGrader {
     private static String quote(String text) {
         return "\"" + text.replace("\\", "\\\\").replace("\r", "\\r")
                 .replace("\n", "\\n").replace("\"", "\\\"") + "\"";
+    }
+
+    private static String outputLimitDescription(long bytes) {
+        return bytes + " byte(s)";
     }
 
     private static String timeoutDescription(Duration timeout) {

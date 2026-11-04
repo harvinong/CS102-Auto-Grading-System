@@ -3,8 +3,10 @@ package autogradesys;
 import autogradesys.grading.ErrorHistory;
 import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
+import autogradesys.grading.HtmlReportWriter;
 import autogradesys.grading.JavaGrader;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -57,9 +59,11 @@ public final class App {
         String questions = options.get("--questions-dir");
         String scoresheet = options.get("--scoresheet");
         String history = options.getOrDefault("--history", ".grader-error-history.jsonl");
+        String report = options.getOrDefault("--report", ".grader-report.html");
         if (submissions == null || questions == null || scoresheet == null) {
             output.println("Usage: --non-interactive --submissions-dir PATH --questions-dir PATH "
-                    + "--scoresheet PATH [--history PATH] [--timeout-ms MILLIS]");
+                    + "--scoresheet PATH [--history PATH] [--report PATH] [--timeout-ms MILLIS]"
+                    + " [--output-limit-bytes BYTES]");
             return 2;
         }
 
@@ -79,9 +83,27 @@ public final class App {
             return 2;
         }
 
+        long outputLimitBytes;
+        try {
+            outputLimitBytes = Long.parseLong(options.getOrDefault("--output-limit-bytes", "1048576"));
+            if (outputLimitBytes <= 0) {
+                throw new NumberFormatException("output limit must be positive");
+            }
+        } catch (NumberFormatException exception) {
+            output.println("Invalid output limit: " + exception.getMessage());
+            return 2;
+        }
+
         ErrorReporter reporter = new ErrorReporter(new ErrorHistory(Path.of(history)), output);
         GradeResult result = JavaGrader.grade(Path.of(submissions), Path.of(questions),
-                Path.of(scoresheet), timeout, reporter);
+                Path.of(scoresheet), timeout, outputLimitBytes, reporter);
+        try {
+            HtmlReportWriter.write(Path.of(report), result, reporter.records());
+            output.println("HTML report: " + Path.of(report).toAbsolutePath().normalize());
+        } catch (IOException exception) {
+            output.println("Could not write HTML report: " + exception.getMessage());
+            return 1;
+        }
         output.printf("Completed: %d submission(s), %d reported issue(s).%n",
                 result.studentCount(), result.issueCount());
         return result.fatal() ? 1 : 0;
