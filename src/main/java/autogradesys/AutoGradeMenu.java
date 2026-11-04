@@ -1,6 +1,7 @@
 package autogradesys;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.time.Duration;
 import java.nio.file.Path;
 import java.util.Scanner;
@@ -110,18 +111,9 @@ public class AutoGradeMenu {
     public void newView() {
         // display new view for new user
         displayTitle();
-        System.out.println(
-            "\n" +
-            "Welcome to the Auto-Grading System! Streamline grading\n" +
-            "by batch-validate and test students' submissions, and\n" +
-            "then write their performances in the scoresheet.\n" +
-            "\n" +
-            "This program requires three configuration parameters:\n" +
-            "1. Starting Folder\n" +
-            "2. Tester Files Folder\n" +
-            "3. Scoresheet File\n"
-        // Perform this small step of the grading workflow.
-        );
+        System.out.println();
+        System.out.println(getWelcomeText());
+        System.out.println();
 
         // Ask for user input
         inputConfig(true);
@@ -213,6 +205,19 @@ public class AutoGradeMenu {
         } else {
             // Perform this small step of the grading workflow.
             System.out.println("\nSave unsuccessful\n");
+        }
+    }
+
+    private static String getWelcomeText() {
+        try (Scanner sc = new Scanner(new File("./assets/welcome.md"))) {
+            StringBuilder result = new StringBuilder();
+            while (sc.hasNextLine()) {
+                result.append(sc.nextLine());
+                result.append('\n');
+            }
+            return result.toString().trim();
+        } catch (FileNotFoundException e) {
+            return "Welcome to the Auto-Grading System!";
         }
     }
 }
