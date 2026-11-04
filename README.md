@@ -2,6 +2,13 @@
 
 This repository contains a small, local Java auto-grader demo. It compiles the grader with Maven, then executes each raw student `Main.java` with bounded `javac` and `java` subprocesses. The demo needs no credentials, network access, or external service.
 
+## Safety and scope
+
+The grader compiles and runs submitted Java code directly on the instructor's machine, as the instructor's user, with no sandbox or container isolation.
+It is intended for trusted local fixtures and reviewed coursework submissions, not untrusted or anonymous code.
+The per-run timeout and 1 MiB combined stdout/stderr limit stop runaway or flooding programs, but they are resource limits, not security isolation.
+Running untrusted submissions safely would require OS or container isolation, which is out of scope for this MVP.
+
 ## Prerequisites
 
 - JDK 17 or newer, with both `java` and `javac` on `PATH`
