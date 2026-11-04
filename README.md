@@ -31,6 +31,14 @@ mvn test
 mvn package
 ```
 
+After `mvn clean package`, start the packaged application directly:
+
+```sh
+java -jar target/CS102-Auto-Grading-System-1.0-SNAPSHOT.jar
+```
+
+The jar bundles its runtime dependencies.
+
 Maven builds and tests the auto-grader itself. A student submission is deliberately not a Maven project: the assignment fixture is source-file based, so the grader passes a source path to bounded `javac` and runs the resulting `Main` class with bounded `java`. Neither subprocess uses a shell, so student-controlled paths and text are not interpolated into shell commands.
 
 ## Run the checked-in demo
