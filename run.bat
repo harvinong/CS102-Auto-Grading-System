@@ -1,1 +1,1 @@
-java -cp "target/CS102-Auto-Grading-System-1.0-SNAPSHOT.jar" autogradesys.App
+mvn exec:java -Dexec.mainClass="autogradesys.App"
