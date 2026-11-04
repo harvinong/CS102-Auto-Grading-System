@@ -9,27 +9,27 @@ import java.util.Scanner;
 import autogradesys.filemanager.FileValidator;
 
 /**
- * 
- * autogradesys.display.Cli (Command Line Interface)
+ *
+ * autogradesys.display.CLI (Command Line Interface)
  * provides utilities to facilitate user input and configuration
  * through a command line terminal.
- * 
+ *
  */
 public class CLI {
 
     /**
      * Ask user for the path of the file/directory and returns the file object.
-     * 
+     *
      * When this method is called, the terminal will show a prompt, then the user
      * inputs the
      * absolute path of the file/directory.
-     * 
+     *
      * The method will ask the user to re-enter the path if:
      * - the user enters a non-absolute (relative) path;
      * - the file/directory does not exist; and
      * - the prompt ask for directory and user inputs a file, and vice versa.
      * - the file extension is invalid.
-     * 
+     *
      * @param fileField   The prompt to be printed out to the user.
      * @param defaultFile The default file returned if user enters none.
      * @param sc          The scanner object to read user input.
@@ -44,8 +44,8 @@ public class CLI {
                 String prompt = String.format("Enter %s%s: ",
                         fileField.getName(), defaultFile != null ? " (" + defaultFile.getName() + ")" : "");
 
-                Path filepath = CLI.promptPath(prompt, defaultFile != null? defaultFile.toPath(): null, sc);
-                file = CLI.getFile(filepath);
+                Path filepath = promptPath(prompt, defaultFile != null ? defaultFile.toPath() : null, sc);
+                file = getFile(filepath);
 
                 if (fileField.isDir()) {
                     FileValidator.validateDirectory(file);
@@ -74,7 +74,7 @@ public class CLI {
 
     /**
      * Ask user for the filepath.
-     * 
+     *
      * @param prompt          The prompt that is printed in the terminal.
      * @param defaultFilePath The default file path.
      * @param sc              The reader to reads the user input.
@@ -101,7 +101,7 @@ public class CLI {
 
     /**
      * Get the file/directory object from the given filepath.
-     * 
+     *
      * @param path The path of the file/directory.
      * @return The file/directory object that exist in the file system.
      * @throws FileNotFoundException If the file/directory does not exist.

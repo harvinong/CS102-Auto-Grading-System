@@ -10,9 +10,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class ConfigDAO {
-    
+
     public static final File DEF_CONFIG_FILE = Path.of(".", "config.json").toFile();
-    
+
     private File startingFolder;
     private File testersFolder;
     private File scoresheetFile;
@@ -26,7 +26,7 @@ public class ConfigDAO {
             // Ref: https://www.geeksforgeeks.org/java/how-to-read-and-write-json-files-in-java/
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonNode = objectMapper.readTree(DEF_CONFIG_FILE);
-            
+
             // Load values
             startingFolder = Path.of(jsonNode.get(ConfigKey.STARTING_FOLDER.toString()).asText()).toFile();
             testersFolder = Path.of(jsonNode.get(ConfigKey.TESTERS.toString()).asText()).toFile();
@@ -41,7 +41,7 @@ public class ConfigDAO {
     public boolean save() {
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode jsonNode = objectMapper.createObjectNode();
-        
+
         // Write into json object
         jsonNode.put(ConfigKey.STARTING_FOLDER.toString(), this.startingFolder.toPath().toAbsolutePath().toString());
         jsonNode.put(ConfigKey.TESTERS.toString(), this.testersFolder.toPath().toAbsolutePath().toString());

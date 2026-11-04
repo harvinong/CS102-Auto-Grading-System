@@ -5,7 +5,7 @@ import java.io.File;
 import autogradesys.config.ConfigDAO;
 
 public class AutoGradeCtrl {
-    
+
     private ConfigDAO configDAO;
 
     public AutoGradeCtrl() {
@@ -25,7 +25,7 @@ public class AutoGradeCtrl {
         return configDAO.getScoresheetFile();
     }
 
-    
+
     public boolean loadConfig() {
         return configDAO.load();
     }
