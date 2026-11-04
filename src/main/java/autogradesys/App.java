@@ -1,13 +1,10 @@
 package autogradesys;
 
-import autogradesys.display.Cli;
-import autogradesys.display.Prompt;
 import autogradesys.grading.ErrorHistory;
 import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
 import autogradesys.grading.JavaGrader;
 
-import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -93,23 +90,13 @@ public final class App {
     private static int runInteractive(PrintStream output) {
         output.println("Auto-Grader System");
         output.println();
-        Scanner scanner = new Scanner(System.in);
-        try {
-            File submissions = Cli.promptFile(Prompt.SUBMISSIONS_PROMPT, scanner);
-            File questions = Cli.promptFile(Prompt.TESTERS_PROMPT, scanner);
-            File scoresheet = Cli.promptFile(Prompt.SCORESHEET_PROMPT, scanner);
-            ErrorReporter reporter = new ErrorReporter(
-                    new ErrorHistory(Path.of(".grader-error-history.jsonl")), output);
-            GradeResult result = JavaGrader.grade(submissions.toPath(), questions.toPath(),
-                    scoresheet.toPath(), Duration.ofSeconds(2), reporter);
-            output.printf("Completed: %d submission(s), %d reported issue(s).%n",
-                    result.studentCount(), result.issueCount());
-            return result.fatal() ? 1 : 0;
-        } catch (Exception exception) {
+        try (Scanner scanner = new Scanner(System.in)) {
+            AutoGradeMenu menu = new AutoGradeMenu(scanner, new AutoGradeCtrl());
+            menu.readOption();
+            return 0;
+        } catch (RuntimeException exception) {
             output.println("Could not start grading: " + exception.getMessage());
             return 2;
-        } finally {
-            scanner.close();
         }
     }
 }

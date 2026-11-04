@@ -97,3 +97,9 @@ mvn test
 mvn package
 git diff --check
 ```
+
+## Submission check
+
+The interactive menu's "Grade students" option first runs a read-only submission check. It compares each submission folder with the configured starting-folder template and reports missing, misnamed, extra, or malformed files. The check never changes submissions or scoresheets; grading proceeds afterward using the configured tester files and scoresheet.
+
+For a synthetic check, run `sh demo/preflight/run-demo.sh` after building with `mvn clean dependency:copy-dependencies package`. The script uses a throwaway working directory and does not modify your own `config.json`.
