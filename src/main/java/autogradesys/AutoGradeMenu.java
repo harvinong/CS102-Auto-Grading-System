@@ -1,8 +1,14 @@
 package autogradesys;
 
 import java.io.File;
+import java.time.Duration;
+import java.nio.file.Path;
 import java.util.Scanner;
 
+import autogradesys.grading.ErrorHistory;
+import autogradesys.grading.ErrorReporter;
+import autogradesys.grading.GradeResult;
+import autogradesys.grading.JavaGrader;
 import autogradesys.input.CLI;
 import autogradesys.input.Field;
 // Feature import: the read-only submission check.
@@ -110,8 +116,14 @@ public class AutoGradeMenu {
         // print(...) writes the report to the console.
         SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), submissions.toPath()).print(System.out);
 
-        // TODO: Put the function that passes in the three file objects.
         System.out.println("\nRunning autograder!\n");
+        ErrorReporter reporter = new ErrorReporter(
+                new ErrorHistory(Path.of(".grader-error-history.jsonl")), System.out);
+        GradeResult result = JavaGrader.grade(submissions.toPath(),
+                ctrl.getTestersFolder().toPath(), ctrl.getScoresheetFile().toPath(),
+                Duration.ofSeconds(2), reporter);
+        System.out.printf("Completed: %d submission(s), %d reported issue(s).%n",
+                result.studentCount(), result.issueCount());
     }
 
     // Helper function
