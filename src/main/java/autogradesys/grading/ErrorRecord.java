@@ -18,10 +18,15 @@ public record ErrorRecord(
         boolean canContinue) {
 
     public ErrorRecord {
+        // Perform this small step of the grading workflow.
         Objects.requireNonNull(stage, "stage");
+        // Perform this small step of the grading workflow.
         Objects.requireNonNull(category, "category");
+        // Perform this small step of the grading workflow.
         Objects.requireNonNull(severity, "severity");
+        // Perform this small step of the grading workflow.
         Objects.requireNonNull(message, "message");
+        // Perform this small step of the grading workflow.
         Objects.requireNonNull(guidance, "guidance");
     }
 }
