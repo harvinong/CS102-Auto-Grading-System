@@ -61,7 +61,11 @@ public class StudentFileExec {
     /*
             "NAME OF .JAVA FILE", new MethodSpec(
                     "METHOD NAME TO TEST",
-                    new Class<?>[]{TYPES OF PARAM FOR METHOD.class, ... ...}
+                    new Class<?>[]{TYPES OF PARAM FOR METHOD.class, ... ...},
+                    List.of(
+                        TestCase.expectValue (for non exception testing)
+                        TestCase.expectException (for exception results)
+                    )
             )
     
     */
@@ -69,8 +73,9 @@ public class StudentFileExec {
                     "getIsogramWords",
                     new Class<?>[]{ ArrayList.class},
                     List.of(
-                            TestCase.expectValue("getIsogramWords(cat,dog,tiger)",   new Object[]{new ArrayList<>(Arrays.asList("cat","dog","tiger"))},   new ArrayList<>(Arrays.asList("cat","dog","tiger"))),
-                            TestCase.expectValue("getIsogramWords(alan,ben,cindy,danny,evan)", new Object[]{new ArrayList<>(Arrays.asList("alan","ben","cindy","danny","evan"))}, new ArrayList<>(Arrays.asList("ben","cindy","evan")))
+                            TestCase.expectValue("getIsogramWords(alice,ben,cathy)",   new Object[]{new ArrayList<>(Arrays.asList("alice","ben","cathy"))},  new ArrayList<>(Arrays.asList("alice","ben","cathy"))),
+                            TestCase.expectValue("getIsogramWords(ellen, alan, zoe)", new Object[]{new ArrayList<>(Arrays.asList("ellen","alan","zoe"))}, new ArrayList<>(Arrays.asList("zoe"))),
+                            TestCase.expectValue("getIsogramWords(Elle,alan,Daniel,Canny)", new Object[]{new ArrayList<>(Arrays.asList("Elle","alan","Daniel","Canny"))}, new ArrayList<>(Arrays.asList("Daniel")))
                     )
             ),
 
@@ -78,8 +83,9 @@ public class StudentFileExec {
                     "getSumOfEvenIntegers",
                     new Class<?>[]{ ArrayList.class },
                     List.of(
-                            TestCase.expectValue("func(10,20,30)", new Object[]{new ArrayList<>(Arrays.asList(10,20,30))}, 60),
-                            TestCase.expectValue("func(2,true,abc,1.0)", new Object[]{new ArrayList<>(Arrays.asList(2,true,"abc",1.0))}, 2)
+                            TestCase.expectValue("func(2,4)", new Object[]{new ArrayList<>(Arrays.asList(2,4))}, 6),
+                            TestCase.expectValue("func(2,false,4.0,'two')", new Object[]{new ArrayList<>(Arrays.asList(2,false,4.0,"two"))}, 2),
+                            TestCase.expectValue("func(9,2,10,3,5,8)", new Object[]{new ArrayList<>(Arrays.asList(9,2,10,3,5,8))}, 20)
                     )
             ),
 
@@ -87,11 +93,11 @@ public class StudentFileExec {
                     "getAverageAge",
                     new Class<?>[]{ String.class, String.class },
                     List.of(
-                            TestCase.expectValue("(person.txt,lee)", new Object[]{"persons.txt", "LEE"}, 36.0),
-                            TestCase.expectValue("(person.txt,WONG)", new Object[]{"persons.txt", "WONG"}, 25.0),
-                            TestCase.expectValue("(person.txt,Chan)", new Object[]{"persons.txt", "Chan"}, 27.0),
-                            TestCase.expectValue("(person.txt,Ong)", new Object[]{"persons.txt", "Ong"}, 0.0),
-                            TestCase.expectValue("(nosuchfile.txt,lee)", new Object[]{"nosuchfile.txt", "Lee"}, -1.0)
+                            TestCase.expectValue("(is442.txt,LEE)", new Object[]{"is442.txt", "LEE"}, -1.0),
+                            TestCase.expectValue("(persontester.txt,TAY)", new Object[]{"persontester.txt", "TAY"}, 30.0),
+                            TestCase.expectValue("(persontester.txt,LEE)", new Object[]{"persontester.txt", "LEE"}, 37.0),
+                            TestCase.expectValue("(persontester.txt,Wong)", new Object[]{"persontester.txt", "Wong"}, 26.0),
+                            TestCase.expectValue("(persontester.txt,Ong)", new Object[]{"persontester.txt", "Ong"}, 0.0)
 
                     )
             ),
@@ -99,12 +105,21 @@ public class StudentFileExec {
                     "getTopStudent",
                     new Class<?>[]{ String.class, String.class },
                     List.of(
-                            TestCase.expectValue("IS102", new Object[]{"students.txt", "IS102"}, "Mary CHAN-3.5"),
-                            TestCase.expectValue("IS103", new Object[]{"students.txt", "IS103"}, "CHAN Wei Jun-4.0"),
-                            TestCase.expectException("IS104", new Object[]{"students.txt","IS104"}, "DataException")
+                            TestCase.expectException("IS442", new Object[]{"is442.txt", "IS101"}, "DataException"),
+                            TestCase.expectException("SMU101", new Object[]{"studentstester.txt", "SMU101"}, "DataException"),
+                            TestCase.expectValue("CS101", new Object[]{"studentstester.txt","CS101"}, "LEE Teck Yang-4.0"),
+                            TestCase.expectValue("CS102", new Object[]{"studentstester.txt", "CS102"}, "Jason LEE-4.0"),
+                            TestCase.expectValue("CS103", new Object[]{"studentstester.txt", "CS103"}, "Tay Evelyn-4.0")
 
                     )
-            )
+            ),
+            "Q3", new MethodSpec(
+                "sortShapes",
+                 new Class<?>[]{ArrayList.class},
+                 List.of(
+                    
+                 )
+                 )
 
             // ... one entry per sub-question
     );
