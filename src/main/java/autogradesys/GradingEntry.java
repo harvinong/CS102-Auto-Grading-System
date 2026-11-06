@@ -1,5 +1,8 @@
 package autogradesys;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -56,7 +59,60 @@ class PerStudentListener implements TestExecutionListener {
         }
     }
 
-    
+    public static Map<String, Map<String, String>> getSubQuestionScoresByStudent(Map<String, int[]> scores) {
+    Map<String, Map<String, String>> result = new LinkedHashMap<>();
+
+    for (Map.Entry<String, int[]> entry : scores.entrySet()) {
+        String[] parts = entry.getKey().split(" > ");
+
+        // Only keep paths exactly at the sub-question depth (5 segments)
+        if (parts.length != 5) continue;
+
+        String studentName = parts[2];
+        String subQuestionName = parts[4];
+        int[] tally = entry.getValue();
+        String scoreStr = tally[0] + "/" + tally[1];
+
+        result.computeIfAbsent(studentName, k -> new LinkedHashMap<>())
+              .put(subQuestionName, scoreStr);
+        }
+
+    return result;
+    }
+    public static void writeScoresToJson(Map<String, int[]> scores, Path outputFile) throws Exception {
+    Map<String, Map<String, String>> studentScores = getSubQuestionScoresByStudent(scores);
+
+    StringBuilder json = new StringBuilder();
+    json.append("{\n");
+
+    int studentIndex = 0;
+    for (Map.Entry<String, Map<String, String>> studentEntry : studentScores.entrySet()) {
+        json.append("  \"").append(escapeJson(studentEntry.getKey())).append("\": {\n");
+
+        int subQIndex = 0;
+        Map<String, String> subScores = studentEntry.getValue();
+        for (Map.Entry<String, String> subEntry : subScores.entrySet()) {
+            json.append("    \"").append(escapeJson(subEntry.getKey())).append("\": \"")
+                .append(escapeJson(subEntry.getValue())).append("\"");
+            subQIndex++;
+            if (subQIndex < subScores.size()) json.append(",");
+            json.append("\n");
+        }
+
+        json.append("  }");
+        studentIndex++;
+        if (studentIndex < studentScores.size()) json.append(",");
+        json.append("\n");
+        }
+
+    json.append("}\n");
+
+    Files.writeString(outputFile, json.toString());
+    }
+
+private static String escapeJson(String s) {
+    return s.replace("\\", "\\\\").replace("\"", "\\\"");
+}
     private List<String> collectAncestorDisplayNames(TestIdentifier leaf) {
         LinkedList<String> names = new LinkedList<>();
         Optional<TestIdentifier> current = testPlan.getParent(leaf);
@@ -80,6 +136,10 @@ class PerStudentListener implements TestExecutionListener {
         scores.forEach((path, s) ->
                 System.out.println(path + ": " + s[0] + "/" + s[1]));
     }
+
+    public Map<String, int[]> getScores() {
+        return scores;
+    }
 }
 public class GradingEntry {
     
@@ -96,5 +156,13 @@ public class GradingEntry {
 
         System.out.println("=== Per-student scores ===");
         perStudentListener.printScores();
+        Path outputJson = Paths.get("scores.json"); // written to project root, same working-dir logic as before
+        try {
+            PerStudentListener.writeScoresToJson(perStudentListener.getScores(), outputJson);
+        } catch (Exception e) {
+            // TODO Auto-generated c
+            System.err.println("Cannot generate JSON file");
+        }
+System.out.println("Scores written to: " + outputJson.toAbsolutePath());
     }
 }

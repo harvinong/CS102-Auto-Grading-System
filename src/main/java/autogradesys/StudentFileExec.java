@@ -289,14 +289,15 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
         return new CompileResult(Map.of());
     }
 
-    // Pass 1: try compiling everything together
-    CompileAttempt firstAttempt = tryCompile(compiler, allJavaFiles);
+    // try all
+   
+    CompileAttempt firstAttempt = tryCompile(compiler, allJavaFiles,dir);
 
     if (firstAttempt.success()) {
-        return new CompileResult(Map.of()); // clean compile, nothing to report
+        return new CompileResult(Map.of()); 
     }
 
-    // Pass 2: something failed. Retry WITHOUT the files that had diagnostics against them,
+    // something failed. Retry without file w prob
     // so files that are actually fine still get their .class produced.
     Set<String> filesWithErrors = firstAttempt.errorsByFile().keySet();
     List<Path> cleanFiles = allJavaFiles.stream()
@@ -304,16 +305,19 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
             .toList();
 
     if (!cleanFiles.isEmpty()) {
-        tryCompile(compiler, cleanFiles); // best-effort: give the clean files their own shot
+        tryCompile(compiler, cleanFiles,dir);
     }
 
     return new CompileResult(firstAttempt.errorsByFile());
 }
 
-private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles) throws Exception {
+private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles, Path questionDir) throws Exception {
     DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
     StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);
-
+    fileManager.setLocation(
+            javax.tools.StandardLocation.CLASS_PATH,
+            List.of(questionDir.toFile())
+    );
     Iterable<? extends JavaFileObject> compilationUnits =
             fileManager.getJavaFileObjectsFromStrings(
                     sourceFiles.stream().map(Path::toString).toList());
@@ -339,7 +343,7 @@ private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles)
     private List<Path> copyResourceFilesToWorkingDir(Path questionDir) throws Exception {
     Path workingDir = Paths.get("").toAbsolutePath(); // the JVM's actual cwd
     List<Path> resourceFiles = Files.list(questionDir)
-            .filter(p -> !p.toString().endsWith(".java") && !p.toString().endsWith(".class"))
+            .filter(p -> !p.toString().endsWith(".java"))
             .toList();
 
     List<Path> copiedPaths = new java.util.ArrayList<>();
