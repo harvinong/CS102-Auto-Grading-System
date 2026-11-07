@@ -7,13 +7,13 @@ import java.time.Duration;
 import java.nio.file.Path;
 import java.util.Scanner;
 
+import autogradesys.cli.Input;
+import autogradesys.cli.Field;
 import autogradesys.grading.ErrorHistory;
 import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
 import autogradesys.grading.HtmlReportWriter;
 import autogradesys.grading.JavaGrader;
-import autogradesys.input.CLI;
-import autogradesys.input.Field;
 // Feature import: the read-only submission check.
 import autogradesys.preflight.SubmissionPreflight;
 import autogradesys.validation.CacheReport;
@@ -77,7 +77,7 @@ public class AutoGradeMenu {
     public void runGrader() {
         // Ask for the submissions folder every time, since it changes between assignments; 
         // keep the answer so both the preflight and the grader receive it.
-        File submissions = CLI.promptFile(Field.SUBMISSIONS, null, sc);
+        File submissions = Input.promptFile(Field.SUBMISSIONS, null, sc);
 
         // One reporter owns the durable audit trail for preflight and grading diagnostics.
         ErrorReporter reporter = new ErrorReporter(
@@ -123,7 +123,7 @@ public class AutoGradeMenu {
             System.out.println("2. Check the working copy again");
             System.out.println("3. Start grading");
             System.out.println("0. Cancel and return to the main menu");
-            int choice = CLI.promptOption(0, 3, sc);
+            int choice = Input.promptOption(0, 3, sc);
             if (choice == 0) return;
             if (choice == 3) break;
             if (choice == 2) {
@@ -131,7 +131,7 @@ public class AutoGradeMenu {
                 preflight.print(System.out);
             } else {
                 try {
-                    ctrl.validateSubmissions(gradingPath, preflight, question -> CLI.promptYesNo(question, sc)).print(System.out);
+                    ctrl.validateSubmissions(gradingPath, preflight, question -> Input.promptYesNo(question, sc)).print(System.out);
                 } catch (IOException exception) {
                     System.out.println("Could not validate the submissions: " + exception.getMessage());
                 }
@@ -221,15 +221,15 @@ public class AutoGradeMenu {
 
     // Helper functions
     private void inputConfig(boolean askNewFiles) {
-        File startingFolder = CLI.promptFile(
+        File startingFolder = Input.promptFile(
                 Field.STARTING_FOLDER,
                 askNewFiles ? null : ctrl.getStartingFolder(),
                 sc);
-        File testers = CLI.promptFile(
+        File testers = Input.promptFile(
                 Field.TESTERS,
                 askNewFiles ? null : ctrl.getTestersFolder(),
                 sc);
-        File scoresheet = CLI.promptFile(
+        File scoresheet = Input.promptFile(
                 Field.SCORESHEET,
                 askNewFiles ? null : ctrl.getScoresheetFile(),
                 sc);
@@ -241,9 +241,9 @@ public class AutoGradeMenu {
         if (!askNewFiles) {
             // Enter keeps the current value; anything else must be a whole number from 1 
             // to the maximum or the prompt repeats.
-            timeoutSeconds = CLI.promptPositiveLong("Grading timeout in seconds", timeoutSeconds,
+            timeoutSeconds = Input.promptPositiveLong("Grading timeout in seconds", timeoutSeconds,
                     ctrl.getMaxTimeoutSeconds(), sc);
-            outputLimitBytes = CLI.promptPositiveLong("Output limit in bytes", outputLimitBytes,
+            outputLimitBytes = Input.promptPositiveLong("Output limit in bytes", outputLimitBytes,
                     ctrl.getMaxOutputLimitBytes(), sc);
         }
 

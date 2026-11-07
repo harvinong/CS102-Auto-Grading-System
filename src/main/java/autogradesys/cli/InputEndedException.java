@@ -1,7 +1,7 @@
-package autogradesys.input;
+package autogradesys.cli;
 
 /**
- * Thrown by the {@link CLI} prompts when the input ends (end of a piped script, or Ctrl+D / Ctrl+Z)
+ * Thrown by the {@link Input} prompts when the input ends (end of a piped script, or Ctrl+D / Ctrl+Z)
  * before an answer was typed, so the program can stop with a clear message instead of a stack trace.
  */
 public class InputEndedException extends IllegalStateException {

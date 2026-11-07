@@ -1,4 +1,4 @@
-package autogradesys.input;
+package autogradesys.cli;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -15,7 +15,7 @@ import autogradesys.filemanager.FileValidator;
  * through a command line terminal.
  *
  */
-public class CLI {
+public class Input {
 
     /**
      * Ask user for the path of the file/directory and returns the file object.
