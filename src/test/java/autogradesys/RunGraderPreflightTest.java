@@ -64,7 +64,7 @@ class RunGraderPreflightTest {
     // path, then 0 to quit.
     private static String script(Path startingFolder, Path testers, Path scores, Path submissions) {
         return String.join("\n", startingFolder.toString(), testers.toString(), scores.toString(),
-                "3", submissions.toString(), "N", "0") + "\n";
+                "3", submissions.toString(), "3", "0") + "\n";
     }
 
     // New: for runs where the preflight is fatal, the prompt is skipped, so there

@@ -70,7 +70,8 @@ public class CLI {
         return file;
     }
 
-    /** ADDED BY JEK
+    /**
+     * ADDED BY JEK
      * Ask the user a yes/no question.
      * 
      * The method keeps asking until the user enters Y or N (in any letter case).
@@ -137,4 +138,19 @@ public class CLI {
         return file;
     }
 
+    public static int promptOption(int min, int max, Scanner sc) {
+        System.out.print("Enter option: ");
+
+        while (true) {
+            try {
+                int option = Integer.parseInt(sc.nextLine().trim());
+                if (option >= min && option <= max) {
+                    return option;
+                }
+            } catch (NumberFormatException e) {
+                // Not a number: fall through and ask again.
+            }
+            System.out.print("Please enter a number from " + min + " to " + max + ": ");
+        }
+    }
 }

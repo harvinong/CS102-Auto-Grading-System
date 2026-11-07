@@ -188,9 +188,7 @@ public class AutoGradeMenu {
             return;
         }
 
-        // Prepare a fresh working copy.
         CacheReport working = ctrl.prepareWorkingCopy(submissions);
-
         working.print(System.out);
         if (!working.usable()) {
             return;
@@ -203,27 +201,18 @@ public class AutoGradeMenu {
         // is made.
         // The template path comes from the saved configuration, the folder to scan is
         // the working copy.
-        PreflightReport preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), workingDir);
-        preflight.print(System.out);
+        PreflightReport preflight = checkWorkingCopy(workingDir);
 
-        // Feature: automatic fixes in the working copy (restore missing Q folders and
-        // files, extra wrapper folder,
-        // mistyped username folder, missing name/email header). The instructor must
-        // agree first, and it only
-        // runs if the preflight could scan the submissions.
-        if (!preflight.fatal() && CLI.promptYesNo("Automatically fix common mistakes in the working copy?", sc)) {
-            try {
-                ctrl.validateSubmissions(workingDir, preflight, question -> CLI.promptYesNo(question, sc))
-                        .print(System.out);
-            } catch (IOException exception) {
-                System.out.println("Could not validate the submissions: " + exception.getMessage() + "\n");
-            }
+        // Pause for manual changes. Skipped if the preflight could not scan the
+        // submissions.
+        if (!preflight.fatal() && !reviewWorkingCopy(workingDir)) {
+            return;
         }
+
         System.out.println("\nRunning autograder!\n");
 
         ErrorReporter reporter = new ErrorReporter(
                 new ErrorHistory(Path.of(".grader-error-history.jsonl")), System.out);
-        // The grader reads the working copy, not the original submissions.
         GradeResult result = JavaGrader.grade(workingDir,
                 ctrl.getTestersFolder().toPath(), ctrl.getScoresheetFile().toPath(),
                 Duration.ofSeconds(2), reporter);
@@ -236,6 +225,50 @@ public class AutoGradeMenu {
         }
         System.out.printf("Completed: %d submission(s), %d reported issue(s).%n",
                 result.studentCount(), result.issueCount());
+    }
+
+    // Returns true to start grading, false to go back to the main menu without grading.
+    private boolean reviewWorkingCopy(Path workingDir) {
+        while (true) {
+            System.out.println("You can edit the files in the working copy by hand now:");
+            System.out.println("  " + workingDir);
+            System.out.println("1. Fix common mistakes automatically");
+            System.out.println("2. Check the working copy again");
+            System.out.println("3. Start grading");
+            System.out.println("0. Cancel and return to the main menu");
+
+            switch (CLI.promptOption(0, 3, sc)) {
+                case 1:
+                    fixWorkingCopy(workingDir);
+                    break;
+                case 2:
+                    checkWorkingCopy(workingDir);
+                    break;
+                case 3:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    }
+
+    private PreflightReport checkWorkingCopy(Path workingDir) {
+        PreflightReport preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), workingDir);
+        preflight.print(System.out);
+        return preflight;
+    }
+
+    private void fixWorkingCopy(Path workingDir) {
+        // Check again first, without printing: the fixes follow the findings, which
+        // must reflect any manual edits.
+        PreflightReport preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), workingDir);
+        try {
+            ctrl.validateSubmissions(workingDir, preflight, question -> CLI.promptYesNo(question, sc))
+                    .print(System.out);
+        } catch (IOException e) {
+            System.out.println("Could not validate the submissions: " + e.getMessage() + "\n");
+        }
+        checkWorkingCopy(workingDir);
     }
 
     // Helper function
