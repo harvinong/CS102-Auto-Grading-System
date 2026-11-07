@@ -39,6 +39,9 @@ public class AutoGradeMenu {
         System.out.println("+== Auto-Grading System ==+");
     }
 
+    /**
+     * Display the options and the "Enter option" prompt.
+     */
     public void displayMenu() {
         displayTitle();
         System.out.println("1. View configuration paths");
@@ -49,53 +52,36 @@ public class AutoGradeMenu {
     }
 
     public void readOption() {
-        // Start at -1 so the loop condition below is not already satisfied before the first choice is read.
-        int menuOption = -1;
-        // Show the menu at least once and keep showing it until the user picks 0.
+        String menuOption;
         do {
-            // Print the numbered options and the "Enter option" prompt.
             displayMenu();
+            
             // Piped or closed input has no next line; stop cleanly instead of throwing NoSuchElementException.
             if (!sc.hasNextLine()) {
                 System.out.println("\nInput ended; exiting.");
                 return;
             }
-            // Read the whole line and trim it, so stray spaces around the number do not matter.
-            String optionText = sc.nextLine().trim();
-            try {
-                // Convert the typed text to a number for the switch below.
-                menuOption = Integer.parseInt(optionText);
-            } catch (NumberFormatException exception) {
-                // Text such as "abc" is not a number; ask again rather than crash.
-                System.out.println("\nPlease enter a number between 0 and 3.\n");
-                // Skip the switch and go straight to the loop condition, then show the menu again.
-                continue;
-            }
+            menuOption = sc.nextLine().trim();
 
             // Dispatch the choice: 1 and 2 manage configuration, 3 runs the grading flow, 0 quits.
             switch (menuOption) {
-                case 1:
+                case "1":
                     viewConfig();
-                    // End this case here, otherwise Java would fall through into the next menu option.
                     break;
-                case 2:
+                case "2":
                     editConfig();
-                    // Stop at this break so editing the configuration does not also start grading.
                     break;
-                case 3:
+                case "3":
                     runGrader();
-                    // Stop here so grading does not fall through into the quit case; the loop then shows the menu again.
                     break;
-                case 0:
+                case "0":
                     System.out.println("\nThank you for using!");
-                    // Exit the switch; the do-while condition (menuOption != 0) now ends the loop and returns to App.
                     break;
                 default:
                     System.out.println("\nPlease enter a number between 0 and 3.\n");
-                    // Leave the switch so the loop redisplays the menu after the invalid-choice message.
                     break;
             }
-        } while (menuOption != 0);
+        } while (!menuOption.equals("0"));
 
     }
 
