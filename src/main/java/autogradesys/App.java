@@ -1,12 +1,12 @@
 package autogradesys;
 
+import autogradesys.cli.InputEndedException;
 import autogradesys.config.ConfigDAO;
 import autogradesys.grading.ErrorHistory;
 import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
 import autogradesys.grading.HtmlReportWriter;
 import autogradesys.grading.JavaGrader;
-import autogradesys.input.InputEndedException;
 
 import java.io.IOException;
 import java.io.PrintStream;

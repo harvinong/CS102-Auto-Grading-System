@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import autogradesys.cli.TextColor;
+
 /**
  * Central place where every grading problem is reported.
  *
@@ -60,8 +62,7 @@ public final class ErrorReporter {
             // Remember the failure so hasFatalError() reports it; losing the audit trail counts as fatal.
             historyFailure = true;
             // Tell the operator directly, because this failure cannot be written to the very history that just failed.
-            output.printf("[ERROR] history/write: Could not append error history at %s: %s%n",
-                    history.path(), exception.getMessage());
+            printAppendErrorHistoryError(exception);
             // Same layout as print(): a guidance line telling them how to fix it.
             output.println("  guidance: Check the history path and filesystem permissions.");
         }
@@ -109,8 +110,7 @@ public final class ErrorReporter {
             // Same rule as error(): a lost audit trail makes hasFatalError() true.
             historyFailure = true;
             // Tell the operator directly, since the failure cannot be logged to the history that just failed.
-            output.printf("[ERROR] history/write: Could not append error history at %s: %s%n",
-                    history.path(), exception.getMessage());
+            printAppendErrorHistoryError(exception);
         }
         // Return the record, mirroring error().
         return record;
@@ -140,8 +140,13 @@ public final class ErrorReporter {
     // Formats one record as a few readable console lines.
     private void print(ErrorRecord record) {
         // Headline such as "[ERROR] scoresheet/scoresheet-read: message", with severity in capitals.
-        output.printf("[%s] %s/%s: %s%n", record.severity().toUpperCase(), record.stage(),
-                record.category(), record.message());
+        output.printf(
+            "%s %s/%s: %s%n", 
+            TextColor.ERROR.apply("[" + record.severity().toUpperCase() + "]"), 
+            record.stage(),
+            record.category(), 
+            record.message()
+        );
         // Print a context line only when at least one of the three optional fields is present; fatal setup errors have none.
         if (record.student() != null || record.submission() != null || record.question() != null) {
             // Start the context line without a newline, because each present field is appended after it.
@@ -168,5 +173,14 @@ public final class ErrorReporter {
         output.println("  guidance: " + record.guidance());
         // Tell the operator whether grading carried on (true) or the run is fatal (false).
         output.println("  continuing: " + record.canContinue());
+    }
+
+    /**
+     * Tell the operator directly, because this failure cannot be written to the very history that just failed.
+     * @param exception
+     */
+    private void printAppendErrorHistoryError(IOException exception) {
+        output.printf("%s history/write: Could not append error history at %s: %s%n",
+                    TextColor.ERROR.apply("[ERROR]"), history.path(), exception.getMessage());
     }
 }

@@ -9,6 +9,10 @@ import java.util.Scanner;
 
 import org.junit.jupiter.api.Test;
 
+import autogradesys.cli.Input;
+import autogradesys.cli.Field;
+import autogradesys.cli.InputEndedException;
+
 /** Checks that the positive-number prompt re-asks on bad input like the path prompts do. */
 class CLITest {
 
@@ -22,7 +26,7 @@ class CLITest {
         // Capture the prompt text, since the method prints directly to System.out.
         System.setOut(new PrintStream(captured));
         try {
-            long value = CLI.promptPositiveLong("Grading timeout in seconds", 2, 3600, new Scanner(typed));
+            long value = Input.promptPositiveLong("Grading timeout in seconds", 2, 3600, new Scanner(typed));
             return new Run(value, captured.toString());
         } finally {
             System.setOut(original);
@@ -78,7 +82,7 @@ class CLITest {
 
     @Test
     void optionPromptRepeatsWithTheMainMenuWording() {
-        String printed = printedBy(sc -> assertEquals(2, CLI.promptOption(0, 3, sc)), "abc\n9\n2\n");
+        String printed = printedBy(sc -> assertEquals(2, Input.promptOption(0, 3, sc)), "abc\n9\n2\n");
         // One message per bad answer, each followed by a fresh "Enter option: ".
         assertEquals("Enter option: Please enter a number between 0 and 3.\n"
                 + "Enter option: Please enter a number between 0 and 3.\n"
@@ -89,7 +93,7 @@ class CLITest {
     void blankPathWithoutADefaultAsksForAPath() {
         java.io.File existing = new java.io.File(System.getProperty("java.io.tmpdir")).getAbsoluteFile();
         String printed = printedBy(sc -> assertEquals(existing,
-                CLI.promptFile(Field.TESTERS, null, sc)), "\n" + existing + "\n");
+                Input.promptFile(Field.TESTERS, null, sc)), "\n" + existing + "\n");
         assertEquals(true, printed.contains("Invalid input: Please enter a path."), printed);
         assertEquals(false, printed.contains("must be absolute"), printed);
     }
@@ -97,7 +101,7 @@ class CLITest {
     @Test
     void endedInputNamesWhatThePromptWaitedFor() {
         InputEndedException ended = assertThrows(InputEndedException.class,
-                () -> printedBy(sc -> CLI.promptFile(Field.STARTING_FOLDER, null, sc), ""));
+                () -> printedBy(sc -> Input.promptFile(Field.STARTING_FOLDER, null, sc), ""));
         assertEquals("Input ended while waiting for Starting Folder", ended.getMessage());
     }
 }

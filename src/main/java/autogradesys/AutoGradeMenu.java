@@ -7,13 +7,13 @@ import java.time.Duration;
 import java.nio.file.Path;
 import java.util.Scanner;
 
+import autogradesys.cli.Input;
+import autogradesys.cli.Field;
 import autogradesys.grading.ErrorHistory;
 import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
 import autogradesys.grading.HtmlReportWriter;
 import autogradesys.grading.JavaGrader;
-import autogradesys.input.CLI;
-import autogradesys.input.Field;
 // Feature import: the read-only submission check.
 import autogradesys.preflight.SubmissionPreflight;
 import autogradesys.validation.CacheReport;
@@ -35,95 +35,38 @@ public class AutoGradeMenu {
         }
     }
 
-    public void displayTitle() {
-        System.out.println("+== Auto-Grading System ==+");
-    }
-
-    public void displayMenu() {
-        displayTitle();
-        System.out.println("1. View configuration paths");
-        System.out.println("2. Edit configuration paths");
-        System.out.println("3. Grade students (run auto-grader)");
-        System.out.println("0. Quit Application");
-        System.out.print("Enter option: ");
-    }
-
     public void readOption() {
-        // Start at -1 so the loop condition below is not already satisfied before the first choice is read.
-        int menuOption = -1;
-        // Show the menu at least once and keep showing it until the user picks 0.
+        String menuOption;
         do {
-            // Print the numbered options and the "Enter option" prompt.
             displayMenu();
+            
             // Piped or closed input has no next line; stop cleanly instead of throwing NoSuchElementException.
             if (!sc.hasNextLine()) {
                 System.out.println("\nInput ended; exiting.");
                 return;
             }
-            // Read the whole line and trim it, so stray spaces around the number do not matter.
-            String optionText = sc.nextLine().trim();
-            try {
-                // Convert the typed text to a number for the switch below.
-                menuOption = Integer.parseInt(optionText);
-            } catch (NumberFormatException exception) {
-                // Text such as "abc" is not a number; ask again rather than crash.
-                System.out.println("\nPlease enter a number between 0 and 3.\n");
-                // Skip the switch and go straight to the loop condition, then show the menu again.
-                continue;
-            }
+            menuOption = sc.nextLine().trim();
 
             // Dispatch the choice: 1 and 2 manage configuration, 3 runs the grading flow, 0 quits.
             switch (menuOption) {
-                case 1:
+                case "1":
                     viewConfig();
-                    // End this case here, otherwise Java would fall through into the next menu option.
                     break;
-                case 2:
+                case "2":
                     editConfig();
-                    // Stop at this break so editing the configuration does not also start grading.
                     break;
-                case 3:
+                case "3":
                     runGrader();
-                    // Stop here so grading does not fall through into the quit case; the loop then shows the menu again.
                     break;
-                case 0:
+                case "0":
                     System.out.println("\nThank you for using!");
-                    // Exit the switch; the do-while condition (menuOption != 0) now ends the loop and returns to App.
                     break;
                 default:
                     System.out.println("\nPlease enter a number between 0 and 3.\n");
-                    // Leave the switch so the loop redisplays the menu after the invalid-choice message.
                     break;
             }
-        } while (menuOption != 0);
+        } while (!menuOption.equals("0"));
 
-    }
-
-    public void newView() {
-        // display new view for new user
-        displayTitle();
-        System.out.println();
-        System.out.println(getWelcomeText());
-        System.out.println();
-
-        // Ask for user input
-        inputConfig(true);
-    }
-
-    public void viewConfig() {
-        System.out.println();
-        System.out.println("__ Configuration __");
-        System.out.println("Starting folder: " + ctrl.getStartingFolder());
-        System.out.println("Testers folder:  " + ctrl.getTestersFolder());
-        System.out.println("Scoresheet file: " + ctrl.getScoresheetFile());
-        // The two grading limits come from config.json (or the defaults when it has none), so show what grading will really use.
-        System.out.println("Grading timeout: " + ctrl.getTimeoutSeconds() + " second(s) per process");
-        System.out.println("Output limit:    " + ctrl.getOutputLimitBytes() + " bytes per process");
-        System.out.println();
-    }
-
-    public void editConfig() {
-        inputConfig(false);
     }
 
     /**
@@ -199,7 +142,8 @@ public class AutoGradeMenu {
             System.out.println("3. Start grading");
             System.out.println("0. Cancel and return to the main menu");
             // Read a whole number from 0 to 3, asking again on bad input.
-            int choice = CLI.promptOption(0, 3, sc);
+            int choice = Input.promptOption(0, 3, sc);
+          
             // Cancel: leave without grading, so no scoresheet, history or report changes happen.
             if (choice == 0) return;
             // Start grading: leave this loop and carry on with the banner and JavaGrader below.
@@ -213,7 +157,7 @@ public class AutoGradeMenu {
             } else {
                 // Choice 1: run the automatic fixes (headers, folder names, missing files), asking yes/no questions where a fix is a guess.
                 try {
-                    ctrl.validateSubmissions(gradingPath, preflight, question -> CLI.promptYesNo(question, sc)).print(System.out);
+                    ctrl.validateSubmissions(gradingPath, preflight, question -> Input.promptYesNo(question, sc)).print(System.out);
                 // A fix that cannot read or write the working copy ends up here.
                 } catch (IOException exception) {
                     // Tell the instructor and fall through to the re-check, so they still see the current state.
@@ -261,29 +205,77 @@ public class AutoGradeMenu {
                 result.studentCount(), result.issueCount());
     }
 
-    // Helper function
+    // -- Displays --
+    private void displayTitle() {
+        System.out.println("+== Auto-Grading System ==+");
+    }
+
+    /**
+     * Display the options and the "Enter option" prompt.
+     */
+    private void displayMenu() {
+        displayTitle();
+        System.out.println("1. View configuration paths");
+        System.out.println("2. Edit configuration paths");
+        System.out.println("3. Grade students (run auto-grader)");
+        System.out.println("0. Quit Application");
+        System.out.print("Enter option: ");
+    }
+
+    /** display the new view for new user, while setting the config files. */
+    private void newView() {
+        displayTitle();
+        System.out.println();
+        System.out.println(getWelcomeText());
+        System.out.println();
+
+        inputConfig(true);
+    }
+
+    /** shows all the configurations set */
+    private void viewConfig() {
+        System.out.println();
+        System.out.println("__ Configuration __");
+        System.out.println("Starting folder: " + ctrl.getStartingFolder());
+        System.out.println("Testers folder:  " + ctrl.getTestersFolder());
+        System.out.println("Scoresheet file: " + ctrl.getScoresheetFile());
+        // The two grading limits come from config.json (or the defaults when it has none), 
+        // so show what grading will really use.
+        System.out.println("Grading timeout: " + ctrl.getTimeoutSeconds() + " second(s) per process");
+        System.out.println("Output limit:    " + ctrl.getOutputLimitBytes() + " bytes per process");
+        System.out.println();
+    }
+
+    /** edit the configurations */
+    private void editConfig() {
+        inputConfig(false);
+    }
+
+    // Helper functions
     private void inputConfig(boolean askNewFiles) {
-        File startingFolder = CLI.promptFile(
+        File startingFolder = Input.promptFile(
                 Field.STARTING_FOLDER,
                 askNewFiles ? null : ctrl.getStartingFolder(),
                 sc);
-        File testers = CLI.promptFile(
+        File testers = Input.promptFile(
                 Field.TESTERS,
                 askNewFiles ? null : ctrl.getTestersFolder(),
                 sc);
-        File scoresheet = CLI.promptFile(
+        File scoresheet = Input.promptFile(
                 Field.SCORESHEET,
                 askNewFiles ? null : ctrl.getScoresheetFile(),
                 sc);
 
-        // First-run setup keeps the three prompts it always had and uses the defaults; only "Edit configuration paths" asks for the limits.
+        // First-run setup keeps the three prompts it always had and uses the defaults; 
+        // only "Edit configuration paths" asks for the limits.
         long timeoutSeconds = ctrl.getTimeoutSeconds();
         long outputLimitBytes = ctrl.getOutputLimitBytes();
         if (!askNewFiles) {
-            // Enter keeps the current value; anything else must be a whole number from 1 to the maximum or the prompt repeats.
-            timeoutSeconds = CLI.promptPositiveLong("Grading timeout in seconds", timeoutSeconds,
+            // Enter keeps the current value; anything else must be a whole number from 1 
+            // to the maximum or the prompt repeats.
+            timeoutSeconds = Input.promptPositiveLong("Grading timeout in seconds", timeoutSeconds,
                     ctrl.getMaxTimeoutSeconds(), sc);
-            outputLimitBytes = CLI.promptPositiveLong("Output limit in bytes", outputLimitBytes,
+            outputLimitBytes = Input.promptPositiveLong("Output limit in bytes", outputLimitBytes,
                     ctrl.getMaxOutputLimitBytes(), sc);
         }
 
