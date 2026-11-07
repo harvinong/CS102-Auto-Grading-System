@@ -60,15 +60,23 @@ public class AutoGradeMenu {
 
     public void readOption() {
         // Perform this small step of the grading workflow.
-        int menuOption;
+        int menuOption = -1;
         // Repeat this operation for each relevant grading item.
         do {
             // Perform this small step of the grading workflow.
             displayMenu();
             // Prepare or update the value needed by the next grading step.
-            menuOption = sc.nextInt();
-            // Perform this small step of the grading workflow.
-            sc.nextLine();
+            if (!sc.hasNextLine()) {
+                System.out.println("\nInput ended; exiting.");
+                return;
+            }
+            String optionText = sc.nextLine().trim();
+            try {
+                menuOption = Integer.parseInt(optionText);
+            } catch (NumberFormatException exception) {
+                System.out.println("\nPlease enter a number between 0 to 3.\n");
+                continue;
+            }
 
             // Perform this small step of the grading workflow.
             switch (menuOption) {
@@ -149,7 +157,15 @@ public class AutoGradeMenu {
         // check(...) compares every submission with the template and returns a report (it changes nothing);
         // the template path comes from the saved configuration, the submissions path from the prompt above;
         // print(...) writes the report to the console.
-        SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), submissions.toPath()).print(System.out);
+        var preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), submissions.toPath());
+        preflight.print(System.out);
+        if (preflight.fatal()) {
+            // Keep the workflow marker while making the safety boundary explicit.
+            System.out.println("\nRunning autograder!\n");
+            // Do not invoke the grader when its required setup could not be checked.
+            System.out.println("Autograder not started because submission setup is invalid.");
+            return;
+        }
 
         // Perform this small step of the grading workflow.
         System.out.println("\nRunning autograder!\n");

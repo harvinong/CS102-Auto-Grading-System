@@ -84,6 +84,9 @@ public class CLI {
      */
     private static Path promptPath(String prompt, Path defaultFilePath, Scanner sc) throws IllegalArgumentException {
         System.out.print(prompt);
+        if (!sc.hasNextLine()) {
+            throw new IllegalStateException("Input ended while waiting for " + prompt.trim());
+        }
         String pathString = sc.nextLine();
 
         if (defaultFilePath != null && pathString.trim().length() == 0) {

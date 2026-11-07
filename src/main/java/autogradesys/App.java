@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.Scanner;
 
 /** CLI entry point for interactive and non-interactive grading. */
@@ -53,6 +54,12 @@ public final class App {
                 // Prepare or update the value needed by the next grading step.
                 nonInteractive = true;
             } else if (argument.startsWith("--")) {
+                Set<String> valueOptions = Set.of("--submissions-dir", "--questions-dir", "--scoresheet",
+                        "--history", "--report", "--timeout-ms", "--timeout", "--output-limit-bytes");
+                if (!valueOptions.contains(argument)) {
+                    output.println("Unknown argument: " + argument);
+                    return 2;
+                }
                 // Check this condition so grading follows the intended path.
                 if (index + 1 >= args.length || args[index + 1].startsWith("--")) {
                     // Perform this small step of the grading workflow.
