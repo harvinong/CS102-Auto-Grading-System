@@ -20,8 +20,8 @@ import java.time.Duration;
  * submissions, write the HTML report, and summarise. It reuses the real grading classes so the
  * demo shows exactly what a real run does.</p>
  *
- * <p>This is deliberately a Maven-run entry point rather than a second grader;
- * it verifies the product path using only repository fixtures.</p>
+ * <p>This is deliberately a thin entry point (run with {@code ./run.sh demo} or Maven) rather than
+ * a second grader; it verifies the product path using only repository fixtures.</p>
  */
 public final class DemoRunner {
     // Static entry point only; no instances.

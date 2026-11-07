@@ -33,6 +33,15 @@ public class AutoGradeCtrl {
         return configDAO.getOutputLimitBytes();
     }
 
+    // Upper bounds for the two limits, so the menu can validate input without reaching past the controller into the config layer.
+    public long getMaxTimeoutSeconds() {
+        return ConfigDAO.MAX_TIMEOUT_SECONDS;
+    }
+
+    public long getMaxOutputLimitBytes() {
+        return ConfigDAO.MAX_OUTPUT_LIMIT_BYTES;
+    }
+
     public boolean loadConfig() {
         return configDAO.load();
     }

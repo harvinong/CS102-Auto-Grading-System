@@ -50,8 +50,8 @@ class ConfigDAOTest {
 
     @Test
     void invalidLimitsInTheFileFallBackToDefaultsInsteadOfFailingTheLoad() throws IOException {
-        // Zero, negative, text and a decimal are all unusable as limits.
-        for (String bad : new String[] { "0", "-5", "\"ten\"", "1.5", "null" }) {
+        // Zero, negative, text, a decimal and a value far above both maximums are all unusable as limits.
+        for (String bad : new String[] { "0", "-5", "\"ten\"", "1.5", "null", "9999999999999999" }) {
             ConfigDAO dao = new ConfigDAO(configWith(",\"grading_timeout_seconds\":" + bad
                     + ",\"output_limit_bytes\":" + bad));
 
@@ -98,8 +98,17 @@ class ConfigDAOTest {
         assertThrows(IllegalArgumentException.class, () -> dao.setTimeoutSeconds(-1));
         assertThrows(IllegalArgumentException.class, () -> dao.setOutputLimitBytes(0));
         assertThrows(IllegalArgumentException.class, () -> dao.setOutputLimitBytes(-1));
+        // One above each maximum is refused too, while the maximums themselves are accepted further down.
+        assertThrows(IllegalArgumentException.class, () -> dao.setTimeoutSeconds(ConfigDAO.MAX_TIMEOUT_SECONDS + 1));
+        assertThrows(IllegalArgumentException.class,
+                () -> dao.setOutputLimitBytes(ConfigDAO.MAX_OUTPUT_LIMIT_BYTES + 1));
         // A rejected value must not overwrite the previous one.
         assertEquals(2, dao.getTimeoutSeconds());
         assertEquals(1_048_576L, dao.getOutputLimitBytes());
+        // The largest allowed values are kept.
+        dao.setTimeoutSeconds(ConfigDAO.MAX_TIMEOUT_SECONDS);
+        dao.setOutputLimitBytes(ConfigDAO.MAX_OUTPUT_LIMIT_BYTES);
+        assertEquals(ConfigDAO.MAX_TIMEOUT_SECONDS, dao.getTimeoutSeconds());
+        assertEquals(ConfigDAO.MAX_OUTPUT_LIMIT_BYTES, dao.getOutputLimitBytes());
     }
 }
