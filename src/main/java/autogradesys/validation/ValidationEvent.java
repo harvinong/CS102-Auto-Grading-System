@@ -1,5 +1,7 @@
 package autogradesys.validation;
 
+import autogradesys.cli.TextColor;
+
 /**
  * One thing the validation did or could not do for a submission.
  *
@@ -40,9 +42,18 @@ public record ValidationEvent(String student, Type type, String path, String mes
         public boolean isFixed() {
             return fixed;
         }
+
+        public String getTagWithColor() {
+            TextColor color = this.isFixed()? TextColor.SUCCESS: TextColor.ERROR;
+            return color.apply("  [" + this + "] ");        
+        }
     }
 
     public boolean fixed() {
         return type.isFixed();
+    }
+
+    public String getTagWithColor() {
+        return type.getTagWithColor();
     }
 }
