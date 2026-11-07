@@ -102,7 +102,8 @@ public class AutoGradeMenu {
         System.out.println("Starting folder: " + ctrl.getStartingFolder());
         System.out.println("Testers folder:  " + ctrl.getTestersFolder());
         System.out.println("Scoresheet file: " + ctrl.getScoresheetFile());
-        // The two grading limits come from config.json (or the defaults when it has none), so show what grading will really use.
+        // The two grading limits come from config.json (or the defaults when it has none), 
+        // so show what grading will really use.
         System.out.println("Grading timeout: " + ctrl.getTimeoutSeconds() + " second(s) per process");
         System.out.println("Output limit:    " + ctrl.getOutputLimitBytes() + " bytes per process");
         System.out.println();
@@ -113,12 +114,13 @@ public class AutoGradeMenu {
     }
 
     /**
-     * Menu option 3: the full grade-students flow. Ask for the submissions folder, run the
+     * <b>Menu option 3:</b> the full grade-students flow. Ask for the submissions folder, run the
      * read-only preflight check (stopping if its setup is fatal), grade every student with
      * JavaGrader (compile, run, compare, update the CSV), then write the HTML report and print a summary.
      */
     public void runGrader() {
-        // Ask for the submissions folder every time, since it changes between assignments; keep the answer so both the preflight and the grader receive it.
+        // Ask for the submissions folder every time, since it changes between assignments; 
+        // keep the answer so both the preflight and the grader receive it.
         File submissions = CLI.promptFile(Field.SUBMISSIONS, null, sc);
 
         // One reporter owns the durable audit trail for preflight and grading diagnostics.
@@ -230,11 +232,13 @@ public class AutoGradeMenu {
                 askNewFiles ? null : ctrl.getScoresheetFile(),
                 sc);
 
-        // First-run setup keeps the three prompts it always had and uses the defaults; only "Edit configuration paths" asks for the limits.
+        // First-run setup keeps the three prompts it always had and uses the defaults; 
+        // only "Edit configuration paths" asks for the limits.
         long timeoutSeconds = ctrl.getTimeoutSeconds();
         long outputLimitBytes = ctrl.getOutputLimitBytes();
         if (!askNewFiles) {
-            // Enter keeps the current value; anything else must be a whole number from 1 to the maximum or the prompt repeats.
+            // Enter keeps the current value; anything else must be a whole number from 1 
+            // to the maximum or the prompt repeats.
             timeoutSeconds = CLI.promptPositiveLong("Grading timeout in seconds", timeoutSeconds,
                     ctrl.getMaxTimeoutSeconds(), sc);
             outputLimitBytes = CLI.promptPositiveLong("Output limit in bytes", outputLimitBytes,
