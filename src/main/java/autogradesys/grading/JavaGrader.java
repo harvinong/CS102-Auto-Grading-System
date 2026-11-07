@@ -80,6 +80,14 @@ public final class JavaGrader {
             scores.put(student.name(), studentScores);
             // Visit every question for this student, including ones the student did not submit, so each gets an explicit 0 or 1.
             for (String question : questions) {
+                // A tester-based question (instructor Tester classes in the testers folder) is graded by
+                // TesterGrader against the student's template-shaped folder; it reports its own errors.
+                if (TesterGrader.usesTesters(questionsRoot.resolve(question))) {
+                    studentScores.put(question, TesterGrader.grade(student.name(),
+                            TesterGrader.submissionRoot(student.directory(), questions), question,
+                            questionsRoot.resolve(question), timeout, outputLimitBytes, reporter));
+                    continue;
+                }
                 // Where this student's work for this question should live, e.g. submissions/alice/q1.
                 Path submissionQuestion = student.directory().resolve(question);
                 // The convention is that every submission's entry point is a file called Main.java inside the question folder.
@@ -416,7 +424,7 @@ public final class JavaGrader {
     }
 
     /** Best-effort recursive delete of the temporary build folder. */
-    private static void deleteTree(Path root) {
+    static void deleteTree(Path root) {
         // Walk the whole temp folder recursively; the stream is closed by try-with-resources.
         try (Stream<Path> paths = Files.walk(root)) {
             // Reverse order puts children before their parent folder, since a folder must be empty to be deleted.
@@ -434,7 +442,7 @@ public final class JavaGrader {
     }
 
     /** Picks the tool's own error text if there is any, otherwise the supplied fallback sentence. */
-    private static String details(String stderr, String fallback) {
+    static String details(String stderr, String fallback) {
         // Treat missing stderr as empty and trim surrounding whitespace so the message is tidy.
         String text = stderr == null ? "" : stderr.trim();
         // Prefer the real error text; use the generic fallback (e.g. the exit status) only when stderr has nothing.
@@ -442,18 +450,18 @@ public final class JavaGrader {
     }
 
     /** Renders text in quotes with control characters escaped, so mismatch messages stay on one readable line. */
-    private static String quote(String text) {
+    static String quote(String text) {
         // Wrap the text in quotes and escape backslashes first, then carriage returns, newlines and quotes, so whitespace differences are visible in messages.
         return "\"" + text.replace("\\", "\\\\").replace("\r", "\\r")
                 .replace("\n", "\\n").replace("\"", "\\\"") + "\"";
     }
 
-    private static String outputLimitDescription(long bytes) {
+    static String outputLimitDescription(long bytes) {
         // Format the limit for messages, e.g. "1048576 byte(s)".
         return bytes + " byte(s)";
     }
 
-    private static String timeoutDescription(Duration timeout) {
+    static String timeoutDescription(Duration timeout) {
         // Whole seconds read better as seconds (e.g. "10 second(s)").
         if (timeout.toMillis() % 1_000 == 0) {
             // Convert milliseconds to seconds for the message.
@@ -464,7 +472,7 @@ public final class JavaGrader {
     }
 
     /** Formats a path for error records and the report. */
-    private static String display(Path path) {
+    static String display(Path path) {
         // Absolute, normalised path for unambiguous messages; a null path prints as <missing> instead of throwing.
         return path == null ? "<missing>" : path.toAbsolutePath().normalize().toString();
     }

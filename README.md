@@ -1,6 +1,6 @@
 # CS102 Auto-Grading System
 
-This repository contains a small, local Java auto-grader demo. It compiles the grader with Maven, then executes each raw student `Main.java` with bounded `javac` and `java` subprocesses. The demo needs no credentials, network access, or external service.
+This repository contains a small, local Java auto-grader demo. It compiles the grader with Maven, then grades student submissions with bounded `javac` and `java` subprocesses: either the instructor's tester classes against the CS102 template layout (menu option 3), or a raw student `Main.java` (the scripted `demo` argument). The demo needs no credentials, network access, or external service.
 
 ## Safety and scope
 
@@ -117,8 +117,66 @@ mvn package
 git diff --check
 ```
 
+## Grading real CS102 submissions with tester files
+
+Menu option 3 ("Grade students") grades submissions shaped like the CS102 starter template (`RenameToYourStudentID/Q1/Q1a.java`, `Q2/persons.txt`, ...) with the instructor's tester classes.
+
+### Tester contract
+
+The configured testers folder holds one folder per question, named like the template's question folders:
+
+```text
+testers/
+  Q1/Q1aTester.java            a class with a main method that exercises the student's Q1a class
+  Q1/Q1aTester.expected.txt    the exact output Q1aTester must print
+  Q1/Q1bTester.java
+  Q1/Q1bTester.expected.txt
+  Q2/...
+```
+
+- A tester is any `<Name>Tester.java` file in the question folder. It has no package and a `public static void main(String[] args)`.
+- Its expected output is `<Name>Tester.expected.txt` in the same folder.
+- Resource files the question needs (for example `persons.txt`) are taken from the student's question folder, as the template defines them.
+
+### How a question is graded
+
+For each student and each question the grader:
+
+1. copies the student's files for that question and that question's testers into a fresh temporary build folder (deleted afterwards);
+2. compiles them together with one bounded `javac` call;
+3. runs each tester with a bounded `java` call (no shell), with the build folder as the working directory so relative names such as `persons.txt` resolve to the student's copy;
+4. compares the tester's output with its expected file (text must match exactly; `\r\n` and `\n` line endings are treated as equal).
+
+Each passing tester is worth **one mark**. The scoresheet column for a question (for example `Q1`) holds the number of testers that passed, so a question with two testers is out of 2. The scoresheet needs a `student` column and one column per question, and a row per student whose name matches the student's folder name.
+
+If the student's work sits one folder down (for example `bob/RenameToYourStudentID/Q1`), grading still finds it; the submission check warns about it.
+
+Each of these is reported with the student, folder and question and does not stop grading: compile error, runtime exception, timeout (default 2 seconds per process), output over the limit, wrong output, missing question folder, a question folder without `.java` files, a question folder without testers, and a tester without an expected file. A missing or unreadable testers folder, submissions folder or scoresheet is fatal and nothing is graded.
+
+A question folder in the testers folder that holds no `*Tester.java` but does hold an `expected.txt` keeps using the older `Main.java` layout described under "Fixture layout"; this is what `demo` uses.
+
+### Try it with the checked-in demo data
+
+```sh
+./compile.sh
+sh demo/preflight/run-demo.sh
+```
+
+The script runs the real menu over `demo/preflight` (template, `testers`, `scores.csv`, `submissions`) from a throwaway folder and prints the filled scoresheet. The students show:
+
+| Student | Q1 | Q2 | Q3 | Story |
+| --- | --- | --- | --- | --- |
+| alice | 2 | 2 | 2 | full pass |
+| bob | 1 | 2 | 2 | partial pass (wrong greeting text); work inside a wrapper folder |
+| carol | 0 | 2 | 0 | compile error (`q1a.java` is misnamed); Q3 folder missing |
+| dave | 2 | 1 | 1 | runtime exception in Q2a; infinite loop in ShapeComparator (timeout) |
+| erin | 2 | 0 | 2 | Q2b.java is empty so the Q2 testers do not compile |
+| frank | | | | `frank.zip` is not extracted, so it is not graded |
+
+To grade by hand, run `./run.sh`, enter `demo/preflight/RenameToYourStudentID` as the starting folder, `demo/preflight/testers` as the testers folder and a copy of `demo/preflight/scores.csv` as the scoresheet (grading overwrites the scoresheet), choose option 3 and enter `demo/preflight/submissions`.
+
 ## Submission check
 
 The interactive menu's "Grade students" option first runs a read-only submission check. It compares each submission folder with the configured starting-folder template and reports missing, misnamed, extra, or malformed files. The check never changes submissions or scoresheets; grading proceeds afterward using the configured tester files and scoresheet.
 
-For a synthetic check, run `sh demo/preflight/run-demo.sh` after building with `mvn clean dependency:copy-dependencies package`. The script uses a throwaway working directory and does not modify your own `config.json`.
+For a synthetic check, run `sh demo/preflight/run-demo.sh` after running `./compile.sh`. The script uses a throwaway working directory and does not modify your own `config.json`.
