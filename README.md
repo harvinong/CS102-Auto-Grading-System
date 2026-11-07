@@ -118,3 +118,12 @@ git diff --check
 The interactive menu's "Grade students" option first runs a read-only submission check. It compares each submission folder with the configured starting-folder template and reports missing, misnamed, extra, or malformed files. The check never changes submissions or scoresheets; grading proceeds afterward using the configured tester files and scoresheet.
 
 For a synthetic check, run `sh demo/preflight/run-demo.sh` after building with `mvn clean dependency:copy-dependencies package`. The script uses a throwaway working directory and does not modify your own `config.json`.
+
+## Zipped submissions
+
+Submissions are normally one zip per student, named `<prefix>-<username>.zip` (for example `2023-2024-ping.lee.2023.zip`). When the submissions folder contains zip files, "Grade students" first extracts each one into `cache/staged-submissions/<username>/`, runs the submission check and grading on those folders, and deletes the extracted folders afterwards. The original zips are never changed.
+
+- A zip that is corrupted or unsafe (paths that escape the folder) is reported and skipped; the other students are still graded.
+- Anything in the folder that is not a zip named like `<prefix>-<username>.zip` is listed and skipped (hidden files are ignored).
+- If the folder contains no zip files, it is used as it is (one folder per student), as before.
+- The zip name pattern and cache folder are set in `src/main/resources/autograde.properties`.

@@ -2,6 +2,7 @@ package autogradesys;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.time.Duration;
 import java.nio.file.Path;
 import java.util.Scanner;
@@ -15,6 +16,7 @@ import autogradesys.input.CLI;
 import autogradesys.input.Field;
 // Feature import: the read-only submission check.
 import autogradesys.preflight.SubmissionPreflight;
+import autogradesys.submission.StagedSubmissions;
 
 public class AutoGradeMenu {
 
@@ -144,19 +146,27 @@ public class AutoGradeMenu {
         // Keep the folder the instructor typed (the original call discarded it) so the check can scan it.
         File submissions = CLI.promptFile(Field.SUBMISSIONS, null, sc);
 
+        ErrorReporter reporter = new ErrorReporter(
+                new ErrorHistory(Path.of(".grader-error-history.jsonl")), System.out);
+
+        try (StagedSubmissions staged = ctrl.stageSubmissions(submissions, reporter)) {
+            gradeFolder(staged.root(), reporter);
+        } catch (IOException | IllegalArgumentException exception) {
+            System.out.println("Could not prepare the submissions: " + exception.getMessage());
+        }
+    }
+
+    private void gradeFolder(Path submissionsRoot, ErrorReporter reporter) {
         // Feature: read-only layout check before grading. It ASSUMES the Starting Folder is the starter
         // template (e.g. RenameToYourStudentID); this is the only place that assumption is made.
         // check(...) compares every submission with the template and returns a report (it changes nothing);
         // the template path comes from the saved configuration, the submissions path from the prompt above;
         // print(...) writes the report to the console.
-        SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), submissions.toPath()).print(System.out);
+        SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), submissionsRoot).print(System.out);
 
         // Perform this small step of the grading workflow.
         System.out.println("\nRunning autograder!\n");
-        ErrorReporter reporter = new ErrorReporter(
-                // Perform this small step of the grading workflow.
-                new ErrorHistory(Path.of(".grader-error-history.jsonl")), System.out);
-        GradeResult result = JavaGrader.grade(submissions.toPath(),
+        GradeResult result = JavaGrader.grade(submissionsRoot,
                 ctrl.getTestersFolder().toPath(), ctrl.getScoresheetFile().toPath(),
                 // Perform this small step of the grading workflow.
                 Duration.ofSeconds(2), reporter);

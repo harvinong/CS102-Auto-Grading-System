@@ -1,15 +1,22 @@
 package autogradesys;
 
 import java.io.File;
+import java.io.IOException;
 
+import autogradesys.config.AppSettings;
 import autogradesys.config.ConfigDAO;
+import autogradesys.grading.ErrorReporter;
+import autogradesys.submission.StagedSubmissions;
+import autogradesys.submission.SubmissionStager;
 
 public class AutoGradeCtrl {
 
     private ConfigDAO configDAO;
+    private final SubmissionStager stager;
 
     public AutoGradeCtrl() {
         this.configDAO = new ConfigDAO();
+        this.stager = new SubmissionStager(AppSettings.load());
     }
 
     // Getters
@@ -36,6 +43,10 @@ public class AutoGradeCtrl {
         configDAO.setScoresheetFile(scoresheet);
 
         return configDAO.save();
+    }
+
+    public StagedSubmissions stageSubmissions(File submissionsFolder, ErrorReporter reporter) throws IOException {
+        return stager.stage(submissionsFolder.toPath(), reporter);
     }
 
 }
