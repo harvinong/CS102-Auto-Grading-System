@@ -13,12 +13,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Drives the real menu in a separate JVM: first-run setup, then "Grade students". The working
- * directory is a temp folder so the program's ./config.json never touches the developer's copy.
+ * Drives the real menu in a separate JVM: first-run setup, then "Grade
+ * students". The working
+ * directory is a temp folder so the program's ./config.json never touches the
+ * developer's copy.
  */
 class RunGraderPreflightTest {
 
-    // Fresh temp folder per test; holds the template, submissions and the program's working directory.
+    // Fresh temp folder per test; holds the template, submissions and the program's
+    // working directory.
     @TempDir
     Path root;
 
@@ -32,11 +35,14 @@ class RunGraderPreflightTest {
         Files.writeString(p, content);
     }
 
-    // Starts the real program, types the given lines into it, and returns everything it printed.
+    // Starts the real program, types the given lines into it, and returns
+    // everything it printed.
     private String runMenu(String input) throws IOException, InterruptedException {
-        // Working directory for the program: ./config.json is created here, not in the repository.
+        // Working directory for the program: ./config.json is created here, not in the
+        // repository.
         Path work = Files.createDirectories(root.resolve("work"));
-        // Launch "java -cp <this test's classpath> autogradesys.App" exactly like run.bat does.
+        // Launch "java -cp <this test's classpath> autogradesys.App" exactly like
+        // run.bat does.
         Process process = new ProcessBuilder(
                 Path.of(System.getProperty("java.home"), "bin", "java").toString(),
                 "-cp", System.getProperty("java.class.path"), "autogradesys.App")
@@ -54,13 +60,15 @@ class RunGraderPreflightTest {
         return output;
     }
 
-    // The scripted answers: three config paths, menu option 3, the submissions path, then 0 to quit.
+    // The scripted answers: three config paths, menu option 3, the submissions
+    // path, then 0 to quit.
     private static String script(Path startingFolder, Path testers, Path scores, Path submissions) {
-    return String.join("\n", startingFolder.toString(), testers.toString(), scores.toString(),
-            "3", submissions.toString(), "N", "0") + "\n";
+        return String.join("\n", startingFolder.toString(), testers.toString(), scores.toString(),
+                "3", submissions.toString(), "N", "0") + "\n";
     }
 
-    // New: for runs where the preflight is fatal, the prompt is skipped, so there is no "N"
+    // New: for runs where the preflight is fatal, the prompt is skipped, so there
+    // is no "N"
     private static String scriptWithoutFixPrompt(Path startingFolder, Path testers, Path scores, Path submissions) {
         return String.join("\n", startingFolder.toString(), testers.toString(), scores.toString(),
                 "3", submissions.toString(), "0") + "\n";
@@ -94,7 +102,8 @@ class RunGraderPreflightTest {
         assertFalse(output.contains("Exception"), output);
         // The scoresheet is untouched.
         assertEquals("username,final_score\n", Files.readString(scores));
-        // No compiled class appeared next to the submitted source (nothing was compiled or run).
+        // No compiled class appeared next to the submitted source (nothing was compiled
+        // or run).
         assertFalse(Files.exists(subs.resolve("alice").resolve("Q1").resolve("Q1a.class")));
     }
 
@@ -108,7 +117,8 @@ class RunGraderPreflightTest {
         Path scores = root.resolve("scores.csv");
         Files.writeString(scores, "username,final_score\n");
 
-        // Mistake: the Starting Folder is the course folder instead of the template inside it.
+        // Mistake: the Starting Folder is the course folder instead of the template
+        // inside it.
         String output = runMenu(scriptWithoutFixPrompt(course, testers, scores, course.resolve("subs")));
 
         // A single clear diagnostic with the exact folder to use instead.
@@ -124,7 +134,8 @@ class RunGraderPreflightTest {
 
     @Test
     void zipBesideItsExtractedFolderIsNotCountedThroughTheMenu() throws Exception {
-        // A normal template and a student who is both extracted (frank/) and still zipped (frank.zip).
+        // A normal template and a student who is both extracted (frank/) and still
+        // zipped (frank.zip).
         Path template = root.resolve("RenameToYourStudentID");
         file(template, "Q1/Q1a.java", "class Q1a {}");
         Path testers = Files.createDirectories(root.resolve("testers"));
@@ -139,7 +150,9 @@ class RunGraderPreflightTest {
         // Only one submission is counted and it is ready.
         assertTrue(output.contains("Checked 1 submissions: 1 ready, 0 need attention"), output);
         // The zip is explained by a note instead of being an extra student.
-        assertTrue(output.contains("[ARCHIVE_ALREADY_EXTRACTED] frank.zip"), output);
         assertFalse(output.contains("[UNEXTRACTED_ARCHIVE]"), output);
+        // The zip is never extracted again or counted: only the extracted folder is in the working copy.
+        assertTrue(Files.isDirectory(root.resolve("work/cache/subs/frank")));
+        assertFalse(Files.exists(root.resolve("work/cache/subs/frank.zip")));
     }
 }

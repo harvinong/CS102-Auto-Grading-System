@@ -2,22 +2,23 @@ package autogradesys;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Predicate;
 
 import autogradesys.config.ConfigDAO;
 import autogradesys.preflight.PreflightReport;
+import autogradesys.validation.CacheReport;
 import autogradesys.validation.ScoresheetReader;
 import autogradesys.validation.Student;
+import autogradesys.validation.SubmissionCache;
 import autogradesys.validation.SubmissionValidation;
 import autogradesys.validation.ValidationReport;
-
-import autogradesys.validation.ArchiveExtractor;
-import autogradesys.validation.ExtractionReport;
 
 public class AutoGradeCtrl {
     
     private ConfigDAO configDAO;
+    private final SubmissionCache cache = new SubmissionCache(SubmissionCache.DEFAULT_ROOT);
 
     public AutoGradeCtrl() {
         this.configDAO = new ConfigDAO();
@@ -49,8 +50,14 @@ public class AutoGradeCtrl {
         return configDAO.save();
     }
 
-    public ExtractionReport extractArchives(File submissions) {
-        return new ExtractionReport(ArchiveExtractor.extractAll(submissions.toPath()));
+    public CacheReport prepareWorkingCopy(File submissions) {
+        return cache.prepare(submissions.toPath());
+    }
+
+    public ValidationReport validateSubmissions(Path workingDir, PreflightReport preflight,
+            Predicate<String> confirm) throws IOException {
+        List<Student> students = ScoresheetReader.read(configDAO.getScoresheetFile());
+        return new SubmissionValidation(students, confirm, cache).run(workingDir, preflight);
     }
 
     /**
@@ -65,7 +72,7 @@ public class AutoGradeCtrl {
     public ValidationReport validateSubmissions(File submissions, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {
         List<Student> students = ScoresheetReader.read(configDAO.getScoresheetFile());
-        return new SubmissionValidation(students, confirm).run(submissions.toPath(), preflight);
+        return new SubmissionValidation(students, confirm, cache).run(submissions.toPath(), preflight);
     }
 
 }

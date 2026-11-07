@@ -19,12 +19,15 @@ public record ValidationEvent(String student, Type type, String path, String mes
         HEADER_ADDED(true),
         HEADER_CORRECTED(true),
         ARCHIVE_EXTRACTED(true),
+        ITEM_RESTORED(true),
         // Still needs the instructor's attention.
         USERNAME_UNREGISTERED(false),
         USERNAME_DUPLICATE(false),
         TYPO_DECLINED(false),
         HEADER_FOREIGN(false),
         ARCHIVE_FAILED(false),
+        COPY_FAILED(false),
+        ITEM_MISSING(false),
         FIX_FAILED(false);
 
         private final boolean fixed;

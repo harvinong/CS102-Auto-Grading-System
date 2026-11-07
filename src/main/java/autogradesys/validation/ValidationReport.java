@@ -46,7 +46,7 @@ public record ValidationReport(List<ValidationEvent> events, Map<String, Path> s
 
         out.println("Identified " + submissions.size() + " submissions: " + fixedCount()
                 + " problems fixed automatically, " + attentionCount() + " still need attention.");
-        out.println("(Files were changed in place. Run the submission check again to confirm.)");
+        out.println("(Only the working copy was changed, never the original submissions. Run the submission check again to confirm.)");
         out.println();
     }
 }

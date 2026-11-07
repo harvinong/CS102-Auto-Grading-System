@@ -2,13 +2,26 @@ package autogradesys;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.DosFileAttributeView;
+import java.time.Duration;
 import java.util.Scanner;
 
+import autogradesys.grading.ErrorHistory;
+import autogradesys.grading.ErrorReporter;
+import autogradesys.grading.GradeResult;
+import autogradesys.grading.HtmlReportWriter;
+import autogradesys.grading.JavaGrader;
 import autogradesys.input.CLI;
 import autogradesys.input.Field;
 // Feature import: the read-only submission check.
 import autogradesys.preflight.PreflightReport;
 import autogradesys.preflight.SubmissionPreflight;
+import autogradesys.validation.CacheReport;
 
 public class AutoGradeMenu {
 
@@ -72,16 +85,15 @@ public class AutoGradeMenu {
         // display new view for new user
         displayTitle();
         System.out.println(
-            "\n" +
-            "Welcome to the Auto-Grading System! Streamline grading\n" +
-            "by batch-validate and test students' submissions, and\n" +
-            "then write their performances in the scoresheet.\n" +
-            "\n" +
-            "This program requires three configuration parameters:\n" +
-            "1. Starting Folder\n" +
-            "2. Tester Files Folder\n" +
-            "3. Scoresheet File\n"
-        );
+                "\n" +
+                        "Welcome to the Auto-Grading System! Streamline grading\n" +
+                        "by batch-validate and test students' submissions, and\n" +
+                        "then write their performances in the scoresheet.\n" +
+                        "\n" +
+                        "This program requires three configuration parameters:\n" +
+                        "1. Starting Folder\n" +
+                        "2. Tester Files Folder\n" +
+                        "3. Scoresheet File\n");
 
         // Ask for user input
         inputConfig(true);
@@ -100,36 +112,130 @@ public class AutoGradeMenu {
         inputConfig(false);
     }
 
-    public void runGrader() {
-        // Freshly prompted so instructor can input folder of submissions.
-        // Keep the folder the instructor typed (the original call discarded it) so the check can scan it.
-        File submissions = CLI.promptFile(Field.SUBMISSIONS, null, sc);
+    // Remove read-only attribute before deleting a file or directory
+    private void makeWritable(Path path) throws IOException {
+        DosFileAttributeView dosView = Files.getFileAttributeView(path, DosFileAttributeView.class);
 
-        // extract all the archives in the submissions folder, and print the report to the console.
-        ctrl.extractArchives(submissions).print(System.out);
+        if (dosView != null) {
+            dosView.setReadOnly(false);
+        }
+    }
 
-        // Feature: read-only layout check before grading. It ASSUMES the Starting Folder is the starter
-        // template (e.g. RenameToYourStudentID); this is the only place that assumption is made.
-        // check(...) compares every submission with the template and returns a report (it changes nothing);
-        // the template path comes from the saved configuration, the submissions path from the prompt above;
-        // print(...) writes the report to the console.
-        PreflightReport preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), submissions.toPath());
-        preflight.print(System.out);
+    // Clear cache folder before running the grader
+    private void clearCache() throws IOException {
+        Path cacheDir = Path.of("cache");
 
-        // Feature: automatic fixes for common mistakes (extra wrapper folder, mistyped username folder,
-        // missing name/email header). Unlike the check above it changes files in place, so the instructor
-        // must agree first, and it only runs if the preflight could scan the submissions.
-        if (!preflight.fatal() && CLI.promptYesNo("Automatically fix common mistakes in place?", sc)) {
-            try {
-                ctrl.validateSubmissions(submissions, preflight, question -> CLI.promptYesNo(question, sc))
-                        .print(System.out);
-            } catch (IOException e) {
-                System.out.println("Could not validate the submissions: " + e.getMessage() + "\n");
-            }
+        if (!Files.exists(cacheDir)) {
+            return;
         }
 
-        // TODO: Put the function that passes in the three file objects.
+        Files.walkFileTree(cacheDir, new SimpleFileVisitor<Path>() {
+
+            // Delete individual files first
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                    throws IOException {
+
+                makeWritable(file);
+                Files.delete(file);
+
+                return FileVisitResult.CONTINUE;
+            }
+
+            // Delete directories after their contents
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc)
+                    throws IOException {
+
+                if (exc != null) {
+                    throw exc;
+                }
+
+                makeWritable(dir);
+                Files.delete(dir);
+
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    public void runGrader() {
+        // Freshly prompted so instructor can input folder of submissions.
+        File submissions = CLI.promptFile(Field.SUBMISSIONS, null, sc);
+
+        // Feature: work on a copy. Zips are extracted and folders copied into the cache
+        // folder, and every step
+        // below uses that copy, so the original submissions are never changed.
+        // Clear previous cache before preparing a new working copy.
+        try {
+            clearCache();
+            System.out.println("Previous cache cleared successfully.\n");
+        } catch (IOException e) {
+            System.out.println("\nFailed to clear cache!");
+
+            System.out.println("Exception type: " + e.getClass().getName());
+            System.out.println("Message: " + e.getMessage());
+
+            if (e instanceof java.nio.file.FileSystemException) {
+                java.nio.file.FileSystemException fse = (java.nio.file.FileSystemException) e;
+
+                System.out.println("File: " + fse.getFile());
+                System.out.println("Other file: " + fse.getOtherFile());
+                System.out.println("Reason: " + fse.getReason());
+            }
+
+            e.printStackTrace();
+            return;
+        }
+
+        // Prepare a fresh working copy.
+        CacheReport working = ctrl.prepareWorkingCopy(submissions);
+
+        working.print(System.out);
+        if (!working.usable()) {
+            return;
+        }
+        Path workingDir = working.workingDir();
+
+        // Feature: read-only layout check before grading. It ASSUMES the Starting
+        // Folder is the starter
+        // template (e.g. RenameToYourStudentID); this is the only place that assumption
+        // is made.
+        // The template path comes from the saved configuration, the folder to scan is
+        // the working copy.
+        PreflightReport preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), workingDir);
+        preflight.print(System.out);
+
+        // Feature: automatic fixes in the working copy (restore missing Q folders and
+        // files, extra wrapper folder,
+        // mistyped username folder, missing name/email header). The instructor must
+        // agree first, and it only
+        // runs if the preflight could scan the submissions.
+        if (!preflight.fatal() && CLI.promptYesNo("Automatically fix common mistakes in the working copy?", sc)) {
+            try {
+                ctrl.validateSubmissions(workingDir, preflight, question -> CLI.promptYesNo(question, sc))
+                        .print(System.out);
+            } catch (IOException exception) {
+                System.out.println("Could not validate the submissions: " + exception.getMessage() + "\n");
+            }
+        }
         System.out.println("\nRunning autograder!\n");
+
+        ErrorReporter reporter = new ErrorReporter(
+                new ErrorHistory(Path.of(".grader-error-history.jsonl")), System.out);
+        // The grader reads the working copy, not the original submissions.
+        GradeResult result = JavaGrader.grade(workingDir,
+                ctrl.getTestersFolder().toPath(), ctrl.getScoresheetFile().toPath(),
+                Duration.ofSeconds(2), reporter);
+        try {
+            Path report = Path.of(".grader-report.html");
+            HtmlReportWriter.write(report, result, reporter.records());
+            System.out.println("HTML report: " + report.toAbsolutePath().normalize());
+        } catch (IOException exception) {
+            System.out.println("Could not write HTML report: " + exception.getMessage());
+        }
+        System.out.printf("Completed: %d submission(s), %d reported issue(s).%n",
+                result.studentCount(), result.issueCount());
     }
 
     // Helper function
