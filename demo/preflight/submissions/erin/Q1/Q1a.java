@@ -1,2 +1,6 @@
-// synthetic demo submission
-public class Q1a { public int answer() { return 42; } }
+public class Q1a {
+    // Returns n multiplied by itself.
+    public static int square(int n) {
+        return n * n;
+    }
+}
