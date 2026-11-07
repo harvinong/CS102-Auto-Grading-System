@@ -17,8 +17,14 @@ import java.util.UUID;
  * with summary cards, a per-student score table and the list of issues with guidance.</p>
  */
 public final class HtmlReportWriter {
+    public static final Path HTML_REPORT_PATH = Path.of(".grader-report.html");
+
     // Static-only utility class, so no instances are allowed.
     private HtmlReportWriter() {
+    }
+
+    public static void write(GradeResult result, List<ErrorRecord> errors) throws IOException {
+        write(HTML_REPORT_PATH, result, errors);
     }
 
     /** Writes only the supplied current run; existing reports are replaced. */

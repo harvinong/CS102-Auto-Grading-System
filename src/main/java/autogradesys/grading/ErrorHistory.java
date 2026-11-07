@@ -24,7 +24,14 @@ public final class ErrorHistory {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     // Location of the JSONL history file; every record from every session is appended to it.
+    public static final Path DEFAULT_PATH = Path.of(".grader-error-history.jsonl");
     private final Path path;
+
+    /** Creates history storage at the default JSONL path <code>DEFAULT_PATH</code>. */
+    public ErrorHistory() {
+        // Remember the file location; the file itself is only touched by append().
+        this.path = DEFAULT_PATH;
+    }
 
     /** Creates history storage at the supplied JSONL path. */
     public ErrorHistory(Path path) {

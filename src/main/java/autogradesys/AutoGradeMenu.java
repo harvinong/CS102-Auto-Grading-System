@@ -1,5 +1,6 @@
 package autogradesys;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.io.FileNotFoundException;
@@ -97,7 +98,7 @@ public class AutoGradeMenu {
 
         // One reporter owns the durable audit trail for preflight and grading diagnostics.
         ErrorReporter reporter = new ErrorReporter(
-                new ErrorHistory(Path.of(".grader-error-history.jsonl")), System.out);
+                new ErrorHistory(), System.out);
         // Prepare a safe working copy: folders are copied and archives are extracted with zip-slip checks.
         CacheReport working = ctrl.prepareWorkingCopy(submissions);
         // Show what the copy step did (new, reused, failed) before anything is checked or graded.
@@ -198,12 +199,10 @@ public class AutoGradeMenu {
                 java.util.Set.of(preflight.templateName()), reporter);
         // Writing the report can fail on disk problems; the grades are already saved, so only a message is shown.
         try {
-            // The report lands in the current folder, overwritten on every run.
-            Path report = Path.of(".grader-report.html");
             // Render the scores and every recorded error into one HTML file.
-            HtmlReportWriter.write(report, result, reporter.records());
+            HtmlReportWriter.write(result, reporter.records());
             // Print the absolute path so the instructor can open the report.
-            System.out.println("HTML report: " + report.toAbsolutePath().normalize());
+            System.out.println("HTML report: " + HtmlReportWriter.HTML_REPORT_PATH.toAbsolutePath().normalize());
         } catch (java.io.IOException exception) {
             // Explain why no report was produced instead of crashing the menu.
             System.out.println("Could not write HTML report: " + exception.getMessage());
@@ -262,8 +261,15 @@ public class AutoGradeMenu {
 
     /** Menu Option 4: open the recent html report */
     private void viewRecentReport() {
-        // TODO: implement viewRecentReport()
-        System.out.println("\nViewing recent report\n");
+        System.out.printf("\n%s Viewing recent report...\n", TextColor.INFO.getActionTag());
+        try {
+            Desktop.getDesktop().open(HtmlReportWriter.HTML_REPORT_PATH.toFile());
+            System.out.printf("%s Opened on your browser!\n", TextColor.SUCCESS.getActionTag());
+        } catch (IOException e) {
+            System.out.printf("%s %s\n", TextColor.ERROR.getActionTag(), e.getMessage());
+        } finally {
+            System.out.println();
+        }
     }
 
     /** Menu Option 5: clear the cache folder */

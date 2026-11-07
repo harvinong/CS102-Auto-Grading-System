@@ -107,9 +107,9 @@ public final class App {
         // CSV to update with scores; required.
         String scoresheet = options.get("--scoresheet");
         // Optional error log location, defaulting to a hidden file in the current folder.
-        String history = options.getOrDefault("--history", ".grader-error-history.jsonl");
+        String history = options.getOrDefault("--history", ErrorHistory.DEFAULT_PATH.toString());
         // Optional HTML report location, with a default.
-        String report = options.getOrDefault("--report", ".grader-report.html");
+        String report = options.getOrDefault("--report", HtmlReportWriter.HTML_REPORT_PATH.toString());
         // At least one required option is missing.
         if (submissions == null || questions == null || scoresheet == null) {
             // Print the full usage line, listing optional options in brackets.
