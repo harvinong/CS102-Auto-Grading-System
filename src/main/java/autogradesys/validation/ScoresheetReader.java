@@ -7,78 +7,65 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.opencsv.CSVReader;
-
-/**
- * Reads the registered students from the scoresheet CSV. Columns are found by their title,
- * so the column order of the export does not matter.
- */
-
+/** Reads registered students from the title-based CSV scoresheet format. */
 public final class ScoresheetReader {
-
-    // Column titles used by the scoresheet export.
     private static final String USERNAME_COLUMN = "Username";
     private static final String EMAIL_COLUMN = "Email";
     private static final String FIRST_NAME_COLUMN = "First Name";
     private static final String LAST_NAME_COLUMN = "Last Name";
-    // The export puts '#' in front of ids and '_' where a last name is empty.
-    private static final String ID_PREFIX = "#";
-    private static final String EMPTY_NAME = "_";
+    private ScoresheetReader() { }
 
-    private ScoresheetReader() {
-    }
-
-    /**
-     * @param scoresheet The scoresheet CSV file.
-     * @return Every student row, in file order.
-     * @throws IOException If the file cannot be read or has no Username column.
-     */
     public static List<Student> read(File scoresheet) throws IOException {
-        try (CSVReader reader = new CSVReader(Files.newBufferedReader(scoresheet.toPath(), StandardCharsets.UTF_8))) {
-            String[] header = reader.readNext();
-            if (header == null) {
-                throw new IOException("The scoresheet is empty.");
-            }
-            int usernameCol = columnOf(header, USERNAME_COLUMN);
-            if (usernameCol < 0) {
-                throw new IOException("The scoresheet has no '" + USERNAME_COLUMN + "' column.");
-            }
-            int emailCol = columnOf(header, EMAIL_COLUMN);
-            int firstCol = columnOf(header, FIRST_NAME_COLUMN);
-            int lastCol = columnOf(header, LAST_NAME_COLUMN);
-
-            List<Student> students = new ArrayList<>();
-            String[] row;
-            while ((row = reader.readNext()) != null) {
-                String username = cell(row, usernameCol).replace(ID_PREFIX, "").trim();
-                if (username.isEmpty()) {
-                    continue;
-                }
-                String last = cell(row, lastCol);
-                String fullName = (cell(row, firstCol) + " " + (last.equals(EMPTY_NAME) ? "" : last)).trim();
-                students.add(new Student(username, fullName, cell(row, emailCol)));
-            }
-            return students;
-        } catch (IOException e) {
-            throw e;
-        } catch (Exception e) {
-            // opencsv 5 added a checked CsvValidationException; catching Exception compiles on 4.x and 5.x.
-            throw new IOException("Could not read the scoresheet: " + e.getMessage(), e);
+        List<List<String>> rows = parse(Files.readString(scoresheet.toPath(), StandardCharsets.UTF_8));
+        if (rows.isEmpty()) throw new IOException("The scoresheet is empty.");
+        List<String> header = rows.get(0);
+        int username = columnOf(header, USERNAME_COLUMN);
+        if (username < 0) throw new IOException("The scoresheet has no '" + USERNAME_COLUMN + "' column.");
+        int email = columnOf(header, EMAIL_COLUMN);
+        int first = columnOf(header, FIRST_NAME_COLUMN);
+        int last = columnOf(header, LAST_NAME_COLUMN);
+        List<Student> result = new ArrayList<>();
+        for (int i = 1; i < rows.size(); i++) {
+            List<String> row = rows.get(i);
+            String name = cell(row, username).replace("#", "").trim();
+            if (name.isEmpty() || name.equalsIgnoreCase("% full marks")) continue;
+            String surname = cell(row, last);
+            String fullName = (cell(row, first) + " " + ("_".equals(surname) ? "" : surname)).trim();
+            result.add(new Student(name, fullName, cell(row, email)));
         }
+        return result;
     }
 
-    // Index of the column with this title (ignoring case), or -1 if there is none.
-    private static int columnOf(String[] header, String title) {
-        for (int i = 0; i < header.length; i++) {
-            if (header[i].trim().equalsIgnoreCase(title)) {
-                return i;
-            }
-        }
+    private static int columnOf(List<String> header, String title) {
+        for (int i = 0; i < header.size(); i++) if (header.get(i).trim().equalsIgnoreCase(title)) return i;
         return -1;
     }
-
-    // The trimmed cell at this column, or "" if the column or cell does not exist.
-    private static String cell(String[] row, int column) {
-        return column < 0 || column >= row.length ? "" : row[column].trim();
+    private static String cell(List<String> row, int column) {
+        return column < 0 || column >= row.size() ? "" : row.get(column).trim();
+    }
+    /** Small RFC-4180-compatible parser, shared in spirit with grading.CsvScoresheet. */
+    private static List<List<String>> parse(String text) throws IOException {
+        List<List<String>> rows = new ArrayList<>();
+        List<String> row = new ArrayList<>();
+        StringBuilder cell = new StringBuilder();
+        boolean quoted = false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (quoted) {
+                if (c == '"') {
+                    if (i + 1 < text.length() && text.charAt(i + 1) == '"') { cell.append('"'); i++; }
+                    else quoted = false;
+                } else cell.append(c);
+            } else if (c == '"' && cell.length() == 0) quoted = true;
+            else if (c == ',') { row.add(cell.toString()); cell.setLength(0); }
+            else if (c == '\n' || c == '\r') {
+                if (c == '\r' && i + 1 < text.length() && text.charAt(i + 1) == '\n') i++;
+                row.add(cell.toString()); cell.setLength(0);
+                if (!row.isEmpty()) rows.add(row); row = new ArrayList<>();
+            } else cell.append(c);
+        }
+        if (quoted) throw new IOException("Unclosed quoted CSV field");
+        if (!row.isEmpty() || cell.length() > 0) { row.add(cell.toString()); rows.add(row); }
+        return rows;
     }
 }

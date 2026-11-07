@@ -3,7 +3,6 @@ package autogradesys.validation;
 import java.util.List;
 import java.util.Optional;
 
-import info.debatty.java.stringsimilarity.WeightedLevenshtein;
 
 /**
  * Matches a submission's folder name to a registered student, tolerating small typos.
@@ -19,12 +18,22 @@ public final class UsernameMatcher {
     // For most characters, substituting one for another costs 1.0.
     private static final double SUBSTITUTION_COST = 1.0;
 
-    private static final WeightedLevenshtein WL = new WeightedLevenshtein((c1, c2) -> {
-        if ((c1 == 't' && c2 == 'r') || (c1 == 'r' && c2 == 't')) {
-            return NEIGHBOUR_COST;
+    private static double distance(String a, String b) {
+        double[] d = new double[b.length() + 1];
+        for (int j = 0; j <= b.length(); j++) d[j] = j;
+        for (int i = 1; i <= a.length(); i++) {
+            double previous = d[0]; d[0] = i;
+            for (int j = 1; j <= b.length(); j++) {
+                double old = d[j];
+                double substitution = a.charAt(i - 1) == b.charAt(j - 1) ? 0
+                        : ((a.charAt(i - 1) == 't' && b.charAt(j - 1) == 'r')
+                        || (a.charAt(i - 1) == 'r' && b.charAt(j - 1) == 't') ? NEIGHBOUR_COST : SUBSTITUTION_COST);
+                d[j] = Math.min(Math.min(d[j] + 1, d[j - 1] + 1), previous + substitution);
+                previous = old;
+            }
         }
-        return SUBSTITUTION_COST;
-    });
+        return d[b.length()];
+    }
 
     private UsernameMatcher() {
     }
@@ -39,7 +48,7 @@ public final class UsernameMatcher {
         Student closest = null;
         double closestDistance = MAX_DISTANCE;
         for (Student student : students) {
-            double distance = WL.distance(name.toLowerCase(), student.username().toLowerCase());
+            double distance = distance(name.toLowerCase(), student.username().toLowerCase());
             if (distance < closestDistance) {
                 closestDistance = distance;
                 closest = student;

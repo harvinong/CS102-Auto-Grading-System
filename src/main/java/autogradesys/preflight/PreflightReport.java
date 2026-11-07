@@ -118,6 +118,8 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // Prints one finding as "  [CATEGORY] path - message -> fix".
     private static void printFinding(PrintStream out, PreflightFinding f) {
+        // Ignored clutter is persisted by the grading flow, not shown to the operator.
+        if (f.category() == PreflightFinding.Category.IGNORED_JUNK) return;
         // Indent, bracketed category, then where it happened.
         StringBuilder sb = new StringBuilder("  [").append(f.category()).append("] ").append(f.path());
         // Add the explanation when there is one.
