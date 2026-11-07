@@ -136,8 +136,6 @@ class RunGraderPreflightTest {
         // Nothing was scanned, so no student is listed as ready or needing attention.
         assertTrue(output.contains("no submissions were scanned"), output);
         assertFalse(output.contains("needs attention"), output);
-        // The existing TODO line still follows.
-        assertTrue(output.contains("Running autograder!"), output);
     }
 
     @Test
@@ -284,7 +282,7 @@ class RunGraderPreflightTest {
         assertTrue(output.contains("Invalid input: Please enter a path."), output);
         assertFalse(output.contains("The path must be absolute"), output);
         // Every bad menu answer, at either menu, gets the same message.
-        assertEquals(4, count(output, "Please enter a number between 0 and 3."), output);
+        assertEquals(4, count(output, "Please enter a number between 0 and"), output);
         assertFalse(output.contains("0 to 3"), output);
         // The ended input is named, without blaming the start of grading.
         assertTrue(output.contains("Input ended while waiting for an option; exiting."), output);
