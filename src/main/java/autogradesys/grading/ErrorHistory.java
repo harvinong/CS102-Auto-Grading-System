@@ -6,6 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 /**
  * Append-only JSON Lines storage for reported grading errors.
  *
@@ -17,6 +20,9 @@ import java.nio.file.StandardOpenOption;
  * rewritten when a later grading session reports another issue.</p>
  */
 public final class ErrorHistory {
+    // One shared mapper: it is thread-safe once configured and creating one per record would be wasteful. Default settings write compact JSON with raw UTF-8 text.
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     // Location of the JSONL history file; every record from every session is appended to it.
     private final Path path;
 
@@ -49,74 +55,31 @@ public final class ErrorHistory {
             // Create the folder (and any missing ancestors) on the first run; does nothing if it already exists.
             Files.createDirectories(parent);
         }
-        // Build the JSON object by hand, which avoids a library dependency; strings go through json() for escaping.
-        String line = "{"
-                // Pipeline stage that failed, e.g. "submission" or "scoresheet".
-                + "\"stage\":" + json(record.stage())
-                // Specific error kind within the stage.
-                + ",\"category\":" + json(record.category())
-                // Severity label, currently "error".
-                + ",\"severity\":" + json(record.severity())
-                // Human-readable description of what went wrong.
-                + ",\"message\":" + json(record.message())
-                // Suggested fix.
-                + ",\"guidance\":" + json(record.guidance())
-                // Student, or the JSON literal null for run-level errors.
-                + ",\"student\":" + optionalJson(record.student())
-                // Submission path, or null.
-                + ",\"submission\":" + optionalJson(record.submission())
-                // Question name, or null.
-                + ",\"question\":" + optionalJson(record.question())
-                // A boolean needs no quotes in JSON, so it is appended directly.
-                + ",\"canContinue\":" + record.canContinue()
-                // Close the object and add a newline, so each record occupies exactly one line (JSON Lines).
-                + "}\n";
+        // Jackson builds the object and does all escaping (quotes, backslashes, control characters), replacing the old hand-written json() helper.
+        ObjectNode object = MAPPER.createObjectNode();
+        // Pipeline stage that failed, e.g. "submission" or "scoresheet".
+        object.put("stage", record.stage());
+        // Specific error kind within the stage.
+        object.put("category", record.category());
+        // Severity label, currently "error".
+        object.put("severity", record.severity());
+        // Human-readable description of what went wrong.
+        object.put("message", record.message());
+        // Suggested fix.
+        object.put("guidance", record.guidance());
+        // Student, or JSON null for run-level errors: put(String, String) stores a null value as JSON null.
+        object.put("student", record.student());
+        // Submission path, or null.
+        object.put("submission", record.submission());
+        // Question name, or null.
+        object.put("question", record.question());
+        // A real JSON boolean, not a string.
+        object.put("canContinue", record.canContinue());
+        // writeValueAsString is compact (no pretty printing, so no embedded newlines); the appended newline makes each record exactly one line (JSON Lines).
+        String line = MAPPER.writeValueAsString(object) + "\n";
         // Write the line as UTF-8 so non-ASCII student names survive.
         Files.writeString(absolute, line, StandardCharsets.UTF_8,
                 // CREATE makes the file if missing, and APPEND adds to the end instead of overwriting earlier sessions' records.
                 StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
-    }
-
-    // Helper for the nullable fields.
-    private static String optionalJson(String value) {
-        // Emit the bare JSON null, or the quoted and escaped string.
-        return value == null ? "null" : json(value);
-    }
-
-    // Turns a Java string into a quoted, escaped JSON string literal.
-    private static String json(String value) {
-        // Start with the opening quote; the initial capacity covers the text plus both quotes.
-        StringBuilder result = new StringBuilder(value.length() + 2).append('"');
-        // Examine each character, since some must be escaped.
-        for (int index = 0; index < value.length(); index++) {
-            // Current character under inspection.
-            char character = value.charAt(index);
-            // Handle the characters that JSON requires to be escaped.
-            switch (character) {
-                // A double quote would end the string early.
-                case '"' -> result.append("\\\"");
-                // A backslash would start an escape sequence.
-                case '\\' -> result.append("\\\\");
-                // Control characters get their short JSON escape names.
-                case '\b' -> result.append("\\b");
-                case '\f' -> result.append("\\f");
-                case '\n' -> result.append("\\n");
-                case '\r' -> result.append("\\r");
-                case '\t' -> result.append("\\t");
-                // Everything else.
-                default -> {
-                    // Remaining control characters below space are illegal raw in JSON.
-                    if (character < 0x20) {
-                        // Write them as a four-digit hex \\u escape.
-                        result.append(String.format("\\u%04x", (int) character));
-                    } else {
-                        // Ordinary characters are copied unchanged.
-                        result.append(character);
-                    }
-                }
-            }
-        }
-        // Add the closing quote and produce the finished literal.
-        return result.append('"').toString();
     }
 }
