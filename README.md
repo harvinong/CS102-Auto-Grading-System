@@ -103,7 +103,7 @@ mvn -q exec:java \
   -Dexec.args="--non-interactive --submissions-dir /path/submissions --questions-dir /path/questions --scoresheet /path/scores.csv --history /path/errors.jsonl --timeout-ms 2000"
 ```
 
-Use `--timeout` for seconds instead of `--timeout-ms`. Invalid arguments return a nonzero status. Invalid setup and scoresheet read/write failures are reported as fatal, return a nonzero status, and stop before student programs or scoresheet writes run. A per-student or per-question failure is recoverable and does not stop unrelated work.
+Use `--timeout` for seconds instead of `--timeout-ms`. Menu grading reads its limits from `config.json` instead: `grading_timeout_seconds` (default 2) and `output_limit_bytes` (default 1048576), both positive whole numbers. Missing or invalid values fall back to the defaults, "View configuration paths" shows them, and "Edit configuration paths" changes them (Enter keeps the current value). Invalid arguments return a nonzero status. Invalid setup and scoresheet read/write failures are reported as fatal, return a nonzero status, and stop before student programs or scoresheet writes run. A per-student or per-question failure is recoverable and does not stop unrelated work.
 
 ## Generated files
 

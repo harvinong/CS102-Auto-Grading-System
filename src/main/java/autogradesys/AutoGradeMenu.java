@@ -114,6 +114,9 @@ public class AutoGradeMenu {
         System.out.println("Starting folder: " + ctrl.getStartingFolder());
         System.out.println("Testers folder:  " + ctrl.getTestersFolder());
         System.out.println("Scoresheet file: " + ctrl.getScoresheetFile());
+        // The two grading limits come from config.json (or the defaults when it has none), so show what grading will really use.
+        System.out.println("Grading timeout: " + ctrl.getTimeoutSeconds() + " second(s) per process");
+        System.out.println("Output limit:    " + ctrl.getOutputLimitBytes() + " bytes per process");
         System.out.println();
     }
 
@@ -153,10 +156,10 @@ public class AutoGradeMenu {
         // One reporter for this run: prints each problem and appends it to the history file in the current folder.
         ErrorReporter reporter = new ErrorReporter(
                 new ErrorHistory(Path.of(".grader-error-history.jsonl")), System.out);
-        // Grade with the configured testers folder (questions) and scoresheet; two seconds per compile or run stops infinite loops.
+        // Grade with the configured testers folder (questions) and scoresheet; the configured timeout (default 2 seconds) stops infinite loops and the output limit (default 1 MiB) stops flooding.
         GradeResult result = JavaGrader.grade(submissions.toPath(),
                 ctrl.getTestersFolder().toPath(), ctrl.getScoresheetFile().toPath(),
-                Duration.ofSeconds(2), reporter);
+                Duration.ofSeconds(ctrl.getTimeoutSeconds()), ctrl.getOutputLimitBytes(), reporter);
         // Writing the report can fail on disk problems; the grades are already saved, so only a message is shown.
         try {
             // The report lands in the current folder, overwritten on every run.
@@ -189,7 +192,16 @@ public class AutoGradeMenu {
                 askNewFiles ? null : ctrl.getScoresheetFile(),
                 sc);
 
-        boolean saveSuccess = ctrl.saveConfig(startingFolder, testers, scoresheet);
+        // First-run setup keeps the three prompts it always had and uses the defaults; only "Edit configuration paths" asks for the limits.
+        long timeoutSeconds = ctrl.getTimeoutSeconds();
+        long outputLimitBytes = ctrl.getOutputLimitBytes();
+        if (!askNewFiles) {
+            // Enter keeps the current value; anything else must be a positive whole number or the prompt repeats.
+            timeoutSeconds = CLI.promptPositiveLong("Grading timeout in seconds", timeoutSeconds, sc);
+            outputLimitBytes = CLI.promptPositiveLong("Output limit in bytes", outputLimitBytes, sc);
+        }
+
+        boolean saveSuccess = ctrl.saveConfig(startingFolder, testers, scoresheet, timeoutSeconds, outputLimitBytes);
 
         if (saveSuccess) {
             System.out.println("\nConfiguration saved!\n");

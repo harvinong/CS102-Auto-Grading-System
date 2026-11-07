@@ -70,6 +70,46 @@ public class CLI {
         return file;
     }
 
+    /**
+     * Ask the user for a positive whole number, such as the grading timeout in seconds.
+     *
+     * Re-prompts when the line is not a whole number or is zero or negative, the same way
+     * {@link #promptFile} re-prompts on a bad path.
+     *
+     * @param label        Name shown in the prompt, e.g. "Grading timeout (seconds)".
+     * @param defaultValue The current value, kept when the user just presses Enter.
+     * @param sc           The scanner object to read user input.
+     * @return The positive number typed, or defaultValue if the line was blank.
+     */
+    public static long promptPositiveLong(String label, long defaultValue, Scanner sc) {
+        // Loops until a valid value is returned from inside the body.
+        while (true) {
+            // Show the current value in brackets so Enter visibly means "keep this".
+            System.out.print(String.format("Enter %s (%d): ", label, defaultValue));
+            // Piped input can end mid-prompt; fail the same way promptPath does instead of spinning forever.
+            if (!sc.hasNextLine()) {
+                throw new IllegalStateException("Input ended while waiting for " + label);
+            }
+            // Trim so " 5 " counts as 5.
+            String text = sc.nextLine().trim();
+            // Blank line: keep the current value.
+            if (text.isEmpty()) {
+                return defaultValue;
+            }
+            try {
+                // Long.parseLong rejects "1.5", "abc" and values beyond the long range, all as NumberFormatException.
+                long value = Long.parseLong(text);
+                // Zero and negatives parse fine but would stop every process at once, so they are refused here.
+                if (value > 0) {
+                    return value;
+                }
+                System.out.println("Invalid input: " + label + " must be a positive whole number.\n");
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input: " + label + " must be a positive whole number.\n");
+            }
+        }
+    }
+
     // Helper Functions
 
     /**

@@ -136,4 +136,32 @@ class RunGraderPreflightTest {
         assertTrue(output.contains("[ARCHIVE_ALREADY_EXTRACTED] frank.zip"), output);
         assertFalse(output.contains("[UNEXTRACTED_ARCHIVE]"), output);
     }
+
+    @Test
+    void gradingLimitsAreShownEditedWithValidationAndSavedThroughTheMenu() throws Exception {
+        Path template = root.resolve("RenameToYourStudentID");
+        file(template, "Q1/Q1a.java", "class Q1a {}");
+        Path testers = Files.createDirectories(root.resolve("testers"));
+        Path scores = root.resolve("scores.csv");
+        Files.writeString(scores, "username,final_score\n");
+
+        // First-run setup (3 paths), view (1), edit (2) keeping all three paths with blank lines, then the
+        // timeout gets "0", "abc" and "1.5" (all refused) before 6, and the output limit gets "-1" before 2048; view again, quit.
+        String typed = String.join("\n", template.toString(), testers.toString(), scores.toString(),
+                "1", "2", "", "", "", "0", "abc", "1.5", "6", "-1", "2048", "1", "0") + "\n";
+        String output = runMenu(typed);
+
+        // The first view shows the defaults a new config gets.
+        assertTrue(output.contains("Grading timeout: 2 second(s) per process"), output);
+        assertTrue(output.contains("Output limit:    1048576 bytes per process"), output);
+        // Each of the four bad inputs was refused and the prompt came back.
+        assertEquals(4, output.split("must be a positive whole number", -1).length - 1, output);
+        // The second view shows the edited values.
+        assertTrue(output.contains("Grading timeout: 6 second(s) per process"), output);
+        assertTrue(output.contains("Output limit:    2048 bytes per process"), output);
+        // And they were written to the program's config.json.
+        String saved = Files.readString(root.resolve("work").resolve("config.json"));
+        assertTrue(saved.contains("\"grading_timeout_seconds\" : 6"), saved);
+        assertTrue(saved.contains("\"output_limit_bytes\" : 2048"), saved);
+    }
 }
