@@ -70,6 +70,27 @@ public class CLI {
         return file;
     }
 
+    /** ADDED BY JEK
+     * Ask the user a yes/no question.
+     * 
+     * The method keeps asking until the user enters Y or N (in any letter case).
+     * 
+     * @param question The question to be printed out to the user.
+     * @param sc       The scanner object to read user input.
+     * @return true if the user answers Y, false if the user answers N.
+     */
+    public static boolean promptYesNo(String question, Scanner sc) {
+        System.out.print(question + " (Y/N): ");
+        String answer = sc.nextLine().trim();
+
+        while (!answer.equalsIgnoreCase("Y") && !answer.equalsIgnoreCase("N")) {
+            System.out.print("Please enter Y or N: ");
+            answer = sc.nextLine().trim();
+        }
+
+        return answer.equalsIgnoreCase("Y");
+    }
+
     // Helper Functions
 
     /**

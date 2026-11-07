@@ -56,6 +56,12 @@ class RunGraderPreflightTest {
 
     // The scripted answers: three config paths, menu option 3, the submissions path, then 0 to quit.
     private static String script(Path startingFolder, Path testers, Path scores, Path submissions) {
+    return String.join("\n", startingFolder.toString(), testers.toString(), scores.toString(),
+            "3", submissions.toString(), "N", "0") + "\n";
+    }
+
+    // New: for runs where the preflight is fatal, the prompt is skipped, so there is no "N"
+    private static String scriptWithoutFixPrompt(Path startingFolder, Path testers, Path scores, Path submissions) {
         return String.join("\n", startingFolder.toString(), testers.toString(), scores.toString(),
                 "3", submissions.toString(), "0") + "\n";
     }
@@ -103,7 +109,7 @@ class RunGraderPreflightTest {
         Files.writeString(scores, "username,final_score\n");
 
         // Mistake: the Starting Folder is the course folder instead of the template inside it.
-        String output = runMenu(script(course, testers, scores, course.resolve("subs")));
+        String output = runMenu(scriptWithoutFixPrompt(course, testers, scores, course.resolve("subs")));
 
         // A single clear diagnostic with the exact folder to use instead.
         assertTrue(output.contains("[TEMPLATE_INVALID]"), output);
