@@ -1,0 +1,103 @@
+package autogradesys.submission;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import autogradesys.config.AppSettings;
+
+class SubmissionIteratorTest {
+    @TempDir
+    Path dir;
+
+    private final Pattern pattern = AppSettings.defaultSettings().getZipNamePattern();
+
+    private List<String> usernames(SubmissionIterator iterator) {
+        List<String> names = new ArrayList<>();
+        for (Submission submission : iterator) {
+            names.add(submission.getUsername());
+        }
+        return names;
+    }
+
+    @Test
+    void returnsTheSixSampleZipsInOrder() throws IOException {
+        String[] names = { "xing.yan.2023", "ping.lee.2023", "jing.lim.2021",
+                "fen.lai.2022", "david.2024", "chee.teo.2022" };
+        for (String name : names) {
+            TestZips.create(dir.resolve("2023-2024-" + name + ".zip"), "Q1/");
+        }
+
+        SubmissionIterator iterator = new SubmissionIterator(dir, pattern);
+
+        assertEquals(List.of("chee.teo.2022", "david.2024", "fen.lai.2022",
+                "jing.lim.2021", "ping.lee.2023", "xing.yan.2023"), usernames(iterator));
+        assertEquals(6, iterator.size());
+    }
+
+    @Test
+    void upperCaseZipExtensionIsAccepted() throws IOException {
+        TestZips.create(dir.resolve("2023-2024-jing.lim.2021.ZIP"), "Q1/");
+
+        assertEquals(List.of("jing.lim.2021"), usernames(new SubmissionIterator(dir, pattern)));
+    }
+
+    @Test
+    void skipsFoldersTextFilesAndZipsWithTheWrongName() throws IOException {
+        TestZips.create(dir.resolve("2023-2024-ping.lee.2023.zip"), "Q1/");
+        TestZips.create(dir.resolve("weird.zip"), "Q1/");
+        Files.writeString(dir.resolve("notes.txt"), "hello");
+        Files.createDirectory(dir.resolve("old-submissions"));
+
+        SubmissionIterator iterator = new SubmissionIterator(dir, pattern);
+
+        assertEquals(1, iterator.size());
+        assertTrue(iterator.getSkipped().containsAll(List.of("weird.zip", "notes.txt", "old-submissions")));
+    }
+
+    @Test
+    void hiddenFilesAreIgnoredCompletely() throws IOException {
+        Files.writeString(dir.resolve(".DS_Store"), "x");
+
+        SubmissionIterator iterator = new SubmissionIterator(dir, pattern);
+
+        assertEquals(0, iterator.size());
+        assertTrue(iterator.getSkipped().isEmpty());
+    }
+
+    @Test
+    void sameUsernameTwiceKeepsTheLastZipAndRecordsAMessage() throws IOException {
+        TestZips.create(dir.resolve("2022-2023-ping.lee.2023.zip"), "Q1/");
+        TestZips.create(dir.resolve("2023-2024-Ping.Lee.2023.zip"), "Q1/");
+
+        SubmissionIterator iterator = new SubmissionIterator(dir, pattern);
+
+        assertEquals(1, iterator.size());
+        assertEquals("2023-2024-Ping.Lee.2023.zip",
+                iterator.iterator().next().getZipPath().getFileName().toString());
+        assertEquals(1, iterator.getDuplicates().size());
+        assertTrue(iterator.getDuplicates().get(0).contains("2022-2023-ping.lee.2023.zip"));
+    }
+
+    @Test
+    void emptyFolderGivesNoSubmissions() throws IOException {
+        assertEquals(0, new SubmissionIterator(dir, pattern).size());
+    }
+
+    @Test
+    void aFileInsteadOfAFolderIsRejected() throws IOException {
+        Path file = Files.writeString(dir.resolve("file.txt"), "x");
+
+        assertThrows(IllegalArgumentException.class, () -> new SubmissionIterator(file, pattern));
+    }
+}

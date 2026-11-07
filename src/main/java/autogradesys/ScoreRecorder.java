@@ -1,32 +1,35 @@
 package autogradesys;
-import java.io.BufferedWriter;
+
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-// Input: Map<String, Integer> Which is a map of usernames to their final scores
-// Function: Takes the map and writes it to a CSV file
-// Output: Path to the newly created CSV file
-public class ScoreRecorder {
-    private static final DateTimeFormatter TIMESTAMP =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSSSSSSSS");
+import autogradesys.grading.CsvScoresheet;
 
-    /** Writes scores to a new CSV in the working directory and returns its path. */
-    public static Path recordScores(Map<String, Integer> scores) throws IOException {
-        Path file = Path.of(LocalDateTime.now().format(TIMESTAMP) + ".csv");
-        try (BufferedWriter writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
-            writer.write("username,final_score\r\n");
-            for (Map.Entry<String, Integer> entry : scores.entrySet()) {
-                String username = entry.getKey().replace("\"", "\"\"");
-                writer.write("\"" + username + "\"," + entry.getValue() + "\r\n");
-            }
+/** Compatibility facade that delegates scoresheet creation to the single CSV writer. */
+public final class ScoreRecorder {
+    private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSSSSSSSS");
+    private ScoreRecorder() { }
+
+    /** Live integration point used by JavaGrader for the current scoresheet. */
+    public static boolean recordScores(Path scoresheet, Map<String, Map<String, Integer>> scores,
+            autogradesys.grading.ErrorReporter reporter) {
+        return autogradesys.grading.CsvScoresheet.update(scoresheet, scores, reporter);
+    }
+
+    public static Path recordScores(Map<String, int[]> results) throws IOException {
+        Map<String, Map<String, Integer>> scores = new LinkedHashMap<>();
+        for (Map.Entry<String, int[]> entry : results.entrySet()) {
+            String[] path = entry.getKey().split(" > ");
+            if (path.length == 1) scores.computeIfAbsent(path[0], ignored -> new LinkedHashMap<>());
+            else if (path.length == 3) scores.computeIfAbsent(path[0], ignored -> new LinkedHashMap<>())
+                    .put(path[2], entry.getValue()[0]);
         }
+        Path file = Path.of(LocalDateTime.now().format(TIMESTAMP) + ".csv");
+        CsvScoresheet.create(file, scores);
         return file;
     }
 }

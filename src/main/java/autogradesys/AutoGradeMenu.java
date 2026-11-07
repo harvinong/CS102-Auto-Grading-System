@@ -1,6 +1,7 @@
 package autogradesys;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.time.Duration;
 import java.nio.file.Path;
@@ -15,6 +16,7 @@ import autogradesys.input.CLI;
 import autogradesys.input.Field;
 // Feature import: the read-only submission check.
 import autogradesys.preflight.SubmissionPreflight;
+import autogradesys.validation.CacheReport;
 
 public class AutoGradeMenu {
 
@@ -133,14 +135,35 @@ public class AutoGradeMenu {
         // Ask for the submissions folder every time, since it changes between assignments; keep the answer so both the preflight and the grader receive it.
         File submissions = CLI.promptFile(Field.SUBMISSIONS, null, sc);
 
+        // One reporter owns the durable audit trail for preflight and grading diagnostics.
+        ErrorReporter reporter = new ErrorReporter(
+                new ErrorHistory(Path.of(".grader-error-history.jsonl")), System.out);
+        // Prepare a safe working copy: folders are copied and archives are extracted with zip-slip checks.
+        CacheReport working = ctrl.prepareWorkingCopy(submissions);
+        working.print(System.out);
+        long cachedIgnored = working.events().stream()
+                .filter(event -> event.type() == autogradesys.validation.ValidationEvent.Type.IGNORED_JUNK)
+                .peek(event -> reporter.ignored("preflight", "ignored-junk", event.path() + " ignored",
+                        "Remove this generated or OS metadata file if desired", event.path()))
+                .count();
+        if (!working.usable()) return;
+        Path gradingPath = working.workingDir();
         // Feature: read-only layout check before grading. It ASSUMES the Starting Folder is the starter
         // template (e.g. RenameToYourStudentID); this is the only place that assumption is made.
         // check(...) compares every submission with the template and returns a report (it changes nothing);
         // the template path comes from the saved configuration, the submissions path from the prompt above;
         // print(...) writes the report to the console.
-        var preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), submissions.toPath());
+        var preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
+        // Persist ignored clutter silently; PreflightReport intentionally omits it from console output.
+        long ignored = preflight.findings().stream()
+                .filter(f -> f.category() == autogradesys.preflight.PreflightFinding.Category.IGNORED_JUNK)
+                .peek(f -> reporter.ignored("preflight", "ignored-junk", f.path() + " ignored",
+                        "Remove this generated or OS metadata file if desired", f.path()))
+                .count();
         // Show the findings (per-student ready or needs-attention list) before any code is compiled.
         preflight.print(System.out);
+        long ignoredTotal = cachedIgnored + ignored;
+        if (ignoredTotal > 0) System.out.println(ignoredTotal + " ignored files logged to the error report.");
         // A fatal finding means the template or submissions folder is unusable, so grading would only produce noise.
         if (preflight.fatal()) {
             // Print the same banner as a normal run so the output layout is the same either way.
@@ -150,14 +173,33 @@ public class AutoGradeMenu {
             // Back to the menu without touching the scoresheet, history or report.
             return;
         }
+        // Keep the validation feature reachable: the instructor may fix, recheck, or proceed.
+        while (true) {
+            System.out.println("1. Fix common mistakes automatically");
+            System.out.println("2. Check the working copy again");
+            System.out.println("3. Start grading");
+            System.out.println("0. Cancel and return to the main menu");
+            int choice = CLI.promptOption(0, 3, sc);
+            if (choice == 0) return;
+            if (choice == 3) break;
+            if (choice == 2) {
+                preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
+                preflight.print(System.out);
+            } else {
+                try {
+                    ctrl.validateSubmissions(gradingPath, preflight, question -> CLI.promptYesNo(question, sc)).print(System.out);
+                } catch (IOException exception) {
+                    System.out.println("Could not validate the submissions: " + exception.getMessage());
+                }
+                preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
+                preflight.print(System.out);
+            }
+        }
 
         // Separate the preflight report from the grading output with a blank line and a banner.
         System.out.println("\nRunning autograder!\n");
-        // One reporter for this run: prints each problem and appends it to the history file in the current folder.
-        ErrorReporter reporter = new ErrorReporter(
-                new ErrorHistory(Path.of(".grader-error-history.jsonl")), System.out);
         // Grade with the configured testers folder (questions) and scoresheet; the configured timeout (default 2 seconds) stops infinite loops and the output limit (default 1 MiB) stops flooding.
-        GradeResult result = JavaGrader.grade(submissions.toPath(),
+        GradeResult result = JavaGrader.grade(gradingPath,
                 ctrl.getTestersFolder().toPath(), ctrl.getScoresheetFile().toPath(),
                 Duration.ofSeconds(ctrl.getTimeoutSeconds()), ctrl.getOutputLimitBytes(), reporter);
         // Writing the report can fail on disk problems; the grades are already saved, so only a message is shown.

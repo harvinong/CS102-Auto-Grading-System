@@ -84,6 +84,22 @@ public final class ErrorReporter {
         return error(stage, category, "error", message, guidance, null, null, null, false);
     }
 
+    /** Records an ignored input artifact without printing it to the console. */
+    public ErrorRecord ignored(String stage, String category, String message, String guidance,
+            String submission) {
+        ErrorRecord record = new ErrorRecord(stage, category, "note", message, guidance,
+                null, submission, null, true);
+        records.add(record);
+        try {
+            history.append(record);
+        } catch (IOException exception) {
+            historyFailure = true;
+            output.printf("[ERROR] history/write: Could not append error history at %s: %s%n",
+                    history.path(), exception.getMessage());
+        }
+        return record;
+    }
+
     /** Prints non-error progress information without adding history. */
     // Used for PASS lines and other progress text that is not a problem.
     public void info(String message) {

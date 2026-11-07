@@ -135,7 +135,7 @@ public final class JavaGrader {
         // Step 5: write results to the CSV. The null check is a safety net; validSetup normally already rejected a missing scoresheet.
         if (scoresheet != null) {
             // Merge the new scores into the existing CSV, keeping other columns and reporting any write problem.
-            CsvScoresheet.update(scoresheet, scores, reporter);
+            autogradesys.ScoreRecorder.recordScores(scoresheet, scores, reporter);
         } else {
             // No destination file was given, so the scores cannot be saved; flag this as fatal for the whole session.
             reporter.fatal("scoresheet", "scoresheet-read", "No scoresheet was provided.",
