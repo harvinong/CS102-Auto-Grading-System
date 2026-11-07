@@ -85,18 +85,34 @@ public final class ErrorReporter {
         return error(stage, category, "error", message, guidance, null, null, null, false);
     }
 
-    /** Records an ignored input artifact without printing it to the console. */
+    /**
+     * Records an ignored input artifact without printing it to the console.
+     *
+     * <p>AutoGradeMenu.runGrader calls this once for each file or folder the working-copy step
+     * (SubmissionCache) or the preflight skipped as junk: a name starting with a dot, such as
+     * {@code .DS_Store}, the {@code __MACOSX} folder, or (preflight only) a compiled {@code .class} file. The record is kept for the HTML report and
+     * the history file, but it is a "note": it never stops grading and it is not printed on the
+     * console, which keeps the output readable when a class has many such files.</p>
+     */
     public ErrorRecord ignored(String stage, String category, String message, String guidance,
             String submission) {
+        // Severity "note" (not "error") and canContinue=true, so it can never make the run fatal; only the submission path is known.
         ErrorRecord record = new ErrorRecord(stage, category, "note", message, guidance,
                 null, submission, null, true);
+        // Keep it in memory so it is counted in the issue total and listed in the HTML report along with the other records.
         records.add(record);
+        // Unlike error(), there is deliberately no print(record) call here, so the console stays quiet.
         try {
+            // Still persist it, so the audit trail in the history file shows what was skipped.
             history.append(record);
+        // The disk write failed.
         } catch (IOException exception) {
+            // Same rule as error(): a lost audit trail makes hasFatalError() true.
             historyFailure = true;
+            // Tell the operator directly, since the failure cannot be logged to the history that just failed.
             printAppendErrorHistoryError(exception);
         }
+        // Return the record, mirroring error().
         return record;
     }
 

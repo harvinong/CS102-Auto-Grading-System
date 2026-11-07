@@ -27,6 +27,7 @@ public record CacheReport(Path workingDir, List<ValidationEvent> events, int cre
         out.println("__ Working copy (the original submissions are never changed) __");
         out.println("  " + workingDir);
         for (ValidationEvent event : events) {
+            // Ignored junk is not printed here; AutoGradeMenu.runGrader logs it quietly through ErrorReporter.ignored.
             if (event.type() == ValidationEvent.Type.IGNORED_JUNK) continue;
             out.println("  [" + event.type() + "] " + event.path() + " - " + event.message());
         }

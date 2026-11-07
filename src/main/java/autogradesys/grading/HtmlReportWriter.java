@@ -126,14 +126,17 @@ public final class HtmlReportWriter {
         private final String cell;
 
         Outcome(String cell) {
+            // Keep the class-plus-label text for this outcome so the table row can append it directly.
             this.cell = cell;
         }
 
         // Classifies marks earned against marks available; a question worth 0 can never be full marks.
         static Outcome of(int score, int available) {
+            // Full marks need a question that is worth something and a score that reaches it.
             if (available > 0 && score >= available) {
                 return FULL;
             }
+            // Below full marks, any positive score is partial and nothing earned is zero.
             return score > 0 ? PARTIAL : ZERO;
         }
     }

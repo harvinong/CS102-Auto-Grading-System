@@ -28,6 +28,7 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // True when this student has at least one ERROR finding.
     public boolean needsAttention(String student) {
+        // Look through every finding of the run for one that belongs to this student and has ERROR severity.
         return findings.stream()
                 // Keep only this student's findings that are errors.
                 .anyMatch(f -> f.student().equals(student) && f.severity() == Severity.ERROR);
@@ -35,6 +36,7 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // True when this folder carries the template's name; grading skips it, so it is neither ready nor needing attention.
     public boolean templateCopy(String student) {
+        // A TEMPLATE_COPY finding for this folder marks it as an untouched copy of the starter template.
         return findings.stream()
                 .anyMatch(f -> f.student().equals(student) && f.category() == PreflightFinding.Category.TEMPLATE_COPY);
     }
@@ -47,6 +49,7 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // How many folders are template copies that grading skips.
     public long notGradedCount() {
+        // Count the folders carrying a TEMPLATE_COPY finding; JavaGrader is told to skip exactly these.
         return students.stream().filter(this::templateCopy).count();
     }
 
@@ -132,7 +135,7 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // Prints one finding as "  [CATEGORY] path - message -> fix".
     private static void printFinding(PrintStream out, PreflightFinding f) {
-        // Ignored clutter is persisted by the grading flow, not shown to the operator.
+        // Ignored clutter (IGNORED_JUNK) is never printed; AutoGradeMenu.runGrader records each one with ErrorReporter.ignored instead.
         if (f.category() == PreflightFinding.Category.IGNORED_JUNK) return;
         // Indent, bracketed category, then where it happened.
         StringBuilder sb = new StringBuilder("  [").append(f.category()).append("] ").append(f.path());

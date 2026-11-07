@@ -61,7 +61,7 @@ public final class ErrorHistory {
         object.put("stage", record.stage());
         // Specific error kind within the stage.
         object.put("category", record.category());
-        // Severity label, currently "error".
+        // Severity label: "error" for real problems, "note" for ignored junk recorded by ErrorReporter.ignored.
         object.put("severity", record.severity());
         // Human-readable description of what went wrong.
         object.put("message", record.message());

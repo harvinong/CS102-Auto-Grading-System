@@ -140,7 +140,7 @@ final class ProcessRunner {
         inputWriter.join(1_000L);
         // A killed process has no meaningful exit status, so use -1 as the "did not exit normally" marker.
         int exitCode = finished ? process.exitValue() : -1;
-        // Package everything for JavaGrader; timedOut is the inverse of finished, and output is decoded as UTF-8.
+        // Package everything for JavaGrader and TesterGrader; timedOut is the inverse of finished, and output is decoded as UTF-8.
         return new Result(exitCode, !finished, capture.limitExceeded(),
                 capture.stdout.toString(StandardCharsets.UTF_8), capture.stderr.toString(StandardCharsets.UTF_8));
     }
@@ -230,6 +230,7 @@ final class ProcessRunner {
 
         // True once any output has been discarded because of the size cap.
         boolean limitExceeded() {
+            // Read the flag that append() sets; the run() wait loop and both reader threads poll it to stop early.
             return exceeded.get();
         }
     }

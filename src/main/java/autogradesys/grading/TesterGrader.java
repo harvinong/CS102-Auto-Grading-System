@@ -27,6 +27,7 @@ final class TesterGrader {
     // Suffix of the expected-output file that sits next to each tester, e.g. Q1aTester.expected.txt.
     private static final String EXPECTED_SUFFIX = ".expected.txt";
 
+    // Utility class with only static methods, so the constructor is private to block instantiation.
     private TesterGrader() {
     }
 
@@ -34,6 +35,7 @@ final class TesterGrader {
     static boolean usesTesters(Path testerDir) {
         // A folder that holds at least one tester class is clearly tester based.
         if (!testerFiles(testerDir).isEmpty()) {
+            // Testers found: use the tester-based grading path.
             return true;
         }
         // The older layout is recognised only by its expected.txt; anything else (including an empty
@@ -57,17 +59,23 @@ final class TesterGrader {
     static Path submissionRoot(Path studentDir, List<String> questions) {
         // Normal case: a question folder sits directly in the student's folder.
         if (holdsQuestion(studentDir, questions)) {
+            // No wrapper folder to look through.
             return studentDir;
         }
         // Otherwise look at the sub-folders for exactly one that holds question folders.
+        // The single wrapper folder found so far; stays null until one is seen.
         Path found = null;
+        // Files.list holds an OS handle, so try-with-resources closes the directory stream.
         try (Stream<Path> children = Files.list(studentDir)) {
+            // Only sub-folders can be wrappers, taken in name order so the result is the same on every machine.
             for (Path child : children.filter(Files::isDirectory).sorted().toList()) {
+                // This sub-folder directly holds question folders, so it is a candidate wrapper.
                 if (holdsQuestion(child, questions)) {
                     // Two candidate wrappers is ambiguous, so fall back to the student folder itself.
                     if (found != null) {
                         return studentDir;
                     }
+                    // First candidate: remember it, and keep looking in case there is a second.
                     found = child;
                 }
             }
@@ -123,18 +131,23 @@ final class TesterGrader {
 
         // Fresh build folder per student and question so classes never leak between submissions.
         Path build = null;
+        // Everything below can throw IOException (copying, starting javac) or be interrupted; the catches at the bottom record those.
         try {
+            // Create the empty temporary build folder; build is declared outside the try so the finally block can delete it.
             build = Files.createTempDirectory("cs102-grader-");
             // Copy the student's files first; the instructor's testers are copied after so they win a name clash.
             for (Path file : studentFiles) {
+                // Same file name in the build folder; REPLACE_EXISTING makes a repeat copy harmless.
                 Files.copy(file, build.resolve(file.getFileName().toString()), StandardCopyOption.REPLACE_EXISTING);
             }
             // Copy every tester source next to the student's files; expected files stay in the instructor's folder.
             List<String> sources = new ArrayList<>();
             for (Path tester : testers) {
+                // A tester with the same name as a student file overwrites it, so the student cannot replace the instructor's tester.
                 Files.copy(tester, build.resolve(tester.getFileName().toString()), StandardCopyOption.REPLACE_EXISTING);
             }
             // javac gets every .java file in the build folder, student and tester alike, in one compilation.
+            // The listing holds an OS handle, so it is closed by try-with-resources; sorting keeps the javac argument order stable.
             try (Stream<Path> copied = Files.list(build)) {
                 copied.filter(path -> path.getFileName().toString().endsWith(".java")).sorted()
                         .forEach(path -> sources.add(path.toAbsolutePath().toString()));
@@ -142,6 +155,7 @@ final class TesterGrader {
             // Command is a list, not a shell string, so file names cannot be reinterpreted as shell syntax.
             List<String> compile = new ArrayList<>(List.of("javac", "-encoding", "UTF-8", "-d",
                     build.toAbsolutePath().toString()));
+            // Append the source files after the options, then run javac under the timeout and output cap with the build folder as working directory.
             compile.addAll(sources);
             ProcessRunner.Result compilation = ProcessRunner.run(compile, "", timeout, build, outputLimitBytes);
             // A compiler that floods its output is stopped and every tester of the question scores zero.
@@ -173,9 +187,11 @@ final class TesterGrader {
             // Compilation succeeded, so run each tester separately and count the ones that pass.
             int marks = 0;
             for (Path tester : testers) {
+                // runTester returns 1 for a pass and 0 for any failure (which it records itself), so the sum is the question's mark.
                 marks += runTester(student, studentQuestion, question, tester, build, timeout, outputLimitBytes,
                         reporter);
             }
+            // Marks earned for this question, from 0 up to the number of testers.
             return marks;
         } catch (IOException exception) {
             reporter.recoverable("question", "filesystem",
@@ -193,6 +209,7 @@ final class TesterGrader {
         } finally {
             // Always remove the build folder so repeated sessions do not fill the temp directory.
             if (build != null) {
+                // Delegate to JavaGrader's best-effort recursive delete of the build folder and its class files.
                 JavaGrader.deleteTree(build);
             }
         }
@@ -219,6 +236,7 @@ final class TesterGrader {
         // Read the expected output as UTF-8 text; an unreadable file is a setup problem for this tester only.
         final String expected;
         try {
+            // final String above is assigned exactly once here; the decode is explicit so it does not depend on the machine's default charset.
             expected = Files.readString(expectedPath, StandardCharsets.UTF_8);
         } catch (IOException exception) {
             reporter.recoverable("question", "fixture-read",
@@ -230,6 +248,7 @@ final class TesterGrader {
         // No shell: java gets the class path and class name as separate arguments. The working
         // directory is the build folder so relative names like "persons.txt" find the student's copy.
         List<String> execute = List.of("java", "-cp", build.toAbsolutePath().toString(), className);
+        // Testers read no stdin (empty input), and the run gets the same timeout and output cap as compiling.
         ProcessRunner.Result execution = ProcessRunner.run(execute, "", timeout, build, outputLimitBytes);
         // Check the output cap before the timeout because stopping a flooding process also ends the wait.
         if (execution.outputLimitExceeded()) {
@@ -270,38 +289,47 @@ final class TesterGrader {
         // Matching output earns this tester's single mark.
         reporter.info(String.format("PASS student=%s submission=%s question=%s tester=%s score=1",
                 student, JavaGrader.display(studentQuestion), question, className));
+        // One mark for this tester.
         return 1;
     }
 
     // Converts Windows line endings to Unix ones so only the text itself decides the comparison.
     private static String normalise(String text) {
+        // Replace every carriage return plus line feed pair with a single line feed.
         return text.replace("\r\n", "\n");
     }
 
     // True when the folder directly contains a sub-folder named after one of the questions.
     private static boolean holdsQuestion(Path folder, List<String> questions) {
+        // True as soon as one configured question name exists as a directory inside the folder.
         return questions.stream().anyMatch(question -> Files.isDirectory(folder.resolve(question)));
     }
 
     // The instructor's tester sources in a question folder, sorted by name; empty if the folder is unreadable.
     private static List<Path> testerFiles(Path testerDir) {
+        // The listing holds an OS handle, so try-with-resources closes it.
         try (Stream<Path> paths = Files.list(testerDir)) {
+            // Keep plain files whose name ends in Tester.java; the .expected.txt files and sub-folders are left out. Sorting makes the order stable.
             return paths.filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(TESTER_SUFFIX))
                     .sorted().toList();
         } catch (IOException exception) {
+            // An unreadable folder looks like one with no testers, which grade() then reports as missing-tester.
             return List.of();
         }
     }
 
     // The student's regular files for a question, minus compiled classes and hidden OS files like .DS_Store.
     private static List<Path> studentFiles(Path studentQuestion) {
+        // The listing holds an OS handle, so try-with-resources closes it.
         try (Stream<Path> paths = Files.list(studentQuestion)) {
+            // Regular files only, dropping hidden files (.DS_Store) and stale .class files so only source and resources are compiled; sorted for a stable order.
             return paths.filter(Files::isRegularFile)
                     .filter(path -> !path.getFileName().toString().startsWith("."))
                     .filter(path -> !path.getFileName().toString().endsWith(".class"))
                     .sorted().toList();
         } catch (IOException exception) {
+            // An unreadable folder looks like one with no files, which grade() then reports as missing-file.
             return List.of();
         }
     }
