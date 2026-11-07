@@ -45,7 +45,7 @@ public record ValidationEvent(String student, Type type, String path, String mes
 
         public String getTagWithColor() {
             TextColor color = this.isFixed()? TextColor.SUCCESS: TextColor.ERROR;
-            return color.apply("  [" + this + "] ");        
+            return color.getActionTag(this.toString());
         }
     }
 
@@ -53,7 +53,8 @@ public record ValidationEvent(String student, Type type, String path, String mes
         return type.isFixed();
     }
 
-    public String getTagWithColor() {
-        return type.getTagWithColor();
+    /** Get log message with format: <pre>"  [TYPE] path/of/files - log message"</pre> */
+    public String getLogMessage() {
+        return "  " + this.type.getTagWithColor() + " " + this.path() + " - " + this.message();
     }
 }

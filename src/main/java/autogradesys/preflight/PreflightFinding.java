@@ -96,6 +96,6 @@ public record PreflightFinding(
                 color = TextColor.ERROR;
                 break;
         }
-        return color.apply("  [" + this.category() + "] ");
+        return color.getActionTag("" + this.category());
     }
 }

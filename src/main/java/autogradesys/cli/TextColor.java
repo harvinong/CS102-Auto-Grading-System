@@ -24,7 +24,15 @@ public enum TextColor {
 
     /** Get action tag such as [INFO] with its color */
     public String getActionTag() {
-        return apply("[" + this.toString() + "]");
+        return getActionTag(this.toString());
+    }
+
+    /**
+     * Get action tag such as [INFO] with its color
+     * @param s text to be put inside the square brackets
+     */
+    public String getActionTag(String s) {
+        return apply("[" + s + "]");
     }
 
 }

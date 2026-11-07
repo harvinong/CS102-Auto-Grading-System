@@ -29,7 +29,7 @@ public record CacheReport(Path workingDir, List<ValidationEvent> events, int cre
         for (ValidationEvent event : events) {
             // Ignored junk is not printed here; AutoGradeMenu.runGrader logs it quietly through ErrorReporter.ignored.
             if (event.type() == ValidationEvent.Type.IGNORED_JUNK) continue;
-            out.println(event.getTagWithColor() + event.path() + " - " + event.message());
+            out.println(event.getLogMessage());
         }
         if (usable) {
             out.println("New: " + created + ", reused from an earlier run: " + reused

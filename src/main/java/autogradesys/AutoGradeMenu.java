@@ -268,10 +268,16 @@ public class AutoGradeMenu {
 
     /** Menu Option 5: clear the cache folder */
     private void clearCache() {
-        // TODO: implement clearCache()
+        Path cachePath = AppSettings.load().getCacheDir();
+
+        if (!cachePath.toFile().exists()) {
+            System.out.printf("\n%s Cache has been cleared\n\n", TextColor.INFO.getActionTag());
+            return;
+        }
+
         System.out.printf("\n%s Clearing cache...\n", TextColor.INFO.getActionTag());
         try {
-            FolderDeleter.delete(AppSettings.load().getCacheDir());
+            FolderDeleter.delete(cachePath);
             System.out.printf("%s Cache cleared\n", TextColor.SUCCESS.getActionTag());
         } catch (IOException e) {
             System.out.printf("%s %s\n", TextColor.ERROR.getActionTag(), e.getMessage());
