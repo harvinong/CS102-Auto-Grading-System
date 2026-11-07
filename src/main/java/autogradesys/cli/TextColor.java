@@ -22,4 +22,9 @@ public enum TextColor {
         return this.prefixEscapeCode + s + SUFFIX_ESCAPE_SEQUENCE;
     }
 
+    /** Get action tag such as [INFO] with its color */
+    public String getActionTag() {
+        return apply("[" + this.toString() + "]");
+    }
+
 }

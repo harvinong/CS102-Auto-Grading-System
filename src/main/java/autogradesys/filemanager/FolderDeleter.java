@@ -1,4 +1,4 @@
-package autogradesys.submission;
+package autogradesys.filemanager;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -9,11 +9,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Deletes a folder together with everything inside it. */
-final class FolderDeleter {
+public final class FolderDeleter {
     private FolderDeleter() {
     }
 
-    static void delete(Path folder) throws IOException {
+    public static void delete(Path folder) throws IOException {
         if (!Files.exists(folder)) {
             return;
         }

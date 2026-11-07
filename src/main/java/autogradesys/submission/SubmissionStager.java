@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import autogradesys.config.AppSettings;
+import autogradesys.filemanager.FolderDeleter;
 import autogradesys.grading.ErrorReporter;
 
 /**

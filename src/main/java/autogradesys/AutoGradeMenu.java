@@ -8,13 +8,15 @@ import java.nio.file.Path;
 import java.util.Scanner;
 
 import autogradesys.cli.Input;
+import autogradesys.cli.TextColor;
+import autogradesys.config.AppSettings;
+import autogradesys.filemanager.FolderDeleter;
 import autogradesys.cli.Field;
 import autogradesys.grading.ErrorHistory;
 import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
 import autogradesys.grading.HtmlReportWriter;
 import autogradesys.grading.JavaGrader;
-// Feature import: the read-only submission check.
 import autogradesys.preflight.SubmissionPreflight;
 import autogradesys.validation.CacheReport;
 
@@ -58,11 +60,17 @@ public class AutoGradeMenu {
                 case "3":
                     runGrader();
                     break;
+                case "4":
+                    viewRecentReport();
+                    break;
+                case "5":
+                    clearCache();
+                    break;
                 case "0":
                     System.out.println("\nThank you for using!");
                     break;
                 default:
-                    System.out.println("\nPlease enter a number between 0 and 3.\n");
+                    System.out.println("\nPlease enter a number between 0 and 5.\n");
                     break;
             }
         } while (!menuOption.equals("0"));
@@ -206,25 +214,25 @@ public class AutoGradeMenu {
     }
 
     // -- Displays --
-    private void displayTitle() {
+    private void displayMenuTitle() {
         System.out.println("+== Auto-Grading System ==+");
     }
 
-    /**
-     * Display the options and the "Enter option" prompt.
-     */
+    /** Display the options and the "Enter option" prompt. */
     private void displayMenu() {
-        displayTitle();
+        displayMenuTitle();
         System.out.println("1. View configuration paths");
         System.out.println("2. Edit configuration paths");
         System.out.println("3. Grade students (run auto-grader)");
+        System.out.println("4. View Recent HTML Report");
+        System.out.println("5. Clear Grading Cache");
         System.out.println("0. Quit Application");
         System.out.print("Enter option: ");
     }
 
     /** display the new view for new user, while setting the config files. */
     private void newView() {
-        displayTitle();
+        displayMenuTitle();
         System.out.println();
         System.out.println(getWelcomeText());
         System.out.println();
@@ -232,7 +240,8 @@ public class AutoGradeMenu {
         inputConfig(true);
     }
 
-    /** shows all the configurations set */
+    // -- Menu Actions --
+    /** Menu Option 1: shows all the configurations set */
     private void viewConfig() {
         System.out.println();
         System.out.println("__ Configuration __");
@@ -246,9 +255,29 @@ public class AutoGradeMenu {
         System.out.println();
     }
 
-    /** edit the configurations */
+    /** Menu Option 2: edit the configurations */
     private void editConfig() {
         inputConfig(false);
+    }
+
+    /** Menu Option 4: open the recent html report */
+    private void viewRecentReport() {
+        // TODO: implement viewRecentReport()
+        System.out.println("\nViewing recent report\n");
+    }
+
+    /** Menu Option 5: clear the cache folder */
+    private void clearCache() {
+        // TODO: implement clearCache()
+        System.out.printf("\n%s Clearing cache...\n", TextColor.INFO.getActionTag());
+        try {
+            FolderDeleter.delete(AppSettings.load().getCacheDir());
+            System.out.printf("%s Cache cleared\n", TextColor.SUCCESS.getActionTag());
+        } catch (IOException e) {
+            System.out.printf("%s %s\n", TextColor.ERROR.getActionTag(), e.getMessage());
+        } finally {
+            System.out.println();
+        }
     }
 
     // Helper functions
