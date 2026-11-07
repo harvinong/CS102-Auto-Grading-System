@@ -33,10 +33,21 @@ public record PreflightReport(String templateName, List<String> students, List<P
                 .anyMatch(f -> f.student().equals(student) && f.severity() == Severity.ERROR);
     }
 
-    // How many students have no ERROR finding.
+    // True when this folder carries the template's name; grading skips it, so it is neither ready nor needing attention.
+    public boolean templateCopy(String student) {
+        return findings.stream()
+                .anyMatch(f -> f.student().equals(student) && f.category() == PreflightFinding.Category.TEMPLATE_COPY);
+    }
+
+    // How many students have no ERROR finding (template copies are not graded, so they are not counted).
     public long readyCount() {
         // Count the students who do not need attention.
-        return students.stream().filter(s -> !needsAttention(s)).count();
+        return students.stream().filter(s -> !templateCopy(s) && !needsAttention(s)).count();
+    }
+
+    // How many folders are template copies that grading skips.
+    public long notGradedCount() {
+        return students.stream().filter(this::templateCopy).count();
     }
 
     // How many findings have the given severity (used for the summary line).
@@ -78,10 +89,11 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
         // Then one block per student, already sorted by name.
         for (String student : students) {
-            // Decide the status word for this student.
-            boolean attention = needsAttention(student);
+            // Decide the status word for this student: a template copy is skipped by grading whatever else it has.
+            String status = templateCopy(student) ? "not graded"
+                    : needsAttention(student) ? "needs attention" : "ready";
             // Name, dots, then the status.
-            out.println(pad(student) + (attention ? "needs attention" : "ready"));
+            out.println(pad(student) + status);
             // List that student's findings underneath, in discovery order.
             for (PreflightFinding f : findings) {
                 // Only findings that belong to this student.
@@ -91,11 +103,13 @@ public record PreflightReport(String templateName, List<String> students, List<P
             }
         }
 
-        // Students without an ERROR finding are ready.
+        // Students without an ERROR finding are ready; template copies are counted on their own.
         long ready = readyCount();
+        long notGraded = notGradedCount();
         // One-line summary with all the counts.
         out.println("Checked " + students.size() + " submissions: "
-                + ready + " ready, " + (students.size() - ready) + " need attention ("
+                + ready + " ready, " + (students.size() - ready - notGraded) + " need attention"
+                + (notGraded > 0 ? ", " + notGraded + " not graded" : "") + " ("
                 + "errors: " + count(Severity.ERROR) + ", warnings: " + count(Severity.WARNING)
                 + ", notes: " + count(Severity.NOTE) + ").");
         // Remind the reader what this check does not do.

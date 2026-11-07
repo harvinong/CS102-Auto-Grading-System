@@ -55,7 +55,8 @@ class AppTest {
         Process process = new ProcessBuilder("java", "-cp", "target/classes", "autogradesys.App",
                 "--non-interactive", "--submissions-dir", root.resolve("submissions").toString(),
                 "--questions-dir", questions.getParent().toString(), "--scoresheet",
-                root.resolve("missing.csv").toString(), "--history", history.toString())
+                root.resolve("missing.csv").toString(), "--history", history.toString(),
+                "--report", root.resolve("report.html").toString())
                 .redirectErrorStream(true).start();
         assertTrue(process.waitFor(10, TimeUnit.SECONDS));
         assertEquals(1, process.exitValue());

@@ -10,14 +10,14 @@ public final class SubmissionUnzipper {
     private SubmissionUnzipper() {
     }
 
-    /** Compatibility facade. ArchiveExtractor is the sole extraction implementation. */
-    public static void unzip(Path zipFile, Path targetFolder) throws IOException {
+    /** Compatibility facade. ArchiveExtractor is the sole extraction implementation; returns how many files were written. */
+    public static int unzip(Path zipFile, Path targetFolder) throws IOException {
         if (java.nio.file.Files.isDirectory(targetFolder)) {
             try (java.util.stream.Stream<Path> files = java.nio.file.Files.list(targetFolder)) {
                 if (files.findAny().isPresent()) throw new IOException("target folder is not empty");
             }
             java.nio.file.Files.delete(targetFolder);
         }
-        ArchiveExtractor.extract(zipFile, targetFolder);
+        return ArchiveExtractor.extract(zipFile, targetFolder);
     }
 }

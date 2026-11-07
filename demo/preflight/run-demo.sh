@@ -17,8 +17,8 @@ cp "$D/scores.csv" "$WORK/scores.csv"
 # The program writes config.json, its error history and its HTML report into its working directory.
 mkdir "$WORK/run" && cd "$WORK/run"
 # Type the answers a user would: starting folder, testers folder, scoresheet, menu option 3,
-# the submissions folder, then 0 to quit.
-printf '%s\n' "$D/RenameToYourStudentID" "$D/testers" "$WORK/scores.csv" 3 "$WORK/submissions" 0 \
+# the submissions folder, 3 to start grading after the submission check, then 0 to quit.
+printf '%s\n' "$D/RenameToYourStudentID" "$D/testers" "$WORK/scores.csv" 3 "$WORK/submissions" 3 0 \
   | java -cp "$REPO/classes:$REPO/lib/*" autogradesys.App
 # Show the marks that were written, then clean up.
 echo

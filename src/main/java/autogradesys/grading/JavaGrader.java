@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -53,6 +54,19 @@ public final class JavaGrader {
      */
     public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             Duration timeout, long outputLimitBytes, ErrorReporter reporter) {
+        // No folder is a template copy when the caller does not know the starter template.
+        return grade(submissionsRoot, questionsRoot, scoresheet, timeout, outputLimitBytes, Set.of(), reporter);
+    }
+
+    /**
+     * Same as {@link #grade(Path, Path, Path, Duration, long, ErrorReporter)}, but skips the named
+     * submission folders: copies of the starter template (such as RenameToYourStudentID) that are not
+     * a student's work, so grading them would only add errors and a missing scoresheet row.
+     *
+     * @param templateCopies names of submission folders to leave out of grading
+     */
+    public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
+            Duration timeout, long outputLimitBytes, Set<String> templateCopies, ErrorReporter reporter) {
         // Step 1 of grading: validate the capture limit up front, since a limit of zero or less could never hold any output.
         if (outputLimitBytes <= 0) {
             // Record a FATAL error: this is a setup mistake by the operator, not a student problem.
@@ -71,6 +85,14 @@ public final class JavaGrader {
         List<String> questions = questionNames(questionsRoot, reporter);
         // List one entry per student folder, also sorted, so the CSV rows and report follow a predictable order.
         List<Student> students = studentDirectories(submissionsRoot, reporter);
+        // Leave template copies out, saying so, so the instructor knows the folder was seen but not graded.
+        students = students.stream().filter(student -> {
+            if (!templateCopies.contains(student.name())) {
+                return true;
+            }
+            reporter.info("Not graded: " + student.name() + "/ is a copy of the starter template, not a student submission.");
+            return false;
+        }).toList();
         // Result table of student name -> (question name -> marks earned); LinkedHashMap keeps insertion order for the CSV.
         Map<String, Map<String, Integer>> scores = new LinkedHashMap<>();
         // Marks each question is worth, so the report can tell full marks from partial marks.

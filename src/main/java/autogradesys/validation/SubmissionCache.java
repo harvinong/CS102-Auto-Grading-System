@@ -132,9 +132,9 @@ public class SubmissionCache {
         boolean zip = SubmissionFiles.isZipFile(source);
         try {
             if (zip) {
-                SubmissionUnzipper.unzip(source, destination);
-                int files = 1;
-                return new ValidationEvent(student, Type.ARCHIVE_EXTRACTED, shown, "extracted " + files + " files");
+                int files = SubmissionUnzipper.unzip(source, destination);
+                return new ValidationEvent(student, Type.ARCHIVE_EXTRACTED, shown,
+                        "extracted " + files + (files == 1 ? " file" : " files"));
             }
             SubmissionFiles.copyMissing(source, destination);
             return null;
@@ -150,8 +150,11 @@ public class SubmissionCache {
         // Use the teammate iterator for the canonical named-archive discovery path.
         SubmissionIterator namedArchives = new SubmissionIterator(originals,
                 Pattern.compile("^\\d{4}-\\d{4}-(.+)\\.zip$", Pattern.CASE_INSENSITIVE));
+        // Zips already claimed under their username, so the loop below does not add them again under the full file name.
+        Set<Path> namedZips = new HashSet<>();
         for (Submission archive : namedArchives) {
             sources.putIfAbsent(archive.getUsername(), archive.getZipPath());
+            namedZips.add(archive.getZipPath());
         }
         List<Path> children;
         try (Stream<Path> stream = Files.list(originals)) {
@@ -176,7 +179,7 @@ public class SubmissionCache {
             } else if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
                 Path onlyZip = SubmissionFiles.onlyContentIsZip(child);
                 sources.putIfAbsent(name, onlyZip != null ? onlyZip : child);
-            } else if (SubmissionFiles.isZipFile(child)
+            } else if (SubmissionFiles.isZipFile(child) && !namedZips.contains(child)
                     && !folderNames.contains(SubmissionFiles.stem(name).toLowerCase(Locale.ROOT))) {
                 sources.putIfAbsent(SubmissionFiles.stem(name), child);
             }

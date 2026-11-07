@@ -7,9 +7,13 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Reads registered students from the title-based CSV scoresheet format. */
+/**
+ * Reads registered students from the CSV scoresheet. The username comes from a "Username" column
+ * (the title-based export) or, failing that, from the "student" column that grading writes marks into.
+ */
 public final class ScoresheetReader {
     private static final String USERNAME_COLUMN = "Username";
+    private static final String STUDENT_COLUMN = "student";
     private static final String EMAIL_COLUMN = "Email";
     private static final String FIRST_NAME_COLUMN = "First Name";
     private static final String LAST_NAME_COLUMN = "Last Name";
@@ -20,7 +24,10 @@ public final class ScoresheetReader {
         if (rows.isEmpty()) throw new IOException("The scoresheet is empty.");
         List<String> header = rows.get(0);
         int username = columnOf(header, USERNAME_COLUMN);
-        if (username < 0) throw new IOException("The scoresheet has no '" + USERNAME_COLUMN + "' column.");
+        if (username < 0) username = columnOf(header, STUDENT_COLUMN);
+        if (username < 0) {
+            throw new IOException("The scoresheet has no '" + USERNAME_COLUMN + "' or '" + STUDENT_COLUMN + "' column.");
+        }
         int email = columnOf(header, EMAIL_COLUMN);
         int first = columnOf(header, FIRST_NAME_COLUMN);
         int last = columnOf(header, LAST_NAME_COLUMN);

@@ -44,7 +44,7 @@ public class CLI {
                 String prompt = String.format("Enter %s%s: ",
                         fileField.getName(), defaultFile != null ? " (" + defaultFile.getName() + ")" : "");
 
-                Path filepath = promptPath(prompt, defaultFile != null ? defaultFile.toPath() : null, sc);
+                Path filepath = promptPath(prompt, fileField.getName(), defaultFile != null ? defaultFile.toPath() : null, sc);
                 file = getFile(filepath);
 
                 if (fileField.isDir()) {
@@ -91,7 +91,7 @@ public class CLI {
             System.out.print(String.format("Enter %s (%d): ", label, defaultValue));
             // Piped input can end mid-prompt; fail the same way promptPath does instead of spinning forever.
             if (!sc.hasNextLine()) {
-                throw new IllegalStateException("Input ended while waiting for " + label);
+                throw new InputEndedException(label);
             }
             // Trim so " 5 " counts as 5.
             String text = sc.nextLine().trim();
@@ -116,12 +116,13 @@ public class CLI {
     public static int promptOption(int min, int max, Scanner sc) {
         while (true) {
             System.out.print("Enter option: ");
-            if (!sc.hasNextLine()) throw new IllegalStateException("Input ended while waiting for option");
+            if (!sc.hasNextLine()) throw new InputEndedException("an option");
             try {
                 int option = Integer.parseInt(sc.nextLine().trim());
                 if (option >= min && option <= max) return option;
             } catch (NumberFormatException ignored) { }
-            System.out.print("Please enter a number from " + min + " to " + max + ": ");
+            // Same wording as the main menu; the loop then shows "Enter option: " again.
+            System.out.println("Please enter a number between " + min + " and " + max + ".");
         }
     }
 
@@ -129,7 +130,7 @@ public class CLI {
     public static boolean promptYesNo(String question, Scanner sc) {
         while (true) {
             System.out.print(question + " (Y/N): ");
-            if (!sc.hasNextLine()) throw new IllegalStateException("Input ended while waiting for confirmation");
+            if (!sc.hasNextLine()) throw new InputEndedException("a Y/N answer");
             String answer = sc.nextLine().trim();
             if (answer.equalsIgnoreCase("Y")) return true;
             if (answer.equalsIgnoreCase("N")) return false;
@@ -143,21 +144,27 @@ public class CLI {
      * Ask user for the filepath.
      *
      * @param prompt          The prompt that is printed in the terminal.
+     * @param label           What is being asked for, named if the input ends.
      * @param defaultFilePath The default file path.
      * @param sc              The reader to reads the user input.
      * @return The path the user has input in absolute form. If user inputs nothing,
      *         it returns [defaultFilePath].
-     * @throws IllegalArgumentException If the path is not absolute.
+     * @throws IllegalArgumentException If the path is blank (with no default) or not absolute.
      */
-    private static Path promptPath(String prompt, Path defaultFilePath, Scanner sc) throws IllegalArgumentException {
+    private static Path promptPath(String prompt, String label, Path defaultFilePath, Scanner sc)
+            throws IllegalArgumentException {
         System.out.print(prompt);
         if (!sc.hasNextLine()) {
-            throw new IllegalStateException("Input ended while waiting for " + prompt.trim());
+            throw new InputEndedException(label);
         }
         String pathString = sc.nextLine();
 
-        if (defaultFilePath != null && pathString.trim().length() == 0) {
-            return defaultFilePath;
+        if (pathString.trim().length() == 0) {
+            if (defaultFilePath != null) {
+                return defaultFilePath;
+            }
+            // Nothing typed and nothing to keep: ask for a path rather than complain that "" is not absolute.
+            throw new IllegalArgumentException("Please enter a path.");
         }
 
         Path dirpath = Paths.get(pathString);

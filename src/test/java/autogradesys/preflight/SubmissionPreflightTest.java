@@ -262,6 +262,12 @@ class SubmissionPreflightTest {
         PreflightReport r = run();
         // It is flagged as a probable template copy.
         assertEquals(1, of(r, "RenameToYourStudentID", Category.TEMPLATE_COPY).size());
+        // Grading skips it, so it is shown as not graded and counted on its own, not as ready.
+        assertEquals(0, r.readyCount());
+        assertEquals(1, r.notGradedCount());
+        String printed = printed(r);
+        assertTrue(printed.contains("RenameToYourStudentID ...... not graded"), printed);
+        assertTrue(printed.contains("Checked 1 submissions: 0 ready, 0 need attention, 1 not graded"), printed);
     }
 
     @Test

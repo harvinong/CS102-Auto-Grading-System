@@ -3,8 +3,10 @@ package autogradesys.config;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 
-/** @deprecated Runtime configuration is stored in config.json; retained only for source compatibility. */
-@Deprecated
+/**
+ * Fixed defaults for {@link autogradesys.submission.SubmissionStager}: the cache folder and the zip
+ * file-name pattern. The menu's own settings are stored in config.json.
+ */
 public final class AppSettings {
     private static final Path DEFAULT_CACHE_DIR = Path.of("cache");
     private static final Pattern DEFAULT_ZIP_NAME_PATTERN = Pattern.compile(

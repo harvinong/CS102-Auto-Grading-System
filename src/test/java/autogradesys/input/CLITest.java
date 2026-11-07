@@ -62,4 +62,42 @@ class CLITest {
     void endedInputFailsInsteadOfLooping() {
         assertThrows(IllegalStateException.class, () -> prompt("abc\n"));
     }
+
+    // Runs any prompt with the typed lines and returns what it printed (System.out is restored afterwards).
+    private static String printedBy(java.util.function.Consumer<Scanner> promptCall, String typed) {
+        PrintStream original = System.out;
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(captured));
+        try {
+            promptCall.accept(new Scanner(typed));
+        } finally {
+            System.setOut(original);
+        }
+        return captured.toString();
+    }
+
+    @Test
+    void optionPromptRepeatsWithTheMainMenuWording() {
+        String printed = printedBy(sc -> assertEquals(2, CLI.promptOption(0, 3, sc)), "abc\n9\n2\n");
+        // One message per bad answer, each followed by a fresh "Enter option: ".
+        assertEquals("Enter option: Please enter a number between 0 and 3.\n"
+                + "Enter option: Please enter a number between 0 and 3.\n"
+                + "Enter option: ", printed.replace("\r\n", "\n"));
+    }
+
+    @Test
+    void blankPathWithoutADefaultAsksForAPath() {
+        java.io.File existing = new java.io.File(System.getProperty("java.io.tmpdir")).getAbsoluteFile();
+        String printed = printedBy(sc -> assertEquals(existing,
+                CLI.promptFile(Field.TESTERS, null, sc)), "\n" + existing + "\n");
+        assertEquals(true, printed.contains("Invalid input: Please enter a path."), printed);
+        assertEquals(false, printed.contains("must be absolute"), printed);
+    }
+
+    @Test
+    void endedInputNamesWhatThePromptWaitedFor() {
+        InputEndedException ended = assertThrows(InputEndedException.class,
+                () -> printedBy(sc -> CLI.promptFile(Field.STARTING_FOLDER, null, sc), ""));
+        assertEquals("Input ended while waiting for Starting Folder", ended.getMessage());
+    }
 }

@@ -249,8 +249,8 @@ public final class SubmissionPreflight {
         // A folder named exactly like the template is probably the blank starter, not a student.
         if (student.equals(templateName)) {
             add(student, Category.TEMPLATE_COPY, Severity.WARNING, student + "/",
-                    "has the template's name, so it looks like the starter template",
-                    "Remove it from the submissions folder, or it would be graded as a student");
+                    "has the template's name, so it is treated as the blank starter template and not graded",
+                    "If it is a student's work, rename it to their username so it is graded");
         }
         // Scan the layout, allowing one level of wrapper folder.
         scanLayout(student, dir, true);
