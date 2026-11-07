@@ -35,22 +35,6 @@ public class AutoGradeMenu {
         }
     }
 
-    public void displayTitle() {
-        System.out.println("+== Auto-Grading System ==+");
-    }
-
-    /**
-     * Display the options and the "Enter option" prompt.
-     */
-    public void displayMenu() {
-        displayTitle();
-        System.out.println("1. View configuration paths");
-        System.out.println("2. Edit configuration paths");
-        System.out.println("3. Grade students (run auto-grader)");
-        System.out.println("0. Quit Application");
-        System.out.print("Enter option: ");
-    }
-
     public void readOption() {
         String menuOption;
         do {
@@ -83,34 +67,6 @@ public class AutoGradeMenu {
             }
         } while (!menuOption.equals("0"));
 
-    }
-
-    public void newView() {
-        // display new view for new user
-        displayTitle();
-        System.out.println();
-        System.out.println(getWelcomeText());
-        System.out.println();
-
-        // Ask for user input
-        inputConfig(true);
-    }
-
-    public void viewConfig() {
-        System.out.println();
-        System.out.println("__ Configuration __");
-        System.out.println("Starting folder: " + ctrl.getStartingFolder());
-        System.out.println("Testers folder:  " + ctrl.getTestersFolder());
-        System.out.println("Scoresheet file: " + ctrl.getScoresheetFile());
-        // The two grading limits come from config.json (or the defaults when it has none), 
-        // so show what grading will really use.
-        System.out.println("Grading timeout: " + ctrl.getTimeoutSeconds() + " second(s) per process");
-        System.out.println("Output limit:    " + ctrl.getOutputLimitBytes() + " bytes per process");
-        System.out.println();
-    }
-
-    public void editConfig() {
-        inputConfig(false);
     }
 
     /**
@@ -217,7 +173,53 @@ public class AutoGradeMenu {
                 result.studentCount(), result.issueCount());
     }
 
-    // Helper function
+    // -- Displays --
+    private void displayTitle() {
+        System.out.println("+== Auto-Grading System ==+");
+    }
+
+    /**
+     * Display the options and the "Enter option" prompt.
+     */
+    private void displayMenu() {
+        displayTitle();
+        System.out.println("1. View configuration paths");
+        System.out.println("2. Edit configuration paths");
+        System.out.println("3. Grade students (run auto-grader)");
+        System.out.println("0. Quit Application");
+        System.out.print("Enter option: ");
+    }
+
+    /** display the new view for new user, while setting the config files. */
+    private void newView() {
+        displayTitle();
+        System.out.println();
+        System.out.println(getWelcomeText());
+        System.out.println();
+
+        inputConfig(true);
+    }
+
+    /** shows all the configurations set */
+    private void viewConfig() {
+        System.out.println();
+        System.out.println("__ Configuration __");
+        System.out.println("Starting folder: " + ctrl.getStartingFolder());
+        System.out.println("Testers folder:  " + ctrl.getTestersFolder());
+        System.out.println("Scoresheet file: " + ctrl.getScoresheetFile());
+        // The two grading limits come from config.json (or the defaults when it has none), 
+        // so show what grading will really use.
+        System.out.println("Grading timeout: " + ctrl.getTimeoutSeconds() + " second(s) per process");
+        System.out.println("Output limit:    " + ctrl.getOutputLimitBytes() + " bytes per process");
+        System.out.println();
+    }
+
+    /** edit the configurations */
+    private void editConfig() {
+        inputConfig(false);
+    }
+
+    // Helper functions
     private void inputConfig(boolean askNewFiles) {
         File startingFolder = CLI.promptFile(
                 Field.STARTING_FOLDER,
