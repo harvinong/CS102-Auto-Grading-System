@@ -113,6 +113,15 @@ public class Input {
         }
     }
 
+    /**Prompt an option, which is a number from <code>min</code> to <code>max</code>
+     * with 0 usually used to go to the previous menu or exit the program.
+     * 
+     * @param min the lowest option
+     * @param max the highest option
+     * @param sc the Scanner instance to read user input
+     * @return option
+     * @throws InputEndedException
+     */
     public static int promptOption(int min, int max, Scanner sc) {
         while (true) {
             System.out.print("Enter option: ");

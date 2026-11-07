@@ -42,42 +42,33 @@ public class AutoGradeMenu {
     }
 
     public void readOption() {
-        String menuOption;
+        int menuOption;
         do {
             displayMenu();
-            
-            // Piped or closed input has no next line; stop cleanly instead of throwing NoSuchElementException.
-            if (!sc.hasNextLine()) {
-                System.out.println("\nInput ended; exiting.");
-                return;
-            }
-            menuOption = sc.nextLine().trim();
+            menuOption = Input.promptOption(0, 5, sc);
 
             // Dispatch the choice: 1 and 2 manage configuration, 3 runs the grading flow, 0 quits.
             switch (menuOption) {
-                case "1":
+                case 1:
                     viewConfig();
                     break;
-                case "2":
+                case 2:
                     editConfig();
                     break;
-                case "3":
+                case 3:
                     runGrader();
                     break;
-                case "4":
+                case 4:
                     viewRecentReport();
                     break;
-                case "5":
+                case 5:
                     clearCache();
                     break;
-                case "0":
+                case 0:
                     System.out.println("\nThank you for using!");
                     break;
-                default:
-                    System.out.println("\nPlease enter a number between 0 and 5.\n");
-                    break;
             }
-        } while (!menuOption.equals("0"));
+        } while (menuOption != 0);
 
     }
 
@@ -138,52 +129,54 @@ public class AutoGradeMenu {
         if (ignoredTotal > 0) System.out.println(ignoredTotal + " ignored files logged to the error report.");
         // A fatal finding means the template or submissions folder is unusable, so grading would only produce noise.
         if (preflight.fatal()) {
-            // Print the same banner as a normal run so the output layout is the same either way.
-            System.out.println("\nRunning autograder!\n");
             // Say plainly that grading did not start, so nobody mistakes the empty result for a pass.
-            System.out.println("Autograder not started because submission setup is invalid.");
+            System.out.printf("%n%s Autograder not started because submission setup is invalid.%n%n", TextColor.ERROR.getActionTag());
             // Back to the menu without touching the scoresheet, history or report.
             return;
         }
+
         // Keep the validation feature reachable: the instructor may fix, recheck, or proceed.
         // The loop only ends by returning (option 0) or breaking out (option 3).
-        while (true) {
+        int choice;
+        do {
             // The four choices offered after each preflight report.
             System.out.println("1. Fix common mistakes automatically");
             System.out.println("2. Check the working copy again");
             System.out.println("3. Start grading");
             System.out.println("0. Cancel and return to the main menu");
             // Read a whole number from 0 to 3, asking again on bad input.
-            int choice = Input.promptOption(0, 3, sc);
+            choice = Input.promptOption(0, 3, sc);
           
-            // Cancel: leave without grading, so no scoresheet, history or report changes happen.
-            if (choice == 0) return;
-            // Start grading: leave this loop and carry on with the banner and JavaGrader below.
-            if (choice == 3) break;
-            // Re-check only: useful after the instructor edited the working copy by hand.
-            if (choice == 2) {
-                // Run the layout check again so the report reflects the edits.
-                preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
-                // Show the fresh report before offering the choices again.
-                preflight.print(System.out);
-            } else {
-                // Choice 1: run the automatic fixes (headers, folder names, missing files), asking yes/no questions where a fix is a guess.
-                try {
-                    ctrl.validateSubmissions(gradingPath, preflight, question -> Input.promptYesNo(question, sc)).print(System.out);
-                // A fix that cannot read or write the working copy ends up here.
-                } catch (IOException exception) {
-                    // Tell the instructor and fall through to the re-check, so they still see the current state.
-                    System.out.println("Could not validate the submissions: " + exception.getMessage());
-                }
-                // Check again after the fixes, because the earlier report no longer describes the copy.
-                preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
-                // Show the updated report.
-                preflight.print(System.out);
+            switch (choice) {
+                case 1:
+                    // run the automatic fixes (headers, folder names, missing files), asking yes/no questions where a fix is a guess.
+                    try {
+                        ctrl.validateSubmissions(gradingPath, preflight, question -> Input.promptYesNo(question, sc)).print(System.out);
+                    // A fix that cannot read or write the working copy ends up here.
+                    } catch (IOException exception) {
+                        // Tell the instructor and fall through to the re-check, so they still see the current state.
+                        System.out.println(TextColor.ERROR.getActionTag() + " Could not validate the submissions: " + exception.getMessage());
+                    }
+                    // Check again after the fixes, because the earlier report no longer describes the copy.
+                    preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
+                    // Show the updated report.
+                    preflight.print(System.out);
+                    break;
+                case 2:
+                    // Run the layout check again so the report reflects the edits.
+                    preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
+                    // Show the fresh report before offering the choices again.
+                    preflight.print(System.out);
+                    break;
+                case 0:
+                    // Cancel: leave without grading, so no scoresheet, history or report changes happen.
+                    System.out.println(); // Pad the inner menu to the main menu
+                    return;
             }
-        }
+        } while (choice != 3);
 
         // Separate the preflight report from the grading output with a blank line and a banner.
-        System.out.println("\nRunning autograder!\n");
+        System.out.printf("%n%s Running autograder!%n", TextColor.INFO.getActionTag());
         // A zip or folder that could not be put into the working copy is not graded; record it so it is in the report and history too.
         for (autogradesys.validation.ValidationEvent event : working.events()) {
             // Fixed events (for example a zip that extracted fine) are not problems; only the failed ones are recorded.
@@ -211,8 +204,8 @@ public class AutoGradeMenu {
             System.out.println("Could not write HTML report: " + exception.getMessage());
         }
         // Final one-line summary: students graded and total issues recorded (fatal or not).
-        System.out.printf("Completed: %d submission(s), %d reported issue(s).%n",
-                result.studentCount(), result.issueCount());
+        System.out.printf("%s Completed: %d submission(s), %d reported issue(s).%n%n",
+                TextColor.INFO.getActionTag(), result.studentCount(), result.issueCount());
     }
 
     // -- Displays --
@@ -229,7 +222,6 @@ public class AutoGradeMenu {
         System.out.println("4. View Recent HTML Report");
         System.out.println("5. Clear Grading Cache");
         System.out.println("0. Quit Application");
-        System.out.print("Enter option: ");
     }
 
     /** display the new view for new user, while setting the config files. */
@@ -262,12 +254,12 @@ public class AutoGradeMenu {
 
     /** Menu Option 4: open the recent html report */
     private void viewRecentReport() {
-        System.out.printf("\n%s Viewing recent report...\n", TextColor.INFO.getActionTag());
+        System.out.printf("%n%s Viewing recent report...%n", TextColor.INFO.getActionTag());
         try {
             Desktop.getDesktop().open(HtmlReportWriter.HTML_REPORT_PATH.toFile());
-            System.out.printf("%s Opened on your browser!\n", TextColor.SUCCESS.getActionTag());
+            System.out.printf("%s Opened on your browser!%n", TextColor.SUCCESS.getActionTag());
         } catch (IOException e) {
-            System.out.printf("%s %s\n", TextColor.ERROR.getActionTag(), e.getMessage());
+            System.out.printf("%s %s%n", TextColor.ERROR.getActionTag(), e.getMessage());
         } finally {
             System.out.println();
         }
@@ -278,16 +270,16 @@ public class AutoGradeMenu {
         Path cachePath = AppSettings.load().getCacheDir();
 
         if (!cachePath.toFile().exists()) {
-            System.out.printf("\n%s Cache has been cleared\n\n", TextColor.INFO.getActionTag());
+            System.out.printf("%n%s Cache has been cleared%n%n", TextColor.INFO.getActionTag());
             return;
         }
 
-        System.out.printf("\n%s Clearing cache...\n", TextColor.INFO.getActionTag());
+        System.out.printf("%n%s Clearing cache...%n", TextColor.INFO.getActionTag());
         try {
             FolderDeleter.delete(cachePath);
-            System.out.printf("%s Cache cleared\n", TextColor.SUCCESS.getActionTag());
+            System.out.printf("%s Cache cleared%n", TextColor.SUCCESS.getActionTag());
         } catch (IOException e) {
-            System.out.printf("%s %s\n", TextColor.ERROR.getActionTag(), e.getMessage());
+            System.out.printf("%s %s%n", TextColor.ERROR.getActionTag(), e.getMessage());
         } finally {
             System.out.println();
         }
@@ -324,9 +316,9 @@ public class AutoGradeMenu {
         boolean saveSuccess = ctrl.saveConfig(startingFolder, testers, scoresheet, timeoutSeconds, outputLimitBytes);
 
         if (saveSuccess) {
-            System.out.println("\nConfiguration saved!\n");
+            System.out.printf("%n%s Configuration saved!%n%n", TextColor.SUCCESS.getActionTag());
         } else {
-            System.out.println("\nSave unsuccessful\n");
+            System.out.printf("%n%s Save unsuccessful%n%n", TextColor.ERROR.getActionTag());
         }
     }
 
