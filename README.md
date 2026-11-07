@@ -12,7 +12,7 @@ Running untrusted submissions safely would require OS or container isolation, wh
 ## Prerequisites
 
 - JDK 17 or newer, with both `java` and `javac` on `PATH`
-- Maven 3.9 or newer
+- Maven 3.9 or newer (for development and tests only)
 
 Check the tools with:
 
@@ -40,6 +40,10 @@ java -jar target/CS102-Auto-Grading-System-1.0-SNAPSHOT.jar
 The jar bundles its runtime dependencies.
 
 Maven builds and tests the auto-grader itself. A student submission is deliberately not a Maven project: the assignment fixture is source-file based, so the grader passes a source path to bounded `javac` and runs the resulting `Main` class with bounded `java`. Neither subprocess uses a shell, so student-controlled paths and text are not interpolated into shell commands.
+
+## Run without Maven
+
+The submission includes portable scripts for assessment. From the repository root, run `./compile.sh` followed by `./run.sh` (or `compile.bat` and `run.bat` on Windows). The scripts compile the application into `classes` and use only the checked-in runtime jars in `lib`; no network or Maven installation is required. `run.sh demo` runs the checked-in demo.
 
 ## Run the checked-in demo
 
