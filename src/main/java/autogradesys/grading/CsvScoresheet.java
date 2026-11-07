@@ -64,6 +64,24 @@ public final class CsvScoresheet {
         }
     }
 
+    /** Creates a current-format scoresheet and writes the supplied student scores. */
+    public static void create(Path path, Map<String, Map<String, Integer>> scores) throws IOException {
+        Set<String> questions = new LinkedHashSet<>();
+        for (Map<String, Integer> student : scores.values()) questions.addAll(student.keySet());
+        List<String> header = new ArrayList<>();
+        header.add("student");
+        header.addAll(questions);
+        List<List<String>> rows = new ArrayList<>();
+        rows.add(header);
+        for (Map.Entry<String, Map<String, Integer>> entry : scores.entrySet()) {
+            List<String> row = new ArrayList<>(); row.add(entry.getKey());
+            for (String question : questions) row.add(String.valueOf(entry.getValue().getOrDefault(question, 0)));
+            rows.add(row);
+        }
+        Files.writeString(path, render(rows), StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+    }
+
     // Called by JavaGrader at the end of grading; returns true only if the file was replaced successfully.
     /**
      * Applies the supplied scores and replaces the file only after rendering succeeds.

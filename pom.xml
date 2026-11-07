@@ -36,11 +36,6 @@
       <version>2.16.1</version>
     </dependency>
     
-    <dependency>
-      <groupId>info.debatty</groupId>
-      <artifactId>java-string-similarity</artifactId>
-      <version>RELEASE</version>
-    </dependency>
 
     <!-- Dependencies for Test -->
     <dependency>

@@ -58,7 +58,7 @@ public class SubmissionStager {
             if (!stagingRoot.equals(target.getParent())) {
                 throw new IOException("the username cannot be used as a folder name");
             }
-            Files.createDirectories(target);
+            // ArchiveExtractor creates the destination atomically and enforces zip-slip/size limits.
             SubmissionUnzipper.unzip(submission.getZipPath(), target);
         } catch (IOException | RuntimeException e) {
             deleteQuietly(target, stagingRoot);

@@ -1,45 +1,23 @@
 package autogradesys.submission;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Enumeration;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+
+import autogradesys.validation.ArchiveExtractor;
 
 /** Unzips one student's zip file into a folder, and refuses files that would end up outside it. */
 public final class SubmissionUnzipper {
     private SubmissionUnzipper() {
     }
 
+    /** Compatibility facade. ArchiveExtractor is the sole extraction implementation. */
     public static void unzip(Path zipFile, Path targetFolder) throws IOException {
-        try (ZipFile zip = new ZipFile(zipFile.toFile())) {
-            Enumeration<? extends ZipEntry> entries = zip.entries();
-
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-                String name = entry.getName();
-
-                if (name.contains("__MACOSX/") || name.endsWith(".DS_Store")) {
-                    continue;
-                }
-
-                Path out = targetFolder.resolve(name).normalize();
-                if (!out.startsWith(targetFolder)) {
-                    throw new IOException("Unsafe path in zip: " + name);
-                }
-
-                if (entry.isDirectory()) {
-                    Files.createDirectories(out);
-                } else {
-                    Files.createDirectories(out.getParent());
-                    try (InputStream in = zip.getInputStream(entry)) {
-                        Files.copy(in, out, StandardCopyOption.REPLACE_EXISTING);
-                    }
-                }
+        if (java.nio.file.Files.isDirectory(targetFolder)) {
+            try (java.util.stream.Stream<Path> files = java.nio.file.Files.list(targetFolder)) {
+                if (files.findAny().isPresent()) throw new IOException("target folder is not empty");
             }
+            java.nio.file.Files.delete(targetFolder);
         }
+        ArchiveExtractor.extract(zipFile, targetFolder);
     }
 }
