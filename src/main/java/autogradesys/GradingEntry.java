@@ -38,7 +38,7 @@ class PerStudentListener implements TestExecutionListener {
         System.out.println("FAILED: " + testIdentifier.getDisplayName());
         result.getThrowable().ifPresent(t -> {
             System.out.println("  Reason: " + t);
-            t.printStackTrace();
+            
         });
     }
         boolean passed = result.getStatus() == TestExecutionResult.Status.SUCCESSFUL;

@@ -6,7 +6,6 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -99,10 +98,10 @@ public class StudentFileExec {
                     new Class<?>[]{ String.class, String.class },
                     List.of(
                             TestCase.expectValue("(is442.txt,LEE)", new Object[]{"is442.txt", "LEE"}, -1.0),
-                            TestCase.expectValue("(persontester.txt,TAY)", new Object[]{"persontester.txt", "TAY"}, 30.0),
-                            TestCase.expectValue("(persontester.txt,LEE)", new Object[]{"persontester.txt", "LEE"}, 37.0),
-                            TestCase.expectValue("(persontester.txt,Wong)", new Object[]{"persontester.txt", "Wong"}, 26.0),
-                            TestCase.expectValue("(persontester.txt,Ong)", new Object[]{"persontester.txt", "Ong"}, 0.0)
+                            TestCase.expectValue("(persontester.txt,TAY)", new Object[]{"personstester.txt", "TAY"}, 30.0),
+                            TestCase.expectValue("(persontester.txt,LEE)", new Object[]{"personstester.txt", "LEE"}, 37.0),
+                            TestCase.expectValue("(persontester.txt,Wong)", new Object[]{"personstester.txt", "Wong"}, 26.0),
+                            TestCase.expectValue("(persontester.txt,Ong)", new Object[]{"personstester.txt", "Ong"}, 0.0)
 
                     )
             ),
@@ -298,47 +297,51 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
 
     try {
         Class<?> studentClass = Class.forName(className, true, loader);
-        Object instance = studentClass.getDeclaredConstructor().newInstance();
+        
         Method method = studentClass.getMethod(spec.methodName(), spec.paramTypes());
 
         return spec.testCases().stream().map(tc ->
     (DynamicNode) DynamicTest.dynamicTest(tc.label(), () -> {
-        List<Path> copiedFiles = copyResourceFilesToWorkingDir(questionDir);
-        try {
-            if (tc.expectedException() != null) {
+    List<Path> copiedFiles = copyResourceFilesToWorkingDir(questionDir);
+    try {
+        Object[] realArgs = resolveArgs(tc.args(), loader);
+        Object freshInstance = studentClass.getDeclaredConstructor().newInstance();
+
+        if (tc.expectedException() != null) {
             Throwable thrown = null;
             try {
-                method.invoke(instance, tc.args());
+                method.invoke(freshInstance, realArgs);
             } catch (java.lang.reflect.InvocationTargetException e) {
                 thrown = e.getCause();
             }
-
             if (thrown == null) {
                 throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
                         + " expected " + tc.expectedException() + " but no exception was thrown");
             }
-
-            // Compare by simple class name, cos cant get dynamically loaded classes
-            String actualExceptionName = thrown.getClass().getSimpleName();
-            if (!actualExceptionName.equals(tc.expectedException())) {
+            String actualName = thrown.getClass().getSimpleName();
+            if (!actualName.equals(tc.expectedException())) {
                 throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
-                        + " expected exception type " + tc.expectedException()
-                        + " but got " + actualExceptionName, thrown);
+                        + " expected " + tc.expectedException() + " but got " + actualName, thrown);
             }
-            // correct exception type thrown - passes
-            } else {
-                // Normal value-comparison case
-                Object[] realArgs = resolveArgs(tc.args(), studentClass.getClassLoader());
-                Object actual = method.invoke(instance, realArgs);
-                assertEquals(tc.expected(), actual,
-                        () -> className + "." + spec.methodName() + " failed on " + tc.label());
+        } else {
+            Object actual;
+            try {
+                
+                actual = method.invoke(freshInstance, realArgs);
+            } catch (java.lang.reflect.InvocationTargetException e) {     
+                throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
+                        + " threw " + e.getCause(), e.getCause());
             }
 
-        } finally {
-            cleanupCopiedFiles(copiedFiles);
+            Object expected = tc.expected();
+          
+            assertEquals(expected, actual,
+                    () -> className + "." + spec.methodName() + " failed on " + tc.label());
         }
-    })
-);
+    } finally {
+        cleanupCopiedFiles(copiedFiles);
+    }
+}));
 
     } catch (NoSuchMethodException e) {
         return Stream.of(DynamicTest.dynamicTest(
@@ -408,7 +411,7 @@ private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles,
         if (d.getSource() == null) continue;
         String fileName = Paths.get(d.getSource().toUri()).getFileName().toString();
         errorsByFile.computeIfAbsent(fileName, k -> new ArrayList<>()).add(d.toString());
-    }
+        }
 
     return new CompileAttempt(success, errorsByFile);
 }
@@ -416,26 +419,45 @@ private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles,
 
 
     private List<Path> copyResourceFilesToWorkingDir(Path questionDir) throws Exception {
-    Path workingDir = Paths.get("").toAbsolutePath(); // the JVM's actual cwd
-    List<Path> resourceFiles = Files.list(questionDir)
-            .filter(p -> !p.toString().endsWith(".java"))
-            .toList();
+        Path workingDir = Paths.get("").toAbsolutePath();
+        List<Path> copiedPaths = new ArrayList<>();
 
-    List<Path> copiedPaths = new java.util.ArrayList<>();
-    for (Path src : resourceFiles) {
-        Path dest = workingDir.resolve(src.getFileName());
-        Files.copy(src, dest, StandardCopyOption.REPLACE_EXISTING);
-        copiedPaths.add(dest);
-    }
+        List<Path> resourceFiles;
+        try (Stream<Path> stream = Files.list(questionDir)) { 
+            resourceFiles = stream
+                    .filter(Files::isRegularFile)                        
+                    .filter(p -> !p.toString().endsWith(".java"))
+                    .filter(p -> !p.toString().endsWith(".class"))        
+                    .toList();
+        }
+
+        try {
+            for (Path src : resourceFiles) {
+                Path dest = workingDir.resolve(src.getFileName());
+                if (Files.exists(dest)) {                                 
+                    throw new IllegalStateException("Refusing to overwrite existing file in working dir: " + dest);
+                }
+                Files.copy(src, dest);
+                copiedPaths.add(dest);
+                
+            }
+        } catch (Exception e) {                                          
+            cleanupCopiedFiles(copiedPaths);
+            throw e;
+        }
     return copiedPaths;
-}
+    }
 
     private void cleanupCopiedFiles(List<Path> copiedFiles) {
         for (Path p : copiedFiles) {
-            try {
-                Files.deleteIfExists(p);
-            } catch (Exception ignored) {
-                
+            for (int attempt = 0; attempt < 3; attempt++) {
+                try {
+                    Files.deleteIfExists(p);
+                    break;
+                } catch (Exception e) {
+                    if (attempt == 2) System.err.println("WARNING: could not delete " + p + ": " + e);
+                    else { System.gc(); try { Thread.sleep(50); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); } }
+                }
             }
         }
     }
