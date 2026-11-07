@@ -8,8 +8,8 @@ This program requires three configuration parameters:
 
 2. Tester Files Folder
    - A folder containing your tester files.
-   - One folder per question, each holding <Name>Tester.java
-     classes and the <Name>Tester.expected.txt output each
+   - One folder per question, each holding QxTester.java
+     classes and the QxTester.expected.txt output each
      must print. Every matching tester earns one mark.
 
 3. Scoresheet File

@@ -2,6 +2,20 @@
 
 This repository contains a small, local Java auto-grader demo. It compiles the grader with Maven, then grades student submissions with bounded `javac` and `java` subprocesses: either the instructor's tester classes against the CS102 template layout (menu option 3), or a raw student `Main.java` (the scripted `demo` argument). The demo needs no credentials, network access, or external service.
 
+## Index
+
+- [Safety and scope](#safety-and-scope)
+- [Prerequisites](#prerequisites)
+- [Build and test the grader](#build-and-test-the-grader)
+- [Run without Maven](#run-without-maven)
+- [Run the checked-in demo](#run-the-checked-in-demo)
+- [Fixture layout](#fixture-layout)
+- [Other non-interactive sessions](#other-non-interactive-sessions)
+- [Generated files](#generated-files)
+- [Grading real CS102 submissions with tester files](#grading-real-cs102-submissions-with-tester-files)
+- [Submission check](#submission-check)
+- [Assets Credit](#assets-credit)
+
 ## Safety and scope
 
 The grader compiles and runs submitted Java code directly on the instructor's machine, as the instructor's user, with no sandbox or container isolation.
@@ -182,3 +196,7 @@ To grade by hand, run `./run.sh` and enter absolute paths (the prompts reject re
 The interactive menu's "Grade students" option first runs a read-only submission check. It compares each submission folder with the configured starting-folder template and reports missing, misnamed, extra, or malformed files. The check never changes submissions or scoresheets; grading proceeds afterward using the configured tester files and scoresheet.
 
 For a synthetic check, run `sh demo/preflight/run-demo.sh` after running `./compile.sh`. The script uses a throwaway working directory and does not modify your own `config.json`.
+
+## Assets Credit
+
+The [big title ASCII art](./assets/title.txt) is generated from [www.asciiart.eu](https://www.asciiart.eu/text-to-ascii-art) With "ANSI Shadow" font and "Box drawing light" border. Everything else ([Welcome message](./assets/welcome.md) and the cat in the title) are self made.

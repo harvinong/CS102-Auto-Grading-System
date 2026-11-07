@@ -30,6 +30,9 @@ public class AutoGradeMenu {
         this.sc = sc;
         this.ctrl = ctrl;
 
+        // Print big title
+        System.out.println(TextColor.WARNING.apply(getText("./assets/title.txt")));
+
         // Check if config is initialized, then prompt
         boolean loadSuccess = ctrl.loadConfig();
         if (!loadSuccess) {
@@ -231,9 +234,7 @@ public class AutoGradeMenu {
 
     /** display the new view for new user, while setting the config files. */
     private void newView() {
-        displayMenuTitle();
-        System.out.println();
-        System.out.println(getWelcomeText());
+        System.out.println(getText("./assets/welcome.md"));
         System.out.println();
 
         inputConfig(true);
@@ -329,8 +330,8 @@ public class AutoGradeMenu {
         }
     }
 
-    private static String getWelcomeText() {
-        try (Scanner sc = new Scanner(new File("./assets/welcome.md"))) {
+    private static String getText(String textPathString) {
+        try (Scanner sc = new Scanner(new File(textPathString))) {
             StringBuilder result = new StringBuilder();
             while (sc.hasNextLine()) {
                 result.append(sc.nextLine());
@@ -338,7 +339,7 @@ public class AutoGradeMenu {
             }
             return result.toString().trim();
         } catch (FileNotFoundException e) {
-            return "Welcome to the Auto-Grading System!";
+            return String.format("[%s not found. You may reinstall this program]", textPathString);
         }
     }
 }
