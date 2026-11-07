@@ -12,6 +12,7 @@ package autogradesys.preflight;
  * @param fix      What the instructor or student can do about it; empty when nothing is needed.
  */
 // A record is an immutable value holder: Java generates the constructor, getters and equals for us.
+// Describes one submission or setup defect found before compilation begins.
 public record PreflightFinding(
         // Which submission this belongs to ("" means it is about the whole run, not one student).
         String student,

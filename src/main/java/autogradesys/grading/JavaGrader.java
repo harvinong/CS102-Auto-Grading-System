@@ -11,24 +11,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-/** Local Java-source grader.
+/**
+ * Local Java-source grader: the engine behind the "grade students" menu option.
+ *
+ * <p>Grading flow: the menu runs the submission preflight, then calls {@link #grade}. For every
+ * student and every question this class compiles {@code Main.java} with javac, runs it through
+ * {@link ProcessRunner} with the question's input, compares stdout with {@code expected.txt},
+ * records any problem in the {@link ErrorReporter}, and finally hands the 0/1 scores to
+ * {@link CsvScoresheet}. The HTML report is written afterwards from the reporter's records.</p>
  *
  * <p>Submission and question defects are recorded as recoverable so grading
  * can continue; missing or unreadable grading setup is fatal.</p>
  */
 public final class JavaGrader {
-    // Prepare or update the value needed by the next grading step.
+    // Default cap on stdout plus stderr per process: 1 MiB (1024 * 1024 bytes).
     public static final long DEFAULT_OUTPUT_LIMIT_BYTES = 1024 * 1024L;
 
+    // Utility class with only static methods, so the constructor is private to block instantiation.
     private JavaGrader() {
     }
 
     /** Backward-compatible entry point using a 1 MiB combined stdout/stderr limit. */
     public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             Duration timeout, ErrorReporter reporter) {
-        // Return this computed result to the caller.
+        // Forward to the full overload, filling in the default 1 MiB output cap.
         return grade(submissionsRoot, questionsRoot, scoresheet, timeout,
-                // Perform this small step of the grading workflow.
                 DEFAULT_OUTPUT_LIMIT_BYTES, reporter);
     }
 
@@ -44,409 +51,425 @@ public final class JavaGrader {
      */
     public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             Duration timeout, long outputLimitBytes, ErrorReporter reporter) {
-        // Check this condition so grading follows the intended path.
+        // Step 1 of grading: validate the capture limit up front, since a limit of zero or less could never hold any output.
         if (outputLimitBytes <= 0) {
+            // Record a FATAL error: this is a setup mistake by the operator, not a student problem.
             reporter.fatal("configuration", "output-limit",
                     "Output limit must be positive bytes: " + outputLimitBytes,
-                    // Perform this small step of the grading workflow.
                     "Pass a positive --output-limit-bytes value.");
-            // Return this computed result to the caller.
+            // Return immediately: zero students graded, the error count so far, fatal flag set, and no scores.
             return new GradeResult(0, reporter.records().size(), true, Map.of());
         }
-        // Check this condition so grading follows the intended path.
+        // Step 2: check that both folders and the CSV scoresheet exist and are usable; validSetup has already recorded why if not.
         if (!validSetup(submissionsRoot, questionsRoot, scoresheet, reporter)) {
-            // Return this computed result to the caller.
+            // Setup is broken, so stop here with the same fatal result instead of grading against missing inputs.
             return new GradeResult(0, reporter.records().size(), true, Map.of());
         }
-        // Prepare or update the value needed by the next grading step.
+        // Step 3: list the question folder names (q1, q2, ...) from the questions directory, sorted so scoring order is stable.
         List<String> questions = questionNames(questionsRoot, reporter);
-        // Prepare or update the value needed by the next grading step.
+        // List one entry per student folder, also sorted, so the CSV rows and report follow a predictable order.
         List<Student> students = studentDirectories(submissionsRoot, reporter);
-        // Prepare or update the value needed by the next grading step.
+        // Result table of student name -> (question name -> 0 or 1); LinkedHashMap keeps insertion order for the CSV.
         Map<String, Map<String, Integer>> scores = new LinkedHashMap<>();
 
-        // Repeat this operation for each relevant grading item.
+        // Step 4: grade students one at a time; any problem inside is recorded and the loop carries on with the next student.
         for (Student student : students) {
-            // Prepare or update the value needed by the next grading step.
+            // Fresh per-student score map, filled in question by question below.
             Map<String, Integer> studentScores = new LinkedHashMap<>();
-            // Perform this small step of the grading workflow.
+            // Register the map now so the student appears in the results even if every question fails.
             scores.put(student.name(), studentScores);
-            // Repeat this operation for each relevant grading item.
+            // Visit every question for this student, including ones the student did not submit, so each gets an explicit 0 or 1.
             for (String question : questions) {
-                // Prepare or update the value needed by the next grading step.
+                // Where this student's work for this question should live, e.g. submissions/alice/q1.
                 Path submissionQuestion = student.directory().resolve(question);
-                // Prepare or update the value needed by the next grading step.
+                // The convention is that every submission's entry point is a file called Main.java inside the question folder.
                 Path source = submissionQuestion.resolve("Main.java");
-                // Check this condition so grading follows the intended path.
+                // Student never created the folder for this question.
                 if (!Files.isDirectory(submissionQuestion)) {
+                    // Record a RECOVERABLE error (the student's fault, grading continues) with a hint on how to fix it.
                     reporter.recoverable("submission", "missing-question",
                             "Question directory is missing: " + question,
                             "Add the question directory and Main.java, or check the question name.",
-                            // Perform this small step of the grading workflow.
                             student.name(), display(student.directory()), question);
-                    // Perform this small step of the grading workflow.
+                    // Score the unsubmitted question as 0 so the scoresheet has a value for every cell.
                     studentScores.put(question, 0);
-                    // Perform this small step of the grading workflow.
+                    // Skip compile and run and go straight to the next question.
                     continue;
                 }
-                // Check this condition so grading follows the intended path.
+                // Folder exists but Main.java does not, so there is nothing to compile.
                 if (!Files.isRegularFile(source)) {
+                    // Record the structure problem (wrong file name or nested folder) as recoverable so the student sees what to rename.
                     reporter.recoverable("submission", "malformed-structure",
                             "Question directory has no Main.java entry point.",
                             "Put the submitted Java entry point in the question directory as Main.java.",
-                            // Perform this small step of the grading workflow.
                             student.name(), display(student.directory()), question);
-                    // Perform this small step of the grading workflow.
+                    // No entry point means no marks for this question.
                     studentScores.put(question, 0);
-                    // Perform this small step of the grading workflow.
+                    // Move on to the next question; runQuestion would fail anyway without a source file.
                     continue;
                 }
+                // Structure is fine, so compile and run the submission; runQuestion returns 1 for a pass and 0 for any failure, and records the reason itself.
                 studentScores.put(question, runQuestion(student.name(), student.directory(), question,
-                        // Perform this small step of the grading workflow.
                         questionsRoot, source, timeout, outputLimitBytes, reporter));
             }
         }
 
-        // Check this condition so grading follows the intended path.
+        // Step 5: write results to the CSV. The null check is a safety net; validSetup normally already rejected a missing scoresheet.
         if (scoresheet != null) {
-            // Perform this small step of the grading workflow.
+            // Merge the new scores into the existing CSV, keeping other columns and reporting any write problem.
             CsvScoresheet.update(scoresheet, scores, reporter);
         } else {
+            // No destination file was given, so the scores cannot be saved; flag this as fatal for the whole session.
             reporter.fatal("scoresheet", "scoresheet-read", "No scoresheet was provided.",
-                    // Perform this small step of the grading workflow.
                     "Pass a CSV scoresheet path before running a non-interactive grading session.");
         }
-        // Return this computed result to the caller.
+        // Summarise the session for the caller: students graded, total errors recorded, whether any was fatal, and all scores.
         return new GradeResult(students.size(), reporter.records().size(), reporter.hasFatalError(), scores);
     }
 
+    /** Checks that the submissions folder, questions folder and scoresheet CSV are usable, reporting every failure found. */
     private static boolean validSetup(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             ErrorReporter reporter) {
-        // Prepare or update the value needed by the next grading step.
+        // Assume the setup is fine and flip this to false on each problem, so every problem is reported in one pass rather than only the first.
         boolean valid = true;
-        // Check this condition so grading follows the intended path.
+        // The folder of student submissions must exist.
         if (!Files.isDirectory(submissionsRoot)) {
+            // Fatal because without submissions there is nothing to grade.
             reporter.fatal("submission", "filesystem",
                     "Submission directory does not exist: " + display(submissionsRoot),
-                    // Perform this small step of the grading workflow.
                     "Choose an existing directory containing one directory per student.");
-            // Prepare or update the value needed by the next grading step.
+            // Remember that setup failed but keep checking the other inputs.
             valid = false;
         }
-        // Check this condition so grading follows the intended path.
+        // The folder of question fixtures (expected.txt, optional input.txt) must exist as well.
         if (!Files.isDirectory(questionsRoot)) {
+            // Fatal because there would be nothing to compare student output against.
             reporter.fatal("submission", "filesystem",
                     "Questions directory does not exist: " + display(questionsRoot),
-                    // Perform this small step of the grading workflow.
                     "Choose an existing directory containing one directory per question.");
-            // Prepare or update the value needed by the next grading step.
+            // Mark failed, then continue to the scoresheet check.
             valid = false;
         }
-        // Check this condition so grading follows the intended path.
+        // The CSV must be supplied, be a normal file, and be readable; the null test comes first so the other calls never see null.
         if (scoresheet == null || !Files.isRegularFile(scoresheet) || !Files.isReadable(scoresheet)) {
+            // Fatal because results could not be saved; display() prints "<missing>" when the path is null.
             reporter.fatal("scoresheet", "scoresheet-read",
                     "Could not read scoresheet " + display(scoresheet),
-                    // Perform this small step of the grading workflow.
                     "Check that the CSV exists and is readable before grading.");
-            // Prepare or update the value needed by the next grading step.
+            // Mark failed and fall through to the return.
             valid = false;
         }
-        // Check this condition so grading follows the intended path.
+        // Only parse the CSV when everything above passed, so we never read a file we already know is missing or unreadable.
         if (valid && !CsvScoresheet.isValid(scoresheet)) {
+            // Parse problem such as a bad header or a malformed row; fatal so grading cannot half-update a broken file.
             reporter.fatal("scoresheet", "scoresheet-read",
                     "Could not read scoresheet " + display(scoresheet),
-                    // Perform this small step of the grading workflow.
                     "Check that the CSV has a valid header and no malformed rows.");
-            // Prepare or update the value needed by the next grading step.
+            // Mark failed.
             valid = false;
         }
-        // Return this computed result to the caller.
+        // True only when all three inputs passed their checks.
         return valid;
     }
 
+    /** Lists question folder names in sorted order; records a fatal error and returns an empty list on failure. */
     private static List<String> questionNames(Path root, ErrorReporter reporter) {
-        // Check this condition so grading follows the intended path.
+        // Defensive recheck: validSetup normally catches this, but this method can be reached on its own.
         if (!Files.isDirectory(root)) {
+            // Report the missing questions folder as fatal.
             reporter.fatal("submission", "filesystem",
                     "Questions directory does not exist: " + display(root),
-                    // Perform this small step of the grading workflow.
                     "Choose an existing directory containing one directory per question.");
-            // Return this computed result to the caller.
+            // Nothing can be listed, so give the caller an empty list rather than null.
             return List.of();
         }
-        // Prepare or update the value needed by the next grading step.
+        // Files.list returns a lazy directory stream that holds an OS handle, so try-with-resources closes it.
         try (Stream<Path> paths = Files.list(root)) {
+            // Keep only sub-directories (each one is a question), take their folder names, and sort them alphabetically.
             List<String> names = paths.filter(Files::isDirectory).map(path -> path.getFileName().toString())
-                    // Perform this small step of the grading workflow.
                     .sorted().toList();
-            // Check this condition so grading follows the intended path.
+            // A questions folder with no question sub-folders cannot be used for grading.
             if (names.isEmpty()) {
+                // Fatal: the caller will end up with no questions to score, so tell the operator how to fix the fixtures.
                 reporter.fatal("submission", "structure", "No question directories were found.",
-                        // Perform this small step of the grading workflow.
                         "Create question directories containing expected.txt fixtures.");
             }
-            // Return this computed result to the caller.
+            // Return the sorted names (possibly empty, in which case the fatal error above is already recorded).
             return names;
+        // Listing can fail on permissions or a disappearing folder.
         } catch (IOException exception) {
+            // Include the system's own message in the error so the cause is visible in the report.
             reporter.fatal("submission", "filesystem",
                     "Could not read questions directory " + display(root) + ": " + exception.getMessage(),
-                    // Perform this small step of the grading workflow.
                     "Check that the questions directory is readable.");
-            // Return this computed result to the caller.
+            // Return an empty list so the caller does not crash; the fatal record is what stops the run.
             return List.of();
         }
     }
 
+    /** Lists one {@link Student} per sub-folder of the submissions directory, sorted by name. */
     private static List<Student> studentDirectories(Path root, ErrorReporter reporter) {
-        // Check this condition so grading follows the intended path.
+        // Same defensive check for the submissions folder.
         if (!Files.isDirectory(root)) {
+            // Report the missing submissions folder as fatal.
             reporter.fatal("submission", "filesystem",
                     "Submission directory does not exist: " + display(root),
-                    // Perform this small step of the grading workflow.
                     "Choose an existing directory containing one directory per student.");
-            // Return this computed result to the caller.
+            // No students can be listed, so return an empty list.
             return List.of();
         }
-        // Prepare or update the value needed by the next grading step.
+        // Open the directory listing, closed automatically when the block ends.
         try (Stream<Path> paths = Files.list(root)) {
+            // Each sub-directory is one student; plain files in the folder (such as a stray .DS_Store) are ignored.
             List<Student> students = paths.filter(Files::isDirectory)
+                    // Sort by folder name because directory listing order is not guaranteed by the OS.
                     .sorted(Comparator.comparing(path -> path.getFileName().toString()))
-                    // Perform this small step of the grading workflow.
+                    // Pair each folder name (used as the student's name in the CSV) with its path.
                     .map(path -> new Student(path.getFileName().toString(), path)).toList();
-            // Check this condition so grading follows the intended path.
+            // No student folders at all means there is no work to grade.
             if (students.isEmpty()) {
+                // Fatal, with a hint about the expected one-folder-per-student layout.
                 reporter.fatal("submission", "structure", "No student submission directories were found.",
-                        // Perform this small step of the grading workflow.
                         "Create one directory per student inside the submissions directory.");
             }
-            // Return this computed result to the caller.
+            // Hand back the sorted students for the grading loop.
             return students;
+        // The folder could not be read, for instance because of permissions.
         } catch (IOException exception) {
+            // Fatal, quoting the underlying I/O message so it can be diagnosed.
             reporter.fatal("submission", "filesystem",
                     "Could not read submissions directory " + display(root) + ": " + exception.getMessage(),
-                    // Perform this small step of the grading workflow.
                     "Check that the submissions directory is readable.");
-            // Return this computed result to the caller.
+            // Empty list keeps the caller safe; the fatal record explains why nothing was graded.
             return List.of();
         }
     }
 
+    /**
+     * Grades one student's answer to one question: load fixtures, compile, run, compare output.
+     *
+     * @return 1 if the program printed exactly the expected text, otherwise 0 (the reason is recorded)
+     */
     private static int runQuestion(String student, Path submission, String question, Path questionsRoot,
             Path source, Duration timeout, long outputLimitBytes, ErrorReporter reporter) {
-        // Prepare or update the value needed by the next grading step.
+        // Folder holding this question's fixtures: expected.txt and optionally input.txt.
         Path spec = questionsRoot.resolve(question);
-        // Prepare or update the value needed by the next grading step.
+        // expected.txt is the exact text a correct program must print.
         Path expectedPath = spec.resolve("expected.txt");
-        // Check this condition so grading follows the intended path.
+        // Without an expected answer the submission cannot be judged, which is a problem with the question and not the student.
         if (!Files.isRegularFile(expectedPath)) {
+            // Category "question" separates this teacher-side defect from student mistakes in the report.
             reporter.recoverable("question", "missing-expected",
                     "Expected output fixture is missing: " + display(expectedPath),
                     "Add expected.txt to the question fixture before grading.",
-                    // Perform this small step of the grading workflow.
                     student, display(submission), question);
-            // Return this computed result to the caller.
+            // Score 0 and stop; the grade loop moves on to the next question.
             return 0;
         }
 
-        // Perform this small step of the grading workflow.
+        // Text fed to the program's standard input; final so it can be assigned once inside the try block.
         final String input;
-        // Perform this small step of the grading workflow.
+        // Exact expected stdout, compared byte for byte later.
         final String expected;
-        // Perform this small step of the grading workflow.
+        // Reading the fixtures can throw IOException, handled just below.
         try {
-            // Prepare or update the value needed by the next grading step.
+            // input.txt is optional, because many questions need no stdin.
             Path inputPath = spec.resolve("input.txt");
+            // Use the file's contents when it exists, otherwise an empty string.
             input = Files.isRegularFile(inputPath)
-                    // Perform this small step of the grading workflow.
                     ? Files.readString(inputPath, StandardCharsets.UTF_8) : "";
-            // Prepare or update the value needed by the next grading step.
+            // Always decode as UTF-8 so results do not depend on the machine's default charset.
             expected = Files.readString(expectedPath, StandardCharsets.UTF_8);
+        // A fixture exists but cannot be read, e.g. due to permissions.
         } catch (IOException exception) {
+            // Blame the fixture, not the student, and keep the batch going.
             reporter.recoverable("question", "fixture-read",
                     "Could not read question fixtures: " + exception.getMessage(),
                     "Ensure expected.txt and optional input.txt are readable.",
-                    // Perform this small step of the grading workflow.
                     student, display(submission), question);
-            // Return this computed result to the caller.
+            // Without fixtures there is no fair grade, so score 0.
             return 0;
         }
 
-        // Prepare or update the value needed by the next grading step.
+        // Temporary folder for compiled .class files; declared outside the try so the finally block can delete it.
         Path build = null;
-        // Perform this small step of the grading workflow.
+        // Everything from here can fail: creating the folder, starting javac or java, or being interrupted.
         try {
-            // Prepare or update the value needed by the next grading step.
+            // Fresh directory per question so classes from one submission can never be picked up by another.
             build = Files.createTempDirectory("cs102-grader-");
+            // Compile command as separate arguments: UTF-8 source, with -d sending the .class output to the temp folder.
             List<String> compile = List.of("javac", "-encoding", "UTF-8", "-d",
-                    // Perform this small step of the grading workflow.
                     build.toAbsolutePath().toString(), source.toAbsolutePath().toString());
-            // Compile and execute independently: one broken submission must not stop later questions.
+            // Run javac with empty stdin under the timeout and output cap, so an endless or huge compile cannot hang grading.
             ProcessRunner.Result compilation = ProcessRunner.run(compile, "", timeout, build, outputLimitBytes);
-            // An output cap breach is distinct from a deadline breach and gets actionable guidance.
+            // Checked before the timeout because killing a process for too much output also stops it waiting.
             if (compilation.outputLimitExceeded()) {
+                // Spell out the limit and that the retained text is cut short.
                 reporter.recoverable("question", "output-limit",
                         "Compiler output exceeded the combined stdout/stderr limit of "
-                                // Perform this small step of the grading workflow.
                                 + outputLimitDescription(outputLimitBytes) + "; retained output is truncated.",
                         "Reduce compiler diagnostics or increase --output-limit-bytes.",
-                        // Perform this small step of the grading workflow.
                         student, display(submission), question);
-                // Return this computed result to the caller.
+                // A compile that was cut short cannot be trusted, so score 0.
                 return 0;
             }
-            // Check this condition so grading follows the intended path.
+            // javac did not finish before the deadline.
             if (compilation.timedOut()) {
+                // Report the time limit in readable units and suggest checking the source.
                 reporter.recoverable("question", "timeout",
                         "Compilation exceeded " + timeoutDescription(timeout) + ".",
                         "Check the submission and retry with valid Java source.",
-                        // Perform this small step of the grading workflow.
                         student, display(submission), question);
-                // Return this computed result to the caller.
+                // No class files can be assumed, so no marks.
                 return 0;
             }
-            // Check this condition so grading follows the intended path.
+            // A non-zero exit from javac means syntax or type errors in the student's code.
             if (compilation.exitCode() != 0) {
+                // Put javac's own messages in the report (or the exit status when stderr is empty) so the student sees the exact error.
                 reporter.recoverable("question", "compile", details(compilation.stderr(),
                                 "javac exited with status " + compilation.exitCode() + "."),
                         "Fix the Java compiler errors and resubmit.",
-                        // Perform this small step of the grading workflow.
                         student, display(submission), question);
-                // Return this computed result to the caller.
+                // Cannot run code that did not compile, so score 0.
                 return 0;
             }
 
-            // Prepare or update the value needed by the next grading step.
+            // Compilation worked: launch the compiled Main class, with the classpath pointing at the temp folder holding the .class files.
             List<String> execute = List.of("java", "-cp", build.toAbsolutePath().toString(), "Main");
-            // Prepare or update the value needed by the next grading step.
+            // Run the student's program with the fixture as stdin, under the same timeout and output cap.
             ProcessRunner.Result execution = ProcessRunner.run(execute, input, timeout, build, outputLimitBytes);
-            // Check the cap before timeout because stopping after a cap also ends the process wait.
+            // Check the cap first for the same reason as at compile time: a kill for flooding also ends the wait.
             if (execution.outputLimitExceeded()) {
+                // Include how many stdout and stderr bytes were kept, to show how far over the program went.
                 reporter.recoverable("question", "output-limit",
                         "Program output exceeded the combined stdout/stderr limit of "
-                                // Perform this small step of the grading workflow.
                                 + outputLimitDescription(outputLimitBytes) + "; retained output is truncated. "
                                 + "stdout=" + execution.stdout().getBytes(StandardCharsets.UTF_8).length
                                 + " bytes, stderr=" + execution.stderr().getBytes(StandardCharsets.UTF_8).length + " bytes.",
-                        // Perform this small step of the grading workflow.
                         "Reduce or remove diagnostic output; the process was terminated.",
-                        // Perform this small step of the grading workflow.
                         student, display(submission), question);
-                // Return this computed result to the caller.
+                // Truncated output can never match expected.txt, so 0.
                 return 0;
             }
-            // Check this condition so grading follows the intended path.
+            // The program was still running at the deadline (typically an infinite loop) and has been killed.
             if (execution.timedOut()) {
+                // Tell the student the program was terminated and where to look.
                 reporter.recoverable("question", "timeout",
                         "Program exceeded " + timeoutDescription(timeout) + " and was terminated.",
                         "Check for an infinite loop or reduce the program's runtime.",
-                        // Perform this small step of the grading workflow.
                         student, display(submission), question);
-                // Return this computed result to the caller.
+                // Zero marks for a program that never finishes.
                 return 0;
             }
-            // Check this condition so grading follows the intended path.
+            // Non-zero exit usually means an uncaught exception or System.exit with an error code.
             if (execution.exitCode() != 0) {
+                // Report the stack trace from stderr when present, else the exit status.
                 reporter.recoverable("question", "runtime", details(execution.stderr(),
                                 "Program exited with status " + execution.exitCode() + "."),
                         "Fix the runtime exception and resubmit.",
-                        // Perform this small step of the grading workflow.
                         student, display(submission), question);
-                // Return this computed result to the caller.
+                // Crashing programs get no marks even if they printed correct text first.
                 return 0;
             }
-            // Check this condition so grading follows the intended path.
+            // The pass/fail test: output must be exactly equal to expected.txt, including spaces and line endings.
             if (!execution.stdout().equals(expected)) {
+                // Show both expected and actual text, escaped by quote(), so invisible differences like trailing newlines are visible.
                 reporter.recoverable("question", "output-mismatch",
                         "Expected " + quote(expected) + ", received " + quote(execution.stdout()) + ".",
                         "Compare whitespace, line endings, and output text with expected.txt.",
-                        // Perform this small step of the grading workflow.
                         student, display(submission), question);
-                // Return this computed result to the caller.
+                // Wrong output gets 0.
                 return 0;
             }
+            // Everything matched: log an informational PASS record rather than an error.
             reporter.info(String.format("PASS student=%s submission=%s question=%s score=1",
-                    // Perform this small step of the grading workflow.
                     student, display(submission), question));
-            // Return this computed result to the caller.
+            // One mark for this question.
             return 1;
+        // Could not create the temp folder or start javac/java (for example no JDK installed).
         } catch (IOException exception) {
+            // Environment problem, reported with the system message and a hint to install a JDK.
             reporter.recoverable("question", "filesystem",
                     "Could not prepare or run the submission: " + exception.getMessage(),
                     "Install a JDK and ensure the temporary build directory is writable.",
-                    // Perform this small step of the grading workflow.
                     student, display(submission), question);
-            // Return this computed result to the caller.
+            // Cannot grade without running the program, so 0 for this question.
             return 0;
+        // The grading thread was cancelled while waiting for a child process.
         } catch (InterruptedException interrupted) {
-            // Perform this small step of the grading workflow.
+            // Put the interrupt flag back so code further up knows cancellation was requested.
             Thread.currentThread().interrupt();
+            // Record that this question was not graded because of the interruption.
             reporter.recoverable("question", "interrupted",
                     "Grading was interrupted while running the submission.",
-                    // Perform this small step of the grading workflow.
                     "Retry the grading session.", student, display(submission), question);
-            // Return this computed result to the caller.
+            // Stop work on this question with no mark.
             return 0;
+        // Runs on every path above (return or exception), so the temp folder is always cleaned up.
         } finally {
-            // Check this condition so grading follows the intended path.
+            // build stays null if createTempDirectory itself failed, so guard before deleting.
             if (build != null) {
-                // A per-question directory prevents generated classes from leaking between submissions.
+                // Delete the temp folder and its class files so repeated runs do not fill the disk.
                 deleteTree(build);
             }
         }
     }
 
+    /** Best-effort recursive delete of the temporary build folder. */
     private static void deleteTree(Path root) {
-        // Prepare or update the value needed by the next grading step.
+        // Walk the whole temp folder recursively; the stream is closed by try-with-resources.
         try (Stream<Path> paths = Files.walk(root)) {
+            // Reverse order puts children before their parent folder, since a folder must be empty to be deleted.
             paths.sorted(Comparator.reverseOrder()).forEach(path -> {
-                // Perform this small step of the grading workflow.
                 try {
-                    // Perform this small step of the grading workflow.
+                    // Remove one file or now-empty folder, tolerating one that has already gone.
                     Files.deleteIfExists(path);
+                // Deleting a single leftover file failed.
                 } catch (IOException ignored) {
-                    // Cleanup is secondary: it must not hide the grading result already recorded.
                 }
-            // Perform this small step of the grading workflow.
             });
+        // Walking the folder failed.
         } catch (IOException ignored) {
-            // Temporary cleanup must not hide the grading result.
         }
     }
 
+    /** Picks the tool's own error text if there is any, otherwise the supplied fallback sentence. */
     private static String details(String stderr, String fallback) {
-        // Prepare or update the value needed by the next grading step.
+        // Treat missing stderr as empty and trim surrounding whitespace so the message is tidy.
         String text = stderr == null ? "" : stderr.trim();
-        // Return this computed result to the caller.
+        // Prefer the real error text; use the generic fallback (e.g. the exit status) only when stderr has nothing.
         return text.isEmpty() ? fallback : text;
     }
 
+    /** Renders text in quotes with control characters escaped, so mismatch messages stay on one readable line. */
     private static String quote(String text) {
-        // Return this computed result to the caller.
+        // Wrap the text in quotes and escape backslashes first, then carriage returns, newlines and quotes, so whitespace differences are visible in messages.
         return "\"" + text.replace("\\", "\\\\").replace("\r", "\\r")
-                // Perform this small step of the grading workflow.
                 .replace("\n", "\\n").replace("\"", "\\\"") + "\"";
     }
 
     private static String outputLimitDescription(long bytes) {
-        // Return this computed result to the caller.
+        // Format the limit for messages, e.g. "1048576 byte(s)".
         return bytes + " byte(s)";
     }
 
     private static String timeoutDescription(Duration timeout) {
-        // Check this condition so grading follows the intended path.
+        // Whole seconds read better as seconds (e.g. "10 second(s)").
         if (timeout.toMillis() % 1_000 == 0) {
-            // Return this computed result to the caller.
+            // Convert milliseconds to seconds for the message.
             return (timeout.toMillis() / 1_000) + " second(s)";
         }
-        // Return this computed result to the caller.
+        // Fractions of a second are shown in milliseconds so no precision is lost.
         return timeout.toMillis() + " millisecond(s)";
     }
 
+    /** Formats a path for error records and the report. */
     private static String display(Path path) {
-        // Return this computed result to the caller.
+        // Absolute, normalised path for unambiguous messages; a null path prints as <missing> instead of throwing.
         return path == null ? "<missing>" : path.toAbsolutePath().normalize().toString();
     }
 
+    // A student's folder name (shown in the CSV and report) plus the path to their submission folder.
     private record Student(String name, Path directory) {
     }
 }

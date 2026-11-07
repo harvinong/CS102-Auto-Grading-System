@@ -13,12 +13,18 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 
-/** Runs the checked-in, credential-free demonstration fixtures.
+/**
+ * Runs the checked-in, credential-free demonstration fixtures.
+ *
+ * <p>Flow: copy the template CSV, build an ErrorReporter, call JavaGrader on the sample
+ * submissions, write the HTML report, and summarise. It reuses the real grading classes so the
+ * demo shows exactly what a real run does.</p>
  *
  * <p>This is deliberately a Maven-run entry point rather than a second grader;
  * it verifies the product path using only repository fixtures.</p>
  */
 public final class DemoRunner {
+    // Static entry point only; no instances.
     private DemoRunner() {
     }
 
@@ -31,74 +37,77 @@ public final class DemoRunner {
      * @return zero when the demo has no fatal error
      */
     public static int run(Path demoRoot, PrintStream output) {
-        // Prepare or update the value needed by the next grading step.
+        // Checked-in sample data: demo/fixtures.
         Path fixtures = demoRoot.resolve("fixtures");
-        // Prepare or update the value needed by the next grading step.
+        // Sample student folders, some deliberately broken to show each error type.
         Path submissions = fixtures.resolve("submissions");
-        // Prepare or update the value needed by the next grading step.
+        // Sample questions with expected.txt (and input.txt where needed).
         Path questions = fixtures.resolve("questions");
-        // Prepare or update the value needed by the next grading step.
+        // Pristine scoresheet that is copied, so the checked-in file is never edited.
         Path template = fixtures.resolve("scores.template.csv");
-        // Prepare or update the value needed by the next grading step.
+        // Output folder under target/, which is git-ignored build output.
         Path generated = demoRoot.resolve("target").resolve("run");
-        // Prepare or update the value needed by the next grading step.
+        // Working copy of the scoresheet that grading will update.
         Path scoresheet = generated.resolve("scores.csv");
-        // Prepare or update the value needed by the next grading step.
+        // Where ErrorHistory appends the demo's error records.
         Path history = generated.resolve("error-history.jsonl");
-        // Prepare or update the value needed by the next grading step.
+        // Where HtmlReportWriter saves the demo report.
         Path report = generated.resolve("grading-report.html");
-        // Perform this small step of the grading workflow.
+        // Folder and file operations can fail with IOException, handled below.
         try {
-            // Perform this small step of the grading workflow.
+            // Create target/run if missing; no-op if it exists.
             Files.createDirectories(generated);
-            // Check this condition so grading follows the intended path.
+            // Copy the template only on the first run, so later runs keep earlier scores.
             if (!Files.exists(scoresheet)) {
-                // Perform this small step of the grading workflow.
+                // Duplicate the template, keeping file attributes such as timestamps.
                 Files.copy(template, scoresheet, StandardCopyOption.COPY_ATTRIBUTES);
             }
+        // The output folder or scoresheet could not be prepared.
         } catch (IOException exception) {
-            // Perform this small step of the grading workflow.
+            // Explain the failure to the person running the demo.
             output.println("Could not prepare demo output directory: " + exception.getMessage());
-            // Return this computed result to the caller.
+            // Exit code 2 means a setup problem, as opposed to 1 for a grading or report failure.
             return 2;
         }
 
-        // Perform this small step of the grading workflow.
+        // Banner so the console output is easy to recognise.
         output.println("CS102 Java auto-grader demo");
-        // Perform this small step of the grading workflow.
+        // Print resolved locations so the viewer can open the files afterwards.
         output.println("Fixtures: " + fixtures.toAbsolutePath().normalize());
-        // Perform this small step of the grading workflow.
+        // Where the updated scores will be.
         output.println("Generated scoresheet: " + scoresheet.toAbsolutePath().normalize());
-        // Perform this small step of the grading workflow.
+        // Where the error log will be.
         output.println("JSONL history: " + history.toAbsolutePath().normalize());
-        // Perform this small step of the grading workflow.
+        // Where the report will be.
         output.println("HTML report: " + report.toAbsolutePath().normalize());
-        // Perform this small step of the grading workflow.
+        // Reminds the viewer of the key design point: timeouts per process, and one failure does not stop the batch.
         output.println("Each question has its own bounded javac/java process; failures continue.");
-        // Perform this small step of the grading workflow.
+        // Blank line to separate the banner from grading output.
         output.println();
 
-        // Prepare or update the value needed by the next grading step.
+        // Wire the reporter to the demo history file and the same console stream.
         ErrorReporter reporter = new ErrorReporter(new ErrorHistory(history), output);
+        // Run the real grading engine on the fixtures; the demo has no preflight step and no separate grader.
         GradeResult result = JavaGrader.grade(submissions, questions, scoresheet,
-                // Perform this small step of the grading workflow.
+                // Two seconds per process is plenty for the small demo programs, and still stops the fixture's infinite loop quickly.
                 Duration.ofSeconds(2), reporter);
-        // Perform this small step of the grading workflow.
+        // Report writing can fail with IOException.
         try {
-            // Perform this small step of the grading workflow.
+            // Render the scores and every collected error into the HTML file.
             HtmlReportWriter.write(report, result, reporter.records());
+        // The report folder is not writable, for instance.
         } catch (IOException exception) {
-            // Perform this small step of the grading workflow.
+            // Say why no report exists.
             output.println("Could not write HTML report: " + exception.getMessage());
-            // Return this computed result to the caller.
+            // Exit code 1: grading ran, but the demo did not fully succeed.
             return 1;
         }
+        // One-line summary of the run.
         output.printf("Completed: %d submission(s), %d reported issue(s).%n",
-                // Perform this small step of the grading workflow.
                 result.studentCount(), result.issueCount());
-        // Perform this small step of the grading workflow.
+        // Reassure the user that only generated files were modified.
         output.println("Scores and history remain under demo/target/run; checked-in fixtures were not changed.");
-        // Return this computed result to the caller.
+        // Success (0) unless grading hit a fatal error; non-fatal student errors are expected in the demo.
         return result.fatal() ? 1 : 0;
     }
 }

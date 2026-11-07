@@ -13,15 +13,58 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Reads and atomically updates a CSV scoresheet while preserving existing rows.
+/**
+ * Reads and atomically updates a CSV scoresheet while preserving existing rows.
+ *
+ * <p>Grading flow: JavaGrader first calls {@link #isValid} during setup, grades everything, then
+ * calls {@link #update} once to write each 0/1 score into the matching student row and question
+ * column. The new file is written to a temp file and swapped in, so a crash cannot leave a
+ * half-written scoresheet.</p>
  *
  * <p>Only known student score cells are changed; unrelated columns and rows
  * remain part of the rendered file.</p>
  */
 public final class CsvScoresheet {
+    // Static utility class; no instances.
     private CsvScoresheet() {
     }
 
+    /** Checks, without modifying the file, that the CSV parses and has a usable unique header with a student column. */
+    public static boolean isValid(Path path) {
+        // Reading or parsing can throw, and any failure simply means "not a valid scoresheet" for this yes/no check.
+        try {
+            // Read the whole file as UTF-8 and split it into rows of cells with the hand-written CSV parser below.
+            List<List<String>> rows = parse(Files.readString(path.toAbsolutePath().normalize(), StandardCharsets.UTF_8));
+            // An empty file or a blank first row has no header, so grading could not tell which column is which.
+            if (rows.isEmpty() || rows.get(0).isEmpty()
+                    || rows.get(0).stream().allMatch(String::isBlank)) {
+                // Reject a scoresheet without a usable header.
+                return false;
+            }
+            // The first row names the columns: "student" plus one column per question.
+            List<String> header = rows.get(0);
+            // Scores are matched to rows by the "student" column, so it must exist.
+            if (!header.contains("student")) {
+                // Without it no row can be tied to a student.
+                return false;
+            }
+            // Tracks column names already seen, to spot duplicates.
+            Set<String> headers = new HashSet<>();
+            // Set.add returns false for a repeated name, so this finds duplicate columns, which would make "which q1 column?" ambiguous.
+            if (header.stream().anyMatch(column -> !headers.add(column))) {
+                // Duplicate headers are rejected.
+                return false;
+            }
+            // Data rows may be short (padded later) but must not have more cells than the header.
+            return rows.stream().skip(1).allMatch(row -> row.size() <= header.size());
+        // Unreadable file or broken CSV quoting.
+        } catch (IOException | IllegalArgumentException exception) {
+            // Treat any read or parse failure as invalid; JavaGrader.validSetup then reports the fatal error.
+            return false;
+        }
+    }
+
+    // Called by JavaGrader at the end of grading; returns true only if the file was replaced successfully.
     /**
      * Applies the supplied scores and replaces the file only after rendering succeeds.
      *
@@ -30,368 +73,346 @@ public final class CsvScoresheet {
      * @param reporter destination for recoverable and fatal diagnostics
      * @return {@code true} when the updated scoresheet is safely written
      */
-    /** Checks setup without modifying the scoresheet. */
-    public static boolean isValid(Path path) {
-        // Perform this small step of the grading workflow.
-        try {
-            // Prepare or update the value needed by the next grading step.
-            List<List<String>> rows = parse(Files.readString(path.toAbsolutePath().normalize(), StandardCharsets.UTF_8));
-            // Check this condition so grading follows the intended path.
-            if (rows.isEmpty() || rows.get(0).isEmpty()
-                    || rows.get(0).stream().allMatch(String::isBlank)) {
-                // Return this computed result to the caller.
-                return false;
-            }
-            // Prepare or update the value needed by the next grading step.
-            List<String> header = rows.get(0);
-            // Check this condition so grading follows the intended path.
-            if (!header.contains("student")) {
-                // Return this computed result to the caller.
-                return false;
-            }
-            // Prepare or update the value needed by the next grading step.
-            Set<String> headers = new HashSet<>();
-            // Check this condition so grading follows the intended path.
-            if (header.stream().anyMatch(column -> !headers.add(column))) {
-                // Return this computed result to the caller.
-                return false;
-            }
-            // Return this computed result to the caller.
-            return rows.stream().skip(1).allMatch(row -> row.size() <= header.size());
-        } catch (IOException | IllegalArgumentException exception) {
-            // Return this computed result to the caller.
-            return false;
-        }
-    }
-
     public static boolean update(Path path, Map<String, Map<String, Integer>> scores,
             ErrorReporter reporter) {
-        // Prepare or update the value needed by the next grading step.
+        // Resolve once and reuse, so messages and file operations name the same location.
         Path absolute = path.toAbsolutePath().normalize();
-        // Perform this small step of the grading workflow.
+        // Parsed contents of the existing sheet, assigned inside the try block.
         final List<List<String>> rows;
-        // Perform this small step of the grading workflow.
         try {
-            // Prepare or update the value needed by the next grading step.
+            // Load the current file into memory before changing anything.
             rows = parse(Files.readString(absolute, StandardCharsets.UTF_8));
+        // The file vanished or has invalid CSV quoting since the earlier validation.
         } catch (IOException | IllegalArgumentException exception) {
+            // Fatal: scores cannot be merged into a file we cannot read.
             reporter.fatal("scoresheet", "scoresheet-read",
                     "Could not read scoresheet " + absolute + ": " + exception.getMessage(),
-                    // Perform this small step of the grading workflow.
                     "Check that the CSV exists, is readable, and uses valid CSV quoting.");
-            // Return this computed result to the caller.
+            // Nothing was written, so the original is untouched.
             return false;
         }
-        // Check this condition so grading follows the intended path.
+        // Repeat the header sanity check, because update() can be called without isValid().
         if (rows.isEmpty() || rows.get(0).isEmpty()
                 || rows.get(0).stream().allMatch(String::isBlank)) {
+            // Fatal: with no header the columns are unknown.
             reporter.fatal("scoresheet", "scoresheet-header",
                     "Scoresheet has no usable header row.",
-                    // Perform this small step of the grading workflow.
                     "Add a header row beginning with student and one column per question.");
-            // Return this computed result to the caller.
+            // Abort without modifying the file.
             return false;
         }
 
-        // Prepare or update the value needed by the next grading step.
+        // Copy the header into a mutable list so it can be extended without altering the parsed rows.
         List<String> header = new ArrayList<>(rows.get(0));
-        // Prepare or update the value needed by the next grading step.
+        // Position of the student-name column, used to look up each row's owner.
         int studentColumn = header.indexOf("student");
-        // Check this condition so grading follows the intended path.
+        // indexOf returns -1 when the column is missing.
         if (studentColumn < 0) {
+            // Fatal: rows cannot be matched to students.
             reporter.fatal("scoresheet", "scoresheet-header",
                     "Scoresheet must have a student column.",
-                    // Perform this small step of the grading workflow.
                     "Add a header named student before grading.");
-            // Return this computed result to the caller.
+            // Abort and leave the file as it was.
             return false;
         }
-        // Prepare or update the value needed by the next grading step.
+        // Used to detect repeated column names.
         Set<String> uniqueHeaders = new HashSet<>();
-        // Repeat this operation for each relevant grading item.
+        // Check each column name once.
         for (String column : header) {
-            // Check this condition so grading follows the intended path.
+            // add() is false when the name was already present.
             if (!uniqueHeaders.add(column)) {
+                // Fatal: an ambiguous header could cause a score to land in the wrong column.
                 reporter.fatal("scoresheet", "scoresheet-header",
                         "Scoresheet contains duplicate column: " + column,
-                        // Perform this small step of the grading workflow.
                         "Keep one unique column for each student field and question.");
-                // Return this computed result to the caller.
+                // Abort without writing.
                 return false;
             }
         }
 
-        // Build a complete copy first so pre-existing rows survive score updates.
+        // Output table built in memory; the file is only touched once it is complete.
         List<List<String>> writableRows = new ArrayList<>();
-        // Perform this small step of the grading workflow.
+        // The header goes first, as in the source file.
         writableRows.add(header);
-        // Prepare or update the value needed by the next grading step.
+        // Students found in the sheet, used afterwards to find graded students that have no row.
         Set<String> seenStudents = new LinkedHashSet<>();
-        // Repeat this operation for each relevant grading item.
+        // Go through data rows only; index 0 was the header.
         for (int rowIndex = 1; rowIndex < rows.size(); rowIndex++) {
-            // Prepare or update the value needed by the next grading step.
+            // Mutable copy of this row, so cells can be overwritten or padded.
             List<String> row = new ArrayList<>(rows.get(rowIndex));
-            // Check this condition so grading follows the intended path.
+            // More cells than columns means the row is damaged (often an unquoted comma).
             if (row.size() > header.size()) {
+                // Fatal rather than guessing which cell belongs where; rowIndex + 1 gives the human line number.
                 reporter.fatal("scoresheet", "scoresheet-row",
                         "Scoresheet row " + (rowIndex + 1) + " has more values than its header.",
-                        // Perform this small step of the grading workflow.
                         "Fix the CSV row before grading; the original file was left unchanged.");
-                // Return this computed result to the caller.
+                // Abort so the original file is left unchanged.
                 return false;
             }
-            // Repeat this operation for each relevant grading item.
+            // Short rows are normal (blank trailing cells are often dropped).
             while (row.size() < header.size()) {
-                // Perform this small step of the grading workflow.
+                // Pad with empty cells so every row lines up with the header.
                 row.add("");
             }
-            // Prepare or update the value needed by the next grading step.
+            // The student name that identifies whose scores belong in this row.
             String student = row.get(studentColumn);
-            // Check this condition so grading follows the intended path.
+            // A row with no student name cannot receive scores.
             if (student.isBlank()) {
+                // Warn but carry on: the rest of the sheet is fine.
                 reporter.recoverable("scoresheet", "scoresheet-row",
                         "Scoresheet row " + (rowIndex + 1) + " has no student name.",
-                        // Perform this small step of the grading workflow.
                         "Fill in the student column; unrelated rows and scores will be preserved.",
-                        // Perform this small step of the grading workflow.
                         null, absolute.toString(), null);
-                // Perform this small step of the grading workflow.
+                // Keep the nameless row exactly as it was so no teacher data is lost.
                 writableRows.add(row);
-                // Perform this small step of the grading workflow.
+                // Skip the score lookup for this row.
                 continue;
             }
-            // Perform this small step of the grading workflow.
+            // Note that this graded student has a row.
             seenStudents.add(student);
-            // Prepare or update the value needed by the next grading step.
+            // Scores computed for this student, or null if they were not graded in this session.
             Map<String, Integer> studentScores = scores.get(student);
-            // Check this condition so grading follows the intended path.
+            // Rows for students who were not graded are left untouched.
             if (studentScores != null) {
-                // Repeat this operation for each relevant grading item.
+                // One entry per question: key is the question name, value is 0 or 1.
                 for (Map.Entry<String, Integer> score : studentScores.entrySet()) {
-                    // Prepare or update the value needed by the next grading step.
+                    // The question name must match a column header exactly.
                     int questionColumn = header.indexOf(score.getKey());
-                    // Check this condition so grading follows the intended path.
+                    // No column for this question in the CSV.
                     if (questionColumn < 0) {
+                        // Report it but keep going; the teacher can add the column and regrade.
                         reporter.recoverable("scoresheet", "scoresheet-update",
                                 "Scoresheet is missing question column: " + score.getKey(),
-                                // Perform this small step of the grading workflow.
                                 "Add the question column before the next grading session; existing rows are safe.",
-                                // Perform this small step of the grading workflow.
                                 student, absolute.toString(), score.getKey());
                     } else {
-                        // Perform this small step of the grading workflow.
+                        // Write the 0 or 1 into the matching column of this student's row.
                         row.set(questionColumn, Integer.toString(score.getValue()));
                     }
                 }
             }
-            // Perform this small step of the grading workflow.
+            // Add the updated row to the output table.
             writableRows.add(row);
         }
 
-        // Repeat this operation for each relevant grading item.
+        // Compare every graded student with the students found in the sheet.
         for (String student : scores.keySet()) {
-            // Check this condition so grading follows the intended path.
+            // This graded student has no row in the CSV.
             if (!seenStudents.contains(student)) {
+                // Report it so their scores are not silently lost; the file itself is not extended with new rows.
                 reporter.recoverable("scoresheet", "scoresheet-row",
                         "No scoresheet row exists for student: " + student,
                         "Add a row for the student if their scores should be recorded.",
-                        // Perform this small step of the grading workflow.
                         student, absolute.toString(), null);
             }
         }
 
-        // Prepare or update the value needed by the next grading step.
+        // Temp file next to the real one; declared outside the try so the error path can delete it.
         Path temporary = null;
-        // Perform this small step of the grading workflow.
+        // Writing and renaming can fail with IOException, handled at the bottom.
         try {
-            // Prepare or update the value needed by the next grading step.
+            // Folder of the scoresheet; the temp file is created there so the final move stays on the same file system.
             Path parent = absolute.getParent();
-            // Check this condition so grading follows the intended path.
+            // A path with no parent folder cannot hold a sibling temp file.
             if (parent == null) {
-                // Report this unrecoverable condition to the caller.
+                // Jump to the catch block below, which reports a fatal write error.
                 throw new IOException("scoresheet has no parent directory");
             }
-            // Perform this small step of the grading workflow.
+            // Make sure the folder exists; does nothing if it does.
             Files.createDirectories(parent);
-            // Prepare or update the value needed by the next grading step.
+            // Create a uniquely named file such as scores.csv.12345.tmp beside the original.
             temporary = Files.createTempFile(parent, absolute.getFileName().toString() + ".", ".tmp");
+            // Write the full new CSV text to the temp file, so the original is untouched until the result is complete.
             Files.writeString(temporary, render(writableRows), StandardCharsets.UTF_8,
-                    // Perform this small step of the grading workflow.
                     StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
-            // Replace only the completed temporary file, preserving the original on failure.
+            // Swap the finished temp file over the original in one step, so readers never see a half-written sheet.
             try {
+                // ATOMIC_MOVE makes the replacement all-or-nothing at the filesystem level.
                 Files.move(temporary, absolute, StandardCopyOption.ATOMIC_MOVE,
-                        // Perform this small step of the grading workflow.
                         StandardCopyOption.REPLACE_EXISTING);
+            // Some filesystems cannot do atomic moves.
             } catch (java.nio.file.AtomicMoveNotSupportedException unsupported) {
-                // Perform this small step of the grading workflow.
+                // Fall back to an ordinary replace, which is still safe because the temp file is already complete.
                 Files.move(temporary, absolute, StandardCopyOption.REPLACE_EXISTING);
             }
-            // Return this computed result to the caller.
+            // The scoresheet now contains the new scores.
             return true;
+        // Any failure while preparing, writing or moving the file ends up here.
         } catch (IOException exception) {
-            // Check this condition so grading follows the intended path.
+            // Only clean up if the temp file was actually created.
             if (temporary != null) {
-                // Perform this small step of the grading workflow.
+                // Deleting can fail too, and that must not hide the original problem.
                 try {
-                    // Perform this small step of the grading workflow.
+                    // Remove the half-finished temp file so stray .tmp files do not pile up.
                     Files.deleteIfExists(temporary);
+                // Cleanup failed; ignored on purpose.
                 } catch (IOException ignored) {
-                    // Preserve the original write error for the user.
                 }
             }
+            // Report that the CSV could not be updated; the original file still holds the old scores.
             reporter.fatal("scoresheet", "scoresheet-write",
                     "Could not safely update scoresheet " + absolute + ": " + exception.getMessage(),
-                    // Perform this small step of the grading workflow.
                     "Check permissions and ensure the scoresheet is not read-only; the original was retained.");
-            // Return this computed result to the caller.
+            // Tell JavaGrader the scores were not saved.
             return false;
         }
     }
 
+    // Minimal RFC 4180 style parser: commas separate cells, quotes wrap cells containing commas or newlines, and "" is a literal quote.
     private static List<List<String>> parse(String content) throws IOException {
-        // Prepare or update the value needed by the next grading step.
+        // Completed rows.
         List<List<String>> rows = new ArrayList<>();
-        // Prepare or update the value needed by the next grading step.
+        // Cells of the row being read.
         List<String> row = new ArrayList<>();
-        // Prepare or update the value needed by the next grading step.
+        // Characters of the cell being read.
         StringBuilder field = new StringBuilder();
-        // Prepare or update the value needed by the next grading step.
+        // True while inside a "..." cell, where commas and newlines are ordinary text.
         boolean quoted = false;
-        // Prepare or update the value needed by the next grading step.
+        // True right after a closing quote, where only a comma or line break is legal.
         boolean afterQuote = false;
-        // Repeat this operation for each relevant grading item.
+        // Single pass over the text, one character at a time (a small state machine).
         for (int index = 0; index < content.length(); index++) {
-            // Prepare or update the value needed by the next grading step.
+            // Character being processed.
             char character = content.charAt(index);
-            // Check this condition so grading follows the intended path.
+            // State 1: inside quotes.
             if (quoted) {
-                // Check this condition so grading follows the intended path.
+                // A quote is either an escaped quote or the end of the cell.
                 if (character == '"') {
-                    // Check this condition so grading follows the intended path.
+                    // Two quotes in a row mean one literal quote character.
                     if (index + 1 < content.length() && content.charAt(index + 1) == '"') {
-                        // Perform this small step of the grading workflow.
+                        // Keep a single quote in the cell value.
                         field.append('"');
-                        // Perform this small step of the grading workflow.
+                        // Skip the second quote of the pair.
                         index++;
                     } else {
-                        // Prepare or update the value needed by the next grading step.
+                        // A lone quote closes the cell.
                         quoted = false;
-                        // Prepare or update the value needed by the next grading step.
+                        // Next character must be a comma or newline.
                         afterQuote = true;
                     }
                 } else {
-                    // Perform this small step of the grading workflow.
+                    // Any other character inside quotes, including commas and newlines, is cell text.
                     field.append(character);
                 }
+            // State 2: a quoted cell has just ended.
             } else if (afterQuote) {
-                // Check this condition so grading follows the intended path.
+                // Comma: this cell is complete.
                 if (character == ',') {
-                    // Perform this small step of the grading workflow.
+                    // Store the finished cell.
                     row.add(field.toString());
-                    // Perform this small step of the grading workflow.
+                    // Empty the buffer for the next cell.
                     field.setLength(0);
-                    // Prepare or update the value needed by the next grading step.
+                    // Back to normal reading.
                     afterQuote = false;
+                // Line break: this cell and the whole row are complete.
                 } else if (character == '\n' || character == '\r') {
-                    // Perform this small step of the grading workflow.
+                    // Store the last cell of the row.
                     row.add(field.toString());
-                    // Perform this small step of the grading workflow.
+                    // Reset for the next row.
                     field.setLength(0);
-                    // Perform this small step of the grading workflow.
+                    // Store the finished row.
                     rows.add(row);
-                    // Prepare or update the value needed by the next grading step.
+                    // Start a new row.
                     row = new ArrayList<>();
-                    // Prepare or update the value needed by the next grading step.
+                    // Back to normal reading.
                     afterQuote = false;
-                    // Check this condition so grading follows the intended path.
+                    // Windows line endings are \r
+                    // , which must count as one break.
                     if (character == '\r' && index + 1 < content.length() && content.charAt(index + 1) == '\n') {
-                        // Perform this small step of the grading workflow.
+                        // Skip the 
+                        //  that follows the \r.
                         index++;
                     }
                 } else {
-                    // Report this unrecoverable condition to the caller.
+                    // Something like "abc"x is malformed; stop rather than guess.
                     throw new IOException("characters found after a quoted CSV field");
                 }
+            // State 3: a quote at the very start of a cell opens a quoted cell.
             } else if (character == '"' && field.length() == 0) {
-                // Prepare or update the value needed by the next grading step.
+                // Enter quote mode.
                 quoted = true;
+            // Unquoted comma: end of the cell.
             } else if (character == ',') {
-                // Perform this small step of the grading workflow.
+                // Store the cell.
                 row.add(field.toString());
-                // Perform this small step of the grading workflow.
+                // Reset for the next cell.
                 field.setLength(0);
+            // Unquoted line break: end of the row.
             } else if (character == '\n' || character == '\r') {
-                // Perform this small step of the grading workflow.
+                // Store the last cell.
                 row.add(field.toString());
-                // Perform this small step of the grading workflow.
+                // Reset the buffer.
                 field.setLength(0);
-                // Perform this small step of the grading workflow.
+                // Store the row.
                 rows.add(row);
-                // Prepare or update the value needed by the next grading step.
+                // Begin the next row.
                 row = new ArrayList<>();
-                // Check this condition so grading follows the intended path.
+                // Treat a Windows \r
+                //  pair as a single line break.
                 if (character == '\r' && index + 1 < content.length() && content.charAt(index + 1) == '\n') {
-                    // Perform this small step of the grading workflow.
+                    // Consume the 
+                    //  of the pair.
                     index++;
                 }
             } else {
-                // Perform this small step of the grading workflow.
+                // Ordinary character: add it to the current cell.
                 field.append(character);
             }
         }
-        // Check this condition so grading follows the intended path.
+        // End of input while still inside quotes.
         if (quoted) {
-            // Report this unrecoverable condition to the caller.
+            // The closing quote is missing, so the file is damaged.
             throw new IOException("unterminated quoted CSV field");
         }
-        // Check this condition so grading follows the intended path.
+        // Input ended right after a quoted cell.
         if (afterQuote) {
-            // Perform this small step of the grading workflow.
+            // Store that final cell.
             row.add(field.toString());
+        // Input ended without a trailing newline, so a final cell or row may still be pending.
         } else if (field.length() > 0 || !row.isEmpty() || (!content.isEmpty() && !content.endsWith("\n") && !content.endsWith("\r"))) {
-            // Perform this small step of the grading workflow.
+            // Store the pending last cell (possibly empty after a trailing comma).
             row.add(field.toString());
         }
-        // Check this condition so grading follows the intended path.
+        // Add the last row only if it holds anything; this avoids a phantom empty row after the final newline.
         if (!row.isEmpty()) {
-            // Perform this small step of the grading workflow.
+            // Store the last row.
             rows.add(row);
         }
-        // Return this computed result to the caller.
+        // The whole file as rows of cells.
         return rows;
     }
 
+    // Turns rows back into CSV text, quoting cells that need it.
     private static String render(List<List<String>> rows) {
-        // Prepare or update the value needed by the next grading step.
+        // Holds the CSV text being built.
         StringBuilder output = new StringBuilder();
-        // Repeat this operation for each relevant grading item.
+        // One output line per row.
         for (List<String> row : rows) {
-            // Repeat this operation for each relevant grading item.
+            // Go through the cells left to right.
             for (int index = 0; index < row.size(); index++) {
-                // Check this condition so grading follows the intended path.
+                // No comma before the first cell.
                 if (index > 0) {
-                    // Perform this small step of the grading workflow.
+                    // Separator between cells.
                     output.append(',');
                 }
-                // Prepare or update the value needed by the next grading step.
+                // Cell text to write.
                 String value = row.get(index);
-                // Check this condition so grading follows the intended path.
+                // A comma, quote or line break in the text would corrupt the layout unless the cell is quoted.
                 if (value.indexOf(',') >= 0 || value.indexOf('"') >= 0
                         || value.indexOf('\n') >= 0 || value.indexOf('\r') >= 0) {
-                    // Perform this small step of the grading workflow.
+                    // Open the quote and double any quote characters inside.
                     output.append('"').append(value.replace("\"", "\"\""));
-                    // Perform this small step of the grading workflow.
+                    // Close the quote.
                     output.append('"');
                 } else {
-                    // Perform this small step of the grading workflow.
+                    // Plain cell: write as is.
                     output.append(value);
                 }
             }
-            // Perform this small step of the grading workflow.
+            // End the row with a Unix newline.
             output.append('\n');
         }
-        // Return this computed result to the caller.
+        // The finished CSV text, ready to be written to the temp file.
         return output.toString();
     }
 }

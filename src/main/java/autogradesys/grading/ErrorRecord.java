@@ -2,7 +2,11 @@ package autogradesys.grading;
 
 import java.util.Objects;
 
-/** A durable, contextual description of one grading problem.
+/**
+ * A durable, contextual description of one grading problem.
+ *
+ * <p>This is the single shape shared by the console output, the JSONL history file and the HTML
+ * report. {@code student}, {@code submission} and {@code question} are null for run-level errors.</p>
  *
  * @param canContinue whether grading may safely proceed after this problem
  */
@@ -17,16 +21,17 @@ public record ErrorRecord(
         String question,
         boolean canContinue) {
 
+    // Compact constructor: runs on every new ErrorRecord before its fields are assigned.
     public ErrorRecord {
-        // Perform this small step of the grading workflow.
+        // Reject a missing stage up front; the console, JSONL and HTML writers all assume it exists.
         Objects.requireNonNull(stage, "stage");
-        // Perform this small step of the grading workflow.
+        // Same for category, the short machine-friendly error code such as "compile" or "timeout".
         Objects.requireNonNull(category, "category");
-        // Perform this small step of the grading workflow.
+        // Severity is needed for the console prefix and the history file.
         Objects.requireNonNull(severity, "severity");
-        // Perform this small step of the grading workflow.
+        // Every record must say what went wrong.
         Objects.requireNonNull(message, "message");
-        // Perform this small step of the grading workflow.
+        // Every record must also say how to fix it; the optional student, submission and question fields may stay null.
         Objects.requireNonNull(guidance, "guidance");
     }
 }

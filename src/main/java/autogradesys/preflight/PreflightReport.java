@@ -20,6 +20,7 @@ public record PreflightReport(String templateName, List<String> students, List<P
     private static final int NAME_WIDTH = 28;
 
     // True when the check could not run at all (bad template or submissions folder).
+    // Treat any fatal finding as a setup failure that must stop grading before compilation.
     public boolean fatal() {
         // Any single FATAL finding is enough.
         return findings.stream().anyMatch(f -> f.severity() == Severity.FATAL);
