@@ -14,6 +14,12 @@ public final class ScoreRecorder {
     private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSSSSSSSS");
     private ScoreRecorder() { }
 
+    /** Live integration point used by JavaGrader for the current scoresheet. */
+    public static boolean recordScores(Path scoresheet, Map<String, Map<String, Integer>> scores,
+            autogradesys.grading.ErrorReporter reporter) {
+        return autogradesys.grading.CsvScoresheet.update(scoresheet, scores, reporter);
+    }
+
     public static Path recordScores(Map<String, int[]> results) throws IOException {
         Map<String, Map<String, Integer>> scores = new LinkedHashMap<>();
         for (Map.Entry<String, int[]> entry : results.entrySet()) {

@@ -27,6 +27,7 @@ public record CacheReport(Path workingDir, List<ValidationEvent> events, int cre
         out.println("__ Working copy (the original submissions are never changed) __");
         out.println("  " + workingDir);
         for (ValidationEvent event : events) {
+            if (event.type() == ValidationEvent.Type.IGNORED_JUNK) continue;
             out.println("  [" + event.type() + "] " + event.path() + " - " + event.message());
         }
         if (usable) {

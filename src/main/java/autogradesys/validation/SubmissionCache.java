@@ -17,6 +17,10 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
+import java.util.regex.Pattern;
+import autogradesys.submission.Submission;
+import autogradesys.submission.SubmissionIterator;
+import autogradesys.submission.SubmissionUnzipper;
 
 import autogradesys.validation.ValidationEvent.Type;
 
@@ -128,7 +132,8 @@ public class SubmissionCache {
         boolean zip = SubmissionFiles.isZipFile(source);
         try {
             if (zip) {
-                int files = ArchiveExtractor.extract(source, destination);
+                SubmissionUnzipper.unzip(source, destination);
+                int files = 1;
                 return new ValidationEvent(student, Type.ARCHIVE_EXTRACTED, shown, "extracted " + files + " files");
             }
             SubmissionFiles.copyMissing(source, destination);
@@ -142,6 +147,12 @@ public class SubmissionCache {
 
     // Finds what each student's original is: a folder, or a zip (beside or inside the folder).
     private void findSources(Path originals, List<ValidationEvent> events) throws IOException {
+        // Use the teammate iterator for the canonical named-archive discovery path.
+        SubmissionIterator namedArchives = new SubmissionIterator(originals,
+                Pattern.compile("^\\d{4}-\\d{4}-(.+)\\.zip$", Pattern.CASE_INSENSITIVE));
+        for (Submission archive : namedArchives) {
+            sources.putIfAbsent(archive.getUsername(), archive.getZipPath());
+        }
         List<Path> children;
         try (Stream<Path> stream = Files.list(originals)) {
             children = stream.sorted().toList();
@@ -156,6 +167,8 @@ public class SubmissionCache {
         for (Path child : children) {
             String name = SubmissionFiles.nameOf(child);
             if (SubmissionFiles.isJunk(child.getFileName())) {
+                events.add(new ValidationEvent("", ValidationEvent.Type.IGNORED_JUNK,
+                        originals.relativize(child).toString().replace('\\', '/'), "ignored"));
                 continue;
             }
             if (Files.isSymbolicLink(child)) {

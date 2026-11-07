@@ -19,6 +19,7 @@ public record ValidationEvent(String student, Type type, String path, String mes
         HEADER_ADDED(true),
         HEADER_CORRECTED(true),
         ARCHIVE_EXTRACTED(true),
+        IGNORED_JUNK(true),
         ITEM_RESTORED(true),
         // Still needs the instructor's attention.
         USERNAME_UNREGISTERED(false),

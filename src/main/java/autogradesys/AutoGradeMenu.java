@@ -141,6 +141,11 @@ public class AutoGradeMenu {
         // Prepare a safe working copy: folders are copied and archives are extracted with zip-slip checks.
         CacheReport working = ctrl.prepareWorkingCopy(submissions);
         working.print(System.out);
+        long cachedIgnored = working.events().stream()
+                .filter(event -> event.type() == autogradesys.validation.ValidationEvent.Type.IGNORED_JUNK)
+                .peek(event -> reporter.ignored("preflight", "ignored-junk", event.path() + " ignored",
+                        "Remove this generated or OS metadata file if desired", event.path()))
+                .count();
         if (!working.usable()) return;
         Path gradingPath = working.workingDir();
         // Feature: read-only layout check before grading. It ASSUMES the Starting Folder is the starter
@@ -157,7 +162,8 @@ public class AutoGradeMenu {
                 .count();
         // Show the findings (per-student ready or needs-attention list) before any code is compiled.
         preflight.print(System.out);
-        if (ignored > 0) System.out.println(ignored + " ignored files logged to the error report.");
+        long ignoredTotal = cachedIgnored + ignored;
+        if (ignoredTotal > 0) System.out.println(ignoredTotal + " ignored files logged to the error report.");
         // A fatal finding means the template or submissions folder is unusable, so grading would only produce noise.
         if (preflight.fatal()) {
             // Print the same banner as a normal run so the output layout is the same either way.
