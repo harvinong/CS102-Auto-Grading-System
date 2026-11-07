@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 
 import autogradesys.filemanager.FileValidator;
 
@@ -16,6 +17,8 @@ import autogradesys.filemanager.FileValidator;
  *
  */
 public class Input {
+
+    private Input() {} // disable instancing
 
     /**
      * Ask user for the path of the file/directory and returns the file object.
@@ -54,10 +57,10 @@ public class Input {
                 }
 
             } catch (IllegalArgumentException e) {
-                // the user enters a non-absolute (relative) path.
-                // the user enters a directory path when prompted for a file path.
-                // the user enters a file path when prompted for a directory path.
-                // the user enters a file path with invalid extensions.
+                // the user enters a:
+                // - non-absolute (relative) path.
+                // - directory path when prompted for a file path.
+                // - file path with invalid extensions or when prompted for a directory path.
                 System.out.println("Invalid input: " + e.getMessage() + "\n");
                 file = null;
             } catch (FileNotFoundException e) {
@@ -166,9 +169,17 @@ public class Input {
         if (!sc.hasNextLine()) {
             throw new InputEndedException(label);
         }
-        String pathString = sc.nextLine();
+        String pathString = sc.nextLine().trim();
 
-        if (pathString.trim().length() == 0) {
+        // if pathString is encased with quotation mark, trim it.
+        for (String p : new String[]{"\"(?:[^\"]|\"\")*\"", "'(?:[^']|'')*'"}) {
+            if (Pattern.matches(p, pathString)) {
+                pathString = pathString.substring(1, pathString.length() - 1);
+                break;
+            }
+        }
+
+        if (pathString.length() == 0) {
             if (defaultFilePath != null) {
                 return defaultFilePath;
             }
@@ -176,13 +187,13 @@ public class Input {
             throw new IllegalArgumentException("Please enter a path.");
         }
 
-        Path dirpath = Paths.get(pathString);
+        Path path = Paths.get(pathString);
 
-        if (!dirpath.isAbsolute()) {
+        if (!path.isAbsolute()) {
             throw new IllegalArgumentException("The path must be absolute.");
         }
 
-        return dirpath;
+        return path;
     }
 
     /**
