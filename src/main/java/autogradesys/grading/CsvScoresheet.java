@@ -17,7 +17,7 @@ import java.util.Set;
  * Reads and atomically updates a CSV scoresheet while preserving existing rows.
  *
  * <p>Grading flow: JavaGrader first calls {@link #isValid} during setup, grades everything, then
- * calls {@link #update} once to write each student's marks into the matching student row and question
+ * calls {@link #update} (through ScoreRecorder) once to write each student's marks into the matching student row and question
  * column. The new file is written to a temp file and swapped in, so a crash cannot leave a
  * half-written scoresheet.</p>
  *
@@ -64,25 +64,38 @@ public final class CsvScoresheet {
         }
     }
 
-    /** Creates a current-format scoresheet and writes the supplied student scores. */
+    /**
+     * Creates a current-format scoresheet and writes the supplied student scores.
+     *
+     * <p>Not part of the menu grading flow (that updates an existing sheet with {@link #update});
+     * ScoreRecorder.recordScores(Map) calls it to write a brand new timestamped CSV.</p>
+     */
     public static void create(Path path, Map<String, Map<String, Integer>> scores) throws IOException {
+        // Ordered set of question names seen across all students; these become the question columns, in first-seen order.
         Set<String> questions = new LinkedHashSet<>();
+        // Merge every student's question names, since different students may have been graded on different questions.
         for (Map<String, Integer> student : scores.values()) questions.addAll(student.keySet());
+        // Header row: the fixed student column first, then one column per question.
         List<String> header = new ArrayList<>();
         header.add("student");
         header.addAll(questions);
+        // Table of rows to render, starting with the header.
         List<List<String>> rows = new ArrayList<>();
         rows.add(header);
+        // One data row per student: their name, then a mark for every question column.
         for (Map.Entry<String, Map<String, Integer>> entry : scores.entrySet()) {
+            // The row starts with the student's name, which fills the student column.
             List<String> row = new ArrayList<>(); row.add(entry.getKey());
+            // A question this student has no mark for is written as 0 so every cell holds a number.
             for (String question : questions) row.add(String.valueOf(entry.getValue().getOrDefault(question, 0)));
             rows.add(row);
         }
+        // CREATE_NEW refuses to overwrite an existing file, so a new timestamped sheet can never replace an old one.
         Files.writeString(path, render(rows), StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
     }
 
-    // Called by JavaGrader at the end of grading; returns true only if the file was replaced successfully.
+    // Called at the end of grading (JavaGrader.grade -> ScoreRecorder.recordScores); returns true only if the file was replaced successfully.
     /**
      * Applies the supplied scores and replaces the file only after rendering succeeds.
      *
@@ -334,11 +347,9 @@ public final class CsvScoresheet {
                     row = new ArrayList<>();
                     // Back to normal reading.
                     afterQuote = false;
-                    // Windows line endings are \r
-                    // , which must count as one break.
+                    // Windows line endings are a carriage return plus a line feed, which must count as one break.
                     if (character == '\r' && index + 1 < content.length() && content.charAt(index + 1) == '\n') {
-                        // Skip the 
-                        //  that follows the \r.
+                        // Skip the line feed that follows the carriage return.
                         index++;
                     }
                 } else {
@@ -365,11 +376,9 @@ public final class CsvScoresheet {
                 rows.add(row);
                 // Begin the next row.
                 row = new ArrayList<>();
-                // Treat a Windows \r
-                //  pair as a single line break.
+                // Treat a Windows carriage return plus line feed pair as a single line break.
                 if (character == '\r' && index + 1 < content.length() && content.charAt(index + 1) == '\n') {
-                    // Consume the 
-                    //  of the pair.
+                    // Consume the line feed of the pair.
                     index++;
                 }
             } else {

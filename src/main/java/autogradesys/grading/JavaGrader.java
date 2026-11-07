@@ -182,7 +182,7 @@ public final class JavaGrader {
             // Remember that setup failed but keep checking the other inputs.
             valid = false;
         }
-        // The folder of question fixtures (expected.txt, optional input.txt) must exist as well.
+        // The questions folder (instructor testers, or expected.txt fixtures in the older layout) must exist as well.
         if (!Files.isDirectory(questionsRoot)) {
             // Fatal because there would be nothing to compare student output against.
             reporter.fatal("submission", "filesystem",
@@ -462,6 +462,7 @@ public final class JavaGrader {
         try (Stream<Path> paths = Files.walk(root)) {
             // Reverse order puts children before their parent folder, since a folder must be empty to be deleted.
             paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+                // Each delete can fail separately, so the try sits inside the loop and one failure does not stop the rest.
                 try {
                     // Remove one file or now-empty folder, tolerating one that has already gone.
                     Files.deleteIfExists(path);
@@ -489,11 +490,13 @@ public final class JavaGrader {
                 .replace("\n", "\\n").replace("\"", "\\\"") + "\"";
     }
 
+    /** Wording for the output cap used in the output-limit error messages. */
     static String outputLimitDescription(long bytes) {
         // Format the limit for messages, e.g. "1048576 byte(s)".
         return bytes + " byte(s)";
     }
 
+    /** Wording for the time limit used in the timeout error messages. */
     static String timeoutDescription(Duration timeout) {
         // Whole seconds read better as seconds (e.g. "10 second(s)").
         if (timeout.toMillis() % 1_000 == 0) {

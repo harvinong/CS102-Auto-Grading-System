@@ -45,6 +45,7 @@ public record GradeResult(int studentCount, int issueCount, boolean fatal, Map<S
         // Every student's question names, merged; putIfAbsent keeps the first entry.
         scores.values().forEach(studentScores -> studentScores.keySet()
                 .forEach(question -> marks.putIfAbsent(question, 1)));
+        // Hand back the question -> 1 table that the four-argument constructor passes on as availableMarks.
         return marks;
     }
 }

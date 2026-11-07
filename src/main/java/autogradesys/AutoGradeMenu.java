@@ -127,12 +127,21 @@ public class AutoGradeMenu {
     }
 
     /**
-     * Menu option 3: the full grade-students flow. Ask for the submissions folder, run the
-     * read-only preflight check (stopping if its setup is fatal), grade every student with
-     * JavaGrader (compile, run, compare, update the CSV), then write the HTML report and print a summary.
+     * Menu option 3: the full grade-students flow, in this order:
+     * <ol>
+     * <li>ask for the submissions folder and build the working copy (copy folders, extract zips);</li>
+     * <li>run the read-only preflight check on the copy, recording ignored junk quietly and stopping
+     *     if the setup is fatal;</li>
+     * <li>let the instructor fix the copy, re-check it, or start grading;</li>
+     * <li>grade every student with JavaGrader (compile, run the testers, compare output, update
+     *     the CSV through ScoreRecorder);</li>
+     * <li>write the HTML report from the result and the recorded errors, and print a summary.</li>
+     * </ol>
+     * Everything that goes wrong is recorded through one ErrorReporter, so the console, the
+     * history file and the HTML report all show the same records.
      */
     public void runGrader() {
-        // Ask for the submissions folder every time, since it changes between assignments; keep the answer so both the preflight and the grader receive it.
+        // Ask for the submissions folder every time, since it changes between assignments; keep the answer so the working copy is built from it.
         File submissions = CLI.promptFile(Field.SUBMISSIONS, null, sc);
 
         // One reporter owns the durable audit trail for preflight and grading diagnostics.
@@ -140,21 +149,27 @@ public class AutoGradeMenu {
                 new ErrorHistory(Path.of(".grader-error-history.jsonl")), System.out);
         // Prepare a safe working copy: folders are copied and archives are extracted with zip-slip checks.
         CacheReport working = ctrl.prepareWorkingCopy(submissions);
+        // Show what the copy step did (new, reused, failed) before anything is checked or graded.
         working.print(System.out);
+        // Junk the copy step skipped (.DS_Store, __MACOSX) is not printed above, so record each one as a quiet note instead.
+        // peek runs once per matching event and count() then gives the total for the summary line further down.
         long cachedIgnored = working.events().stream()
                 .filter(event -> event.type() == autogradesys.validation.ValidationEvent.Type.IGNORED_JUNK)
                 .peek(event -> reporter.ignored("preflight", "ignored-junk", event.path() + " ignored",
                         "Remove this generated or OS metadata file if desired", event.path()))
                 .count();
+        // If the working copy could not be set up at all, there is nothing to check or grade, so go back to the menu.
         if (!working.usable()) return;
+        // Preflight and grading both run on the copy, never on the original submissions.
         Path gradingPath = working.workingDir();
         // Feature: read-only layout check before grading. It ASSUMES the Starting Folder is the starter
         // template (e.g. RenameToYourStudentID); this is the only place that assumption is made.
         // check(...) compares every submission with the template and returns a report (it changes nothing);
-        // the template path comes from the saved configuration, the submissions path from the prompt above;
+        // the template path comes from the saved configuration, the submissions path from the working copy built above;
         // print(...) writes the report to the console.
         var preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
         // Persist ignored clutter silently; PreflightReport intentionally omits it from console output.
+        // This is the same quiet recording as above, but for junk found inside the student folders.
         long ignored = preflight.findings().stream()
                 .filter(f -> f.category() == autogradesys.preflight.PreflightFinding.Category.IGNORED_JUNK)
                 .peek(f -> reporter.ignored("preflight", "ignored-junk", f.path() + " ignored",
@@ -162,7 +177,9 @@ public class AutoGradeMenu {
                 .count();
         // Show the findings (per-student ready or needs-attention list) before any code is compiled.
         preflight.print(System.out);
+        // Both sources of ignored files added together, so the instructor is told how many entries were left out of the report on screen.
         long ignoredTotal = cachedIgnored + ignored;
+        // Only mention it when something was ignored, and say where the details went.
         if (ignoredTotal > 0) System.out.println(ignoredTotal + " ignored files logged to the error report.");
         // A fatal finding means the template or submissions folder is unusable, so grading would only produce noise.
         if (preflight.fatal()) {
@@ -174,24 +191,37 @@ public class AutoGradeMenu {
             return;
         }
         // Keep the validation feature reachable: the instructor may fix, recheck, or proceed.
+        // The loop only ends by returning (option 0) or breaking out (option 3).
         while (true) {
+            // The four choices offered after each preflight report.
             System.out.println("1. Fix common mistakes automatically");
             System.out.println("2. Check the working copy again");
             System.out.println("3. Start grading");
             System.out.println("0. Cancel and return to the main menu");
+            // Read a whole number from 0 to 3, asking again on bad input.
             int choice = CLI.promptOption(0, 3, sc);
+            // Cancel: leave without grading, so no scoresheet, history or report changes happen.
             if (choice == 0) return;
+            // Start grading: leave this loop and carry on with the banner and JavaGrader below.
             if (choice == 3) break;
+            // Re-check only: useful after the instructor edited the working copy by hand.
             if (choice == 2) {
+                // Run the layout check again so the report reflects the edits.
                 preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
+                // Show the fresh report before offering the choices again.
                 preflight.print(System.out);
             } else {
+                // Choice 1: run the automatic fixes (headers, folder names, missing files), asking yes/no questions where a fix is a guess.
                 try {
                     ctrl.validateSubmissions(gradingPath, preflight, question -> CLI.promptYesNo(question, sc)).print(System.out);
+                // A fix that cannot read or write the working copy ends up here.
                 } catch (IOException exception) {
+                    // Tell the instructor and fall through to the re-check, so they still see the current state.
                     System.out.println("Could not validate the submissions: " + exception.getMessage());
                 }
+                // Check again after the fixes, because the earlier report no longer describes the copy.
                 preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
+                // Show the updated report.
                 preflight.print(System.out);
             }
         }
@@ -200,7 +230,9 @@ public class AutoGradeMenu {
         System.out.println("\nRunning autograder!\n");
         // A zip or folder that could not be put into the working copy is not graded; record it so it is in the report and history too.
         for (autogradesys.validation.ValidationEvent event : working.events()) {
+            // Fixed events (for example a zip that extracted fine) are not problems; only the failed ones are recorded.
             if (!event.fixed()) {
+                // A recoverable record: that student is skipped but the others are still graded. The student is null when the failure is not tied to one folder.
                 reporter.recoverable("submission", "working-copy", event.path() + " was not graded: " + event.message(),
                         "Ask the student to resubmit a valid zip file or folder.",
                         event.student().isEmpty() ? null : event.student(), event.path(), null);

@@ -168,10 +168,14 @@ public class SubmissionCache {
             }
         }
         for (Path child : children) {
+            // The entry's own file or folder name (a zip still has its .zip ending here), used when it is stored as a source.
             String name = SubmissionFiles.nameOf(child);
+            // Junk is a name starting with a dot (.DS_Store) or the __MACOSX folder; it is never a student.
             if (SubmissionFiles.isJunk(child.getFileName())) {
+                // Record an IGNORED_JUNK event with the path relative to the submissions folder; AutoGradeMenu.runGrader turns it into a quiet "note" record.
                 events.add(new ValidationEvent("", ValidationEvent.Type.IGNORED_JUNK,
                         originals.relativize(child).toString().replace('\\', '/'), "ignored"));
+                // Skip the checks below so the junk entry is not copied into the working copy.
                 continue;
             }
             if (Files.isSymbolicLink(child)) {
