@@ -85,7 +85,7 @@ public class AutoGradeMenu {
      */
     public void runGrader() {
         // Ask for the submissions folder every time, since it changes between assignments; keep the answer so the working copy is built from it.
-        File submissions = CLI.promptFile(Field.SUBMISSIONS, null, sc);
+        File submissions = Input.promptFile(Field.SUBMISSIONS, null, sc);
 
         // One reporter owns the durable audit trail for preflight and grading diagnostics.
         ErrorReporter reporter = new ErrorReporter(
