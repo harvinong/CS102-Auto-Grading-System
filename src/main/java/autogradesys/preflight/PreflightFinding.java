@@ -1,5 +1,7 @@
 package autogradesys.preflight;
 
+import autogradesys.cli.TextColor;
+
 /**
  * One thing the preflight noticed about a submission.
  *
@@ -71,5 +73,29 @@ public record PreflightFinding(
         WARNING,
         // Information only.
         NOTE
+    }
+
+    /**<p>
+     * Get a tag like "  [CATEGORY] " (padded with spaces)
+     * applied with TextColor based on its severity:
+     * </p>
+     * - NOTE is applied with TextColor.INFO;
+     * - WARNING is applied with TextColor.WARNING;
+     * - ERROR and FATAL is applied with TextColor.ERROR;
+     */
+    public String getTagWithColor() {
+        TextColor color;
+        switch (this.severity()) {
+            case NOTE:
+                color = TextColor.INFO;
+                break;
+            case WARNING:
+                color = TextColor.WARNING;
+                break;
+            default:
+                color = TextColor.ERROR;
+                break;
+        }
+        return color.apply("  [" + this.category() + "] ");
     }
 }

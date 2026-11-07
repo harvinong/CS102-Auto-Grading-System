@@ -40,7 +40,7 @@ public record ValidationReport(List<ValidationEvent> events, Map<String, Path> s
         for (Map.Entry<String, List<ValidationEvent>> entry : byStudent.entrySet()) {
             out.println(entry.getKey());
             for (ValidationEvent event : entry.getValue()) {
-                out.println("  [" + event.type() + "] " + event.path() + " - " + event.message());
+                out.println(event.getTagWithColor() + event.path() + " - " + event.message());
             }
         }
 

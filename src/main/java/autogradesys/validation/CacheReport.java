@@ -28,7 +28,7 @@ public record CacheReport(Path workingDir, List<ValidationEvent> events, int cre
         out.println("  " + workingDir);
         for (ValidationEvent event : events) {
             if (event.type() == ValidationEvent.Type.IGNORED_JUNK) continue;
-            out.println("  [" + event.type() + "] " + event.path() + " - " + event.message());
+            out.println(event.getTagWithColor() + event.path() + " - " + event.message());
         }
         if (usable) {
             out.println("New: " + created + ", reused from an earlier run: " + reused

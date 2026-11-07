@@ -135,7 +135,7 @@ public record PreflightReport(String templateName, List<String> students, List<P
         // Ignored clutter is persisted by the grading flow, not shown to the operator.
         if (f.category() == PreflightFinding.Category.IGNORED_JUNK) return;
         // Indent, bracketed category, then where it happened.
-        StringBuilder sb = new StringBuilder("  [").append(f.category()).append("] ").append(f.path());
+        StringBuilder sb = new StringBuilder(f.getTagWithColor()).append(f.category()).append("] ").append(f.path());
         // Add the explanation when there is one.
         if (!f.message().isEmpty()) {
             sb.append(" - ").append(f.message());
