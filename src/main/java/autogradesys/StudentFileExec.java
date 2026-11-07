@@ -41,6 +41,11 @@ public class StudentFileExec {
         return new TestCase(label, args, null, expectedExceptionName);
     }
 }
+    // Describes "new <className>(<args>)" 
+    record ObjSpec(String className, Object... ctorArgs) {}
+
+    
+    
     // method name like (compareShape, IsIsogramWord, ...) paramTypes is what type of parameter it is expected. testCases is the testcases it will be put against
     record MethodSpec(String methodName, Class<?>[] paramTypes, List<TestCase> testCases) {}
 
@@ -117,7 +122,7 @@ public class StudentFileExec {
                 "sortShapes",
                  new Class<?>[]{ArrayList.class},
                  List.of(
-                    
+                        TestCase.expectValue("test1", new Object[]{new ArrayList<>(Arrays.asList(new ObjSpec("Rectangle", "R1",1000,2)))}, "[R2=>10.0:13.0]")
                  )
                  )
 
@@ -139,6 +144,60 @@ public class StudentFileExec {
         );
     }
 
+        // Recursively turns ObjSpec / List into real objects using the student's classloader
+    private Object resolveArg(Object arg, ClassLoader loader) throws Exception {
+        if (arg instanceof ObjSpec spec) {
+            Class<?> cls = Class.forName(spec.className(), true, loader);
+            Object[] ctorArgs = new Object[spec.ctorArgs().length];
+            for (int i = 0; i < ctorArgs.length; i++) {
+                ctorArgs[i] = resolveArg(spec.ctorArgs()[i], loader);
+            }
+            return construct(cls, ctorArgs);
+        }
+        if (arg instanceof List<?> list) {
+            ArrayList<Object> resolved = new ArrayList<>();
+            for (Object o : list) resolved.add(resolveArg(o, loader));
+            return resolved;
+        }
+        return arg; // plain values (String, Integer, ...) pass through untouched
+    }
+
+    private Object[] resolveArgs(Object[] args, ClassLoader loader) throws Exception {
+        Object[] out = new Object[args.length];
+        for (int i = 0; i < args.length; i++) out[i] = resolveArg(args[i], loader);
+        return out;
+    }
+
+    // Finds a constructor whose parameters can accept the args (allows int -> double widening)
+    private Object construct(Class<?> cls, Object[] args) throws Exception {
+        for (java.lang.reflect.Constructor<?> c : cls.getConstructors()) {
+            Class<?>[] pts = c.getParameterTypes();
+            if (pts.length != args.length) continue;
+            Object[] converted = new Object[args.length];
+            boolean ok = true;
+            for (int i = 0; i < pts.length && ok; i++) {
+                Object converted_i = coerce(args[i], pts[i]);
+                if (converted_i == NO_MATCH) ok = false; else converted[i] = converted_i;
+            }
+            if (ok) return c.newInstance(converted);
+        }
+        throw new NoSuchMethodException("No matching constructor on " + cls.getName()
+                + " for args " + Arrays.toString(args));
+    }
+
+    private static final Object NO_MATCH = new Object();
+
+    private Object coerce(Object arg, Class<?> target) {
+        if (arg instanceof Number n) {
+            if (target == double.class || target == Double.class) return n.doubleValue();
+            if (target == int.class || target == Integer.class)
+                return (n instanceof Integer) ? n : NO_MATCH;
+            if (target == float.class || target == Float.class) return n.floatValue();
+            if (target == long.class || target == Long.class) return n.longValue();
+        }
+        if (arg == null) return target.isPrimitive() ? NO_MATCH : null;
+        return target.isInstance(arg) ? arg : NO_MATCH;
+    }
     // this is the MAIN question container
     private Stream<DynamicNode> buildQuestionContainers(Path studentDir) {
         try {
@@ -266,10 +325,11 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
                         + " expected exception type " + tc.expectedException()
                         + " but got " + actualExceptionName, thrown);
             }
-            // correct exception type thrown — passes
+            // correct exception type thrown - passes
             } else {
                 // Normal value-comparison case
-                Object actual = method.invoke(instance, tc.args());
+                Object[] realArgs = resolveArgs(tc.args(), studentClass.getClassLoader());
+                Object actual = method.invoke(instance, realArgs);
                 assertEquals(tc.expected(), actual,
                         () -> className + "." + spec.methodName() + " failed on " + tc.label());
             }
