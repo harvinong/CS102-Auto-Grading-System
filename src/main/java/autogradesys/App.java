@@ -202,10 +202,6 @@ public final class App {
 
     // Menu mode: the controller holds session state and the menu drives it.
     private static int runInteractive(PrintStream output) {
-        // Title line.
-        output.println("Auto-Grader System");
-        // Blank line before the menu.
-        output.println();
         // One scanner for the whole session, closed automatically on exit.
         try (Scanner scanner = new Scanner(System.in)) {
             // Create the menu with a fresh controller (the shared state of the session).
