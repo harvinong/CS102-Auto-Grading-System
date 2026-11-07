@@ -151,6 +151,8 @@ Each passing tester is worth **one mark**. The scoresheet column for a question 
 
 If the student's work sits one folder down (for example `bob/RenameToYourStudentID/Q1`), grading still finds it; the submission check warns about it.
 
+A folder in the submissions folder that has the starting folder's own name (for example `submissions/RenameToYourStudentID`) is a copy of the blank template, not a student: the submission check lists it as `not graded` and grading skips it.
+
 Each of these is reported with the student, folder and question and does not stop grading: compile error, runtime exception, timeout (default 2 seconds per process), output over the limit, wrong output, missing question folder, a question folder without `.java` files, a question folder without testers, and a tester without an expected file. A missing or unreadable testers folder, submissions folder or scoresheet is fatal and nothing is graded.
 
 A question folder in the testers folder that holds no `*Tester.java` but does hold an `expected.txt` keeps using the older `Main.java` layout described under "Fixture layout"; this is what `demo` uses.

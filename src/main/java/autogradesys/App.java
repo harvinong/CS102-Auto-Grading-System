@@ -6,6 +6,7 @@ import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
 import autogradesys.grading.HtmlReportWriter;
 import autogradesys.grading.JavaGrader;
+import autogradesys.input.InputEndedException;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -213,6 +214,13 @@ public final class App {
             menu.readOption();
             // Normal exit after the user leaves the menu.
             return 0;
+        // The input ended (end of a piped script, or Ctrl+D) while a prompt was waiting for an answer.
+        } catch (InputEndedException exception) {
+            // Say what was being asked; the unfinished action was not saved or run.
+            output.println();
+            output.println(exception.getMessage() + "; exiting.");
+            // Exit code 1: the session stopped before the requested action finished.
+            return 1;
         // Unexpected failure while starting or running the menu.
         } catch (RuntimeException exception) {
             // Show a short message instead of a stack trace.

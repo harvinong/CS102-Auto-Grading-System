@@ -217,7 +217,8 @@ class JavaGraderTest {
 
         int status = App.run(new String[] {"--non-interactive", "--submissions-dir", submissions.toString(),
                 "--questions-dir", questions.toString(), "--scoresheet", scoresheet.toString(),
-                "--history", history.toString(), "--timeout-ms", "2000"},
+                "--history", history.toString(), "--report", temporary.resolve("cli-report.html").toString(),
+                "--timeout-ms", "2000"},
                 new PrintStream(output, true, StandardCharsets.UTF_8));
 
         assertEquals(0, status);

@@ -67,7 +67,7 @@ public class AutoGradeMenu {
                 menuOption = Integer.parseInt(optionText);
             } catch (NumberFormatException exception) {
                 // Text such as "abc" is not a number; ask again rather than crash.
-                System.out.println("\nPlease enter a number between 0 to 3.\n");
+                System.out.println("\nPlease enter a number between 0 and 3.\n");
                 // Skip the switch and go straight to the loop condition, then show the menu again.
                 continue;
             }
@@ -91,7 +91,7 @@ public class AutoGradeMenu {
                     // Exit the switch; the do-while condition (menuOption != 0) now ends the loop and returns to App.
                     break;
                 default:
-                    System.out.println("\nPlease enter between 0 to 3.\n");
+                    System.out.println("\nPlease enter a number between 0 and 3.\n");
                     // Leave the switch so the loop redisplays the menu after the invalid-choice message.
                     break;
             }
@@ -198,10 +198,20 @@ public class AutoGradeMenu {
 
         // Separate the preflight report from the grading output with a blank line and a banner.
         System.out.println("\nRunning autograder!\n");
+        // A zip or folder that could not be put into the working copy is not graded; record it so it is in the report and history too.
+        for (autogradesys.validation.ValidationEvent event : working.events()) {
+            if (!event.fixed()) {
+                reporter.recoverable("submission", "working-copy", event.path() + " was not graded: " + event.message(),
+                        "Ask the student to resubmit a valid zip file or folder.",
+                        event.student().isEmpty() ? null : event.student(), event.path(), null);
+            }
+        }
         // Grade with the configured testers folder (questions) and scoresheet; the configured timeout (default 2 seconds) stops infinite loops and the output limit (default 1 MiB) stops flooding.
+        // A copy of the starter template in the submissions folder is not a student, so it is skipped.
         GradeResult result = JavaGrader.grade(gradingPath,
                 ctrl.getTestersFolder().toPath(), ctrl.getScoresheetFile().toPath(),
-                Duration.ofSeconds(ctrl.getTimeoutSeconds()), ctrl.getOutputLimitBytes(), reporter);
+                Duration.ofSeconds(ctrl.getTimeoutSeconds()), ctrl.getOutputLimitBytes(),
+                java.util.Set.of(preflight.templateName()), reporter);
         // Writing the report can fail on disk problems; the grades are already saved, so only a message is shown.
         try {
             // The report lands in the current folder, overwritten on every run.
