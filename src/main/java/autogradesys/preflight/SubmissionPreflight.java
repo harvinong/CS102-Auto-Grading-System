@@ -28,6 +28,7 @@ import autogradesys.preflight.PreflightFinding.Severity;
  * never writes, renames, moves or deletes. It does not grade; "ready" only means the layout
  * matches the template.
  */
+// Compares the submitted directory layout with the expected questions before grading starts.
 public final class SubmissionPreflight {
 
     // How many bytes of a file we read to decide whether it is only whitespace.
@@ -143,9 +144,11 @@ public final class SubmissionPreflight {
                     }
                     // .java files are required files; everything else is an expected resource.
                     if (name.endsWith(".java")) {
+                        // Remember it as a file every student must hand in, and count it for the "one level too high" test below.
                         q.javaFiles().add(name);
                         javaCount++;
                     } else {
+                        // Data files such as persons.txt are only warned about, because students may legitimately omit them.
                         q.resources().add(name);
                     }
                 }
@@ -297,9 +300,12 @@ public final class SubmissionPreflight {
         Map<String, Path> dirs = new TreeMap<>();
         List<Path> files = new ArrayList<>();
         for (Path item : items) {
+            // Real directories only; symlinked directories are not followed and fall into the else branch.
             if (Files.isDirectory(item, LinkOption.NOFOLLOW_LINKS)) {
+                // Keyed by name so question folders can be looked up directly.
                 dirs.put(nameOf(item), item);
             } else {
+                // Loose files at this level are inspected later for stray .java files.
                 files.add(item);
             }
         }
@@ -482,7 +488,9 @@ public final class SubmissionPreflight {
                 // The candidate's own sub-folders, by name.
                 Map<String, Path> inside = new TreeMap<>();
                 for (Path child : sortedChildren(candidate)) {
+                    // Ignore clutter like __MACOSX and symlinks, so only genuine sub-folders count as question folders.
                     if (!isJunk(nameOf(child)) && Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
+                        // Index by name for the later comparison with the template's question names.
                         inside.put(nameOf(child), child);
                     }
                 }
@@ -543,6 +551,7 @@ public final class SubmissionPreflight {
     // True when the folder directly contains at least one .java file.
     private static boolean containsJava(Path dir) {
         try {
+            // Any regular (non-link) .java file directly inside the folder is enough.
             return sortedChildren(dir).stream()
                     .anyMatch(p -> nameOf(p).endsWith(".java") && Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS));
         } catch (IOException | SecurityException e) {

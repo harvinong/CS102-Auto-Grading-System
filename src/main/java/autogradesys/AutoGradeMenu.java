@@ -18,20 +18,15 @@ import autogradesys.preflight.SubmissionPreflight;
 
 public class AutoGradeMenu {
 
-    // Perform this small step of the grading workflow.
     private Scanner sc;
-    // Perform this small step of the grading workflow.
     private AutoGradeCtrl ctrl;
 
     public AutoGradeMenu(Scanner sc, AutoGradeCtrl ctrl) {
-        // Prepare or update the value needed by the next grading step.
         this.sc = sc;
-        // Prepare or update the value needed by the next grading step.
         this.ctrl = ctrl;
 
         // Check if config is initialized, then prompt
         boolean loadSuccess = ctrl.loadConfig();
-        // Check this condition so grading follows the intended path.
         if (!loadSuccess) {
             // No config file initialized. User is new
             newView();
@@ -39,79 +34,65 @@ public class AutoGradeMenu {
     }
 
     public void displayTitle() {
-        // Prepare or update the value needed by the next grading step.
         System.out.println("+== Auto-Grading System ==+");
     }
 
     public void displayMenu() {
-        // Perform this small step of the grading workflow.
         displayTitle();
-        // Perform this small step of the grading workflow.
         System.out.println("1. View configuration paths");
-        // Perform this small step of the grading workflow.
         System.out.println("2. Edit configuration paths");
-        // Perform this small step of the grading workflow.
         System.out.println("3. Grade students (run auto-grader)");
-        // Perform this small step of the grading workflow.
         System.out.println("0. Quit Application");
-        // Perform this small step of the grading workflow.
         System.out.print("Enter option: ");
     }
 
     public void readOption() {
-        // Perform this small step of the grading workflow.
+        // Start at -1 so the loop condition below is not already satisfied before the first choice is read.
         int menuOption = -1;
-        // Repeat this operation for each relevant grading item.
+        // Show the menu at least once and keep showing it until the user picks 0.
         do {
-            // Perform this small step of the grading workflow.
+            // Print the numbered options and the "Enter option" prompt.
             displayMenu();
-            // Prepare or update the value needed by the next grading step.
+            // Piped or closed input has no next line; stop cleanly instead of throwing NoSuchElementException.
             if (!sc.hasNextLine()) {
                 System.out.println("\nInput ended; exiting.");
                 return;
             }
+            // Read the whole line and trim it, so stray spaces around the number do not matter.
             String optionText = sc.nextLine().trim();
             try {
+                // Convert the typed text to a number for the switch below.
                 menuOption = Integer.parseInt(optionText);
             } catch (NumberFormatException exception) {
+                // Text such as "abc" is not a number; ask again rather than crash.
                 System.out.println("\nPlease enter a number between 0 to 3.\n");
+                // Skip the switch and go straight to the loop condition, then show the menu again.
                 continue;
             }
 
-            // Perform this small step of the grading workflow.
+            // Dispatch the choice: 1 and 2 manage configuration, 3 runs the grading flow, 0 quits.
             switch (menuOption) {
-                // Perform this small step of the grading workflow.
                 case 1:
-                    // Perform this small step of the grading workflow.
                     viewConfig();
-                    // Perform this small step of the grading workflow.
+                    // End this case here, otherwise Java would fall through into the next menu option.
                     break;
-                // Perform this small step of the grading workflow.
                 case 2:
-                    // Perform this small step of the grading workflow.
                     editConfig();
-                    // Perform this small step of the grading workflow.
+                    // Stop at this break so editing the configuration does not also start grading.
                     break;
-                // Perform this small step of the grading workflow.
                 case 3:
-                    // Perform this small step of the grading workflow.
                     runGrader();
-                    // Perform this small step of the grading workflow.
+                    // Stop here so grading does not fall through into the quit case; the loop then shows the menu again.
                     break;
-                // Perform this small step of the grading workflow.
                 case 0:
-                    // Perform this small step of the grading workflow.
                     System.out.println("\nThank you for using!");
-                    // Perform this small step of the grading workflow.
+                    // Exit the switch; the do-while condition (menuOption != 0) now ends the loop and returns to App.
                     break;
-                // Perform this small step of the grading workflow.
                 default:
-                    // Perform this small step of the grading workflow.
                     System.out.println("\nPlease enter between 0 to 3.\n");
-                    // Perform this small step of the grading workflow.
+                    // Leave the switch so the loop redisplays the menu after the invalid-choice message.
                     break;
             }
-        // Prepare or update the value needed by the next grading step.
         } while (menuOption != 0);
 
     }
@@ -128,28 +109,25 @@ public class AutoGradeMenu {
     }
 
     public void viewConfig() {
-        // Perform this small step of the grading workflow.
         System.out.println();
-        // Perform this small step of the grading workflow.
         System.out.println("__ Configuration __");
-        // Perform this small step of the grading workflow.
         System.out.println("Starting folder: " + ctrl.getStartingFolder());
-        // Perform this small step of the grading workflow.
         System.out.println("Testers folder:  " + ctrl.getTestersFolder());
-        // Perform this small step of the grading workflow.
         System.out.println("Scoresheet file: " + ctrl.getScoresheetFile());
-        // Perform this small step of the grading workflow.
         System.out.println();
     }
 
     public void editConfig() {
-        // Perform this small step of the grading workflow.
         inputConfig(false);
     }
 
+    /**
+     * Menu option 3: the full grade-students flow. Ask for the submissions folder, run the
+     * read-only preflight check (stopping if its setup is fatal), grade every student with
+     * JavaGrader (compile, run, compare, update the CSV), then write the HTML report and print a summary.
+     */
     public void runGrader() {
-        // Freshly prompted so instructor can input folder of submissions.
-        // Keep the folder the instructor typed (the original call discarded it) so the check can scan it.
+        // Ask for the submissions folder every time, since it changes between assignments; keep the answer so both the preflight and the grader receive it.
         File submissions = CLI.promptFile(Field.SUBMISSIONS, null, sc);
 
         // Feature: read-only layout check before grading. It ASSUMES the Starting Folder is the starter
@@ -158,38 +136,41 @@ public class AutoGradeMenu {
         // the template path comes from the saved configuration, the submissions path from the prompt above;
         // print(...) writes the report to the console.
         var preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), submissions.toPath());
+        // Show the findings (per-student ready or needs-attention list) before any code is compiled.
         preflight.print(System.out);
+        // A fatal finding means the template or submissions folder is unusable, so grading would only produce noise.
         if (preflight.fatal()) {
-            // Keep the workflow marker while making the safety boundary explicit.
+            // Print the same banner as a normal run so the output layout is the same either way.
             System.out.println("\nRunning autograder!\n");
-            // Do not invoke the grader when its required setup could not be checked.
+            // Say plainly that grading did not start, so nobody mistakes the empty result for a pass.
             System.out.println("Autograder not started because submission setup is invalid.");
+            // Back to the menu without touching the scoresheet, history or report.
             return;
         }
 
-        // Perform this small step of the grading workflow.
+        // Separate the preflight report from the grading output with a blank line and a banner.
         System.out.println("\nRunning autograder!\n");
+        // One reporter for this run: prints each problem and appends it to the history file in the current folder.
         ErrorReporter reporter = new ErrorReporter(
-                // Perform this small step of the grading workflow.
                 new ErrorHistory(Path.of(".grader-error-history.jsonl")), System.out);
+        // Grade with the configured testers folder (questions) and scoresheet; two seconds per compile or run stops infinite loops.
         GradeResult result = JavaGrader.grade(submissions.toPath(),
                 ctrl.getTestersFolder().toPath(), ctrl.getScoresheetFile().toPath(),
-                // Perform this small step of the grading workflow.
                 Duration.ofSeconds(2), reporter);
-        // Perform this small step of the grading workflow.
+        // Writing the report can fail on disk problems; the grades are already saved, so only a message is shown.
         try {
-            // Prepare or update the value needed by the next grading step.
+            // The report lands in the current folder, overwritten on every run.
             Path report = Path.of(".grader-report.html");
-            // Perform this small step of the grading workflow.
+            // Render the scores and every recorded error into one HTML file.
             HtmlReportWriter.write(report, result, reporter.records());
-            // Perform this small step of the grading workflow.
+            // Print the absolute path so the instructor can open the report.
             System.out.println("HTML report: " + report.toAbsolutePath().normalize());
         } catch (java.io.IOException exception) {
-            // Perform this small step of the grading workflow.
+            // Explain why no report was produced instead of crashing the menu.
             System.out.println("Could not write HTML report: " + exception.getMessage());
         }
+        // Final one-line summary: students graded and total issues recorded (fatal or not).
         System.out.printf("Completed: %d submission(s), %d reported issue(s).%n",
-                // Perform this small step of the grading workflow.
                 result.studentCount(), result.issueCount());
     }
 
@@ -198,28 +179,21 @@ public class AutoGradeMenu {
         File startingFolder = CLI.promptFile(
                 Field.STARTING_FOLDER,
                 askNewFiles ? null : ctrl.getStartingFolder(),
-                // Perform this small step of the grading workflow.
                 sc);
         File testers = CLI.promptFile(
                 Field.TESTERS,
                 askNewFiles ? null : ctrl.getTestersFolder(),
-                // Perform this small step of the grading workflow.
                 sc);
         File scoresheet = CLI.promptFile(
                 Field.SCORESHEET,
                 askNewFiles ? null : ctrl.getScoresheetFile(),
-                // Perform this small step of the grading workflow.
                 sc);
 
-        // Prepare or update the value needed by the next grading step.
         boolean saveSuccess = ctrl.saveConfig(startingFolder, testers, scoresheet);
 
-        // Check this condition so grading follows the intended path.
         if (saveSuccess) {
-            // Perform this small step of the grading workflow.
             System.out.println("\nConfiguration saved!\n");
         } else {
-            // Perform this small step of the grading workflow.
             System.out.println("\nSave unsuccessful\n");
         }
     }
