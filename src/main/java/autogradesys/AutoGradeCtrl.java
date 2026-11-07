@@ -1,12 +1,24 @@
 package autogradesys;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.function.Predicate;
 
 import autogradesys.config.ConfigDAO;
+import autogradesys.preflight.PreflightReport;
+import autogradesys.validation.CacheReport;
+import autogradesys.validation.ScoresheetReader;
+import autogradesys.validation.Student;
+import autogradesys.validation.SubmissionCache;
+import autogradesys.validation.SubmissionValidation;
+import autogradesys.validation.ValidationReport;
 
 public class AutoGradeCtrl {
-
+    
     private ConfigDAO configDAO;
+    private final SubmissionCache cache = new SubmissionCache(SubmissionCache.DEFAULT_ROOT);
 
     public AutoGradeCtrl() {
         this.configDAO = new ConfigDAO();
@@ -33,7 +45,6 @@ public class AutoGradeCtrl {
         return configDAO.getOutputLimitBytes();
     }
 
-    // Upper bounds for the two limits, so the menu can validate input without reaching past the controller into the config layer.
     public long getMaxTimeoutSeconds() {
         return ConfigDAO.MAX_TIMEOUT_SECONDS;
     }
@@ -54,13 +65,27 @@ public class AutoGradeCtrl {
         return configDAO.save();
     }
 
-    // Saves the paths and the grading limits together; the setters reject non-positive limits before anything is written.
+    // Saves the paths and grading limits together.
     public boolean saveConfig(File startingFolder, File testers, File scoresheet,
             long timeoutSeconds, long outputLimitBytes) {
         configDAO.setTimeoutSeconds(timeoutSeconds);
         configDAO.setOutputLimitBytes(outputLimitBytes);
-
         return saveConfig(startingFolder, testers, scoresheet);
+    }
+
+    public CacheReport prepareWorkingCopy(File submissions) {
+        return cache.prepare(submissions.toPath());
+    }
+
+    public ValidationReport validateSubmissions(Path workingDir, PreflightReport preflight,
+            Predicate<String> confirm) throws IOException {
+        List<Student> students = ScoresheetReader.read(configDAO.getScoresheetFile());
+        return new SubmissionValidation(students, confirm, cache).run(workingDir, preflight);
+    }
+
+    public ValidationReport validateSubmissions(File submissions, PreflightReport preflight,
+            Predicate<String> confirm) throws IOException {
+        return validateSubmissions(submissions.toPath(), preflight, confirm);
     }
 
 }
