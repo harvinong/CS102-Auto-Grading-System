@@ -1,6 +1,7 @@
 package autogradesys;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.time.Duration;
 import java.nio.file.Path;
@@ -165,6 +166,28 @@ public class AutoGradeMenu {
             System.out.println("Autograder not started because submission setup is invalid.");
             // Back to the menu without touching the scoresheet, history or report.
             return;
+        }
+        // Keep the validation feature reachable: the instructor may fix, recheck, or proceed.
+        while (true) {
+            System.out.println("1. Fix common mistakes automatically");
+            System.out.println("2. Check the working copy again");
+            System.out.println("3. Start grading");
+            System.out.println("0. Cancel and return to the main menu");
+            int choice = CLI.promptOption(0, 3, sc);
+            if (choice == 0) return;
+            if (choice == 3) break;
+            if (choice == 2) {
+                preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
+                preflight.print(System.out);
+            } else {
+                try {
+                    ctrl.validateSubmissions(gradingPath, preflight, question -> CLI.promptYesNo(question, sc)).print(System.out);
+                } catch (IOException exception) {
+                    System.out.println("Could not validate the submissions: " + exception.getMessage());
+                }
+                preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
+                preflight.print(System.out);
+            }
         }
 
         // Separate the preflight report from the grading output with a blank line and a banner.

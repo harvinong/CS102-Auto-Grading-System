@@ -113,6 +113,18 @@ public class CLI {
         }
     }
 
+    public static int promptOption(int min, int max, Scanner sc) {
+        while (true) {
+            System.out.print("Enter option: ");
+            if (!sc.hasNextLine()) throw new IllegalStateException("Input ended while waiting for option");
+            try {
+                int option = Integer.parseInt(sc.nextLine().trim());
+                if (option >= min && option <= max) return option;
+            } catch (NumberFormatException ignored) { }
+            System.out.print("Please enter a number from " + min + " to " + max + ": ");
+        }
+    }
+
     /** Ask a yes/no question, retrying until a valid answer is entered. */
     public static boolean promptYesNo(String question, Scanner sc) {
         while (true) {
