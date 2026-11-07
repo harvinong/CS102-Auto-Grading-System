@@ -41,6 +41,12 @@ final class TesterGrader {
         return !Files.isRegularFile(testerDir.resolve("expected.txt"));
     }
 
+    /** Number of tester classes in the question folder, which is the number of marks the question is worth. */
+    static int testerCount(Path testerDir) {
+        // Each tester is worth one mark, so the count is the question's maximum.
+        return testerFiles(testerDir).size();
+    }
+
     /**
      * Finds the folder that holds a student's question folders.
      *
@@ -143,7 +149,7 @@ final class TesterGrader {
                 reporter.recoverable("question", "output-limit",
                         "Compiler output exceeded the combined stdout/stderr limit of "
                                 + JavaGrader.outputLimitDescription(outputLimitBytes) + "; retained output is truncated.",
-                        "Reduce compiler diagnostics or increase --output-limit-bytes.",
+                        "Reduce compiler diagnostics or raise the output limit (menu option 2, or --output-limit-bytes).",
                         student, JavaGrader.display(studentQuestion), question);
                 return 0;
             }

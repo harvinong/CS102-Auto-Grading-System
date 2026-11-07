@@ -196,9 +196,11 @@ public class AutoGradeMenu {
         long timeoutSeconds = ctrl.getTimeoutSeconds();
         long outputLimitBytes = ctrl.getOutputLimitBytes();
         if (!askNewFiles) {
-            // Enter keeps the current value; anything else must be a positive whole number or the prompt repeats.
-            timeoutSeconds = CLI.promptPositiveLong("Grading timeout in seconds", timeoutSeconds, sc);
-            outputLimitBytes = CLI.promptPositiveLong("Output limit in bytes", outputLimitBytes, sc);
+            // Enter keeps the current value; anything else must be a whole number from 1 to the maximum or the prompt repeats.
+            timeoutSeconds = CLI.promptPositiveLong("Grading timeout in seconds", timeoutSeconds,
+                    ctrl.getMaxTimeoutSeconds(), sc);
+            outputLimitBytes = CLI.promptPositiveLong("Output limit in bytes", outputLimitBytes,
+                    ctrl.getMaxOutputLimitBytes(), sc);
         }
 
         boolean saveSuccess = ctrl.saveConfig(startingFolder, testers, scoresheet, timeoutSeconds, outputLimitBytes);

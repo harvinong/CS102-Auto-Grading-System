@@ -206,6 +206,22 @@ class TesterGraderTest {
         GradeResult result = grade();
 
         assertEquals(1, result.scores().get("alice").get("Q1"));
+        // Q1 is worth one mark per tester, so the report shows 1/2 rather than a pass.
+        assertEquals(2, result.marksFor("Q1"));
         assertEquals(List.of("output-mismatch"), categories());
+    }
+
+    @Test
+    void questionWithoutTestersIsWorthNoMarks() throws IOException {
+        // Same setup as missingTesterIsReportedAsRecoverable: Q2 has no testers, so nobody can earn marks for it.
+        Files.createDirectories(testers.resolve("Q2"));
+        write(submissions, "alice/Q1/Square.java",
+                "public class Square { static int of(int n) { return n * n; } }");
+        Files.writeString(scores, "student,Q1,Q2\nalice,,\n");
+
+        GradeResult result = grade();
+
+        assertEquals(1, result.marksFor("Q1"));
+        assertEquals(0, result.marksFor("Q2"));
     }
 }

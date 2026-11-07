@@ -13,8 +13,8 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Runs one external program (javac or a student's compiled class) and reports what happened.
  *
- * <p>In the grading flow this is the only place that starts child processes: JavaGrader calls
- * it once to compile a submission and once per test case to run it. Every run is bounded by a
+ * <p>In the grading flow this is the only place that starts child processes: JavaGrader and
+ * TesterGrader call it once to compile a submission and once per program or tester run. Every run is bounded by a
  * wall-clock timeout and an output-size cap, so a student program that loops forever or prints
  * endlessly turns into a normal {@link Result} flag instead of hanging the whole grading batch.</p>
  *

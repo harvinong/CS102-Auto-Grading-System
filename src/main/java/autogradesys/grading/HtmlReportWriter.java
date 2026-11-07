@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -32,21 +31,21 @@ public final class HtmlReportWriter {
         }
         // The whole page is built in memory and written to disk in a single call at the end.
         StringBuilder html = new StringBuilder();
-        // For each student, count the questions scored exactly 1, then add the counts together.
-        int passCount = result.scores().values().stream().mapToInt(scores ->
-                (int) scores.values().stream().filter(score -> score == 1).count()).sum();
-        // Total number of student-question results, passes and failures together.
-        int outcomeCount = result.scores().values().stream().mapToInt(Map::size).sum();
-        // Anything not passed counts as failed, so the cards always add up.
-        int failedCount = outcomeCount - passCount;
+        // Count the student-question results that earned every available mark (2 of 2 testers, or 1 of 1 for Main.java).
+        int fullCount = countOutcomes(result, Outcome.FULL);
+        // Results that earned some but not all marks, such as 1 of 2 testers.
+        int partialCount = countOutcomes(result, Outcome.PARTIAL);
+        // Results with no marks; the three cards always add up to every student-question result.
+        int zeroCount = countOutcomes(result, Outcome.ZERO);
         // Page start: doctype, language and UTF-8 charset.
         html.append("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">")
                 // Makes the report scale properly on phones.
                 .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
                 // Browser tab title, then the opening of the inline stylesheet.
                 .append("<title>Grading run report</title><style>")
-                // All CSS is inline so the report is a single file that can be emailed or opened offline.
-                .append("body{font-family:system-ui,sans-serif;line-height:1.45;margin:0;background:#f4f7fb;color:#172033}main{max-width:1100px;margin:auto;padding:32px 20px}header,.card{background:white;border:1px solid #d9e1ee;border-radius:14px;padding:22px;margin-bottom:18px;box-shadow:0 2px 8px #17203312}h1{margin:0 0 6px;color:#123b6d}h2{margin-top:0}.muted{color:#5c6b80;font-size:.9rem}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.metric{background:#edf4ff;border-radius:10px;padding:14px}.metric strong{display:block;font-size:1.7rem;color:#123b6d}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #e3e8f0;vertical-align:top}th{background:#f5f8fc}.pass{color:#087443;font-weight:700}.fail{color:#a32626;font-weight:700}.error{border-left:4px solid #d25a36;padding:12px 14px;margin:12px 0;background:#fff7f3;border-radius:4px}.error h3{font-size:1rem;margin:0 0 6px}.error p{margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere}.pill{display:inline-block;border-radius:99px;padding:2px 8px;background:#e8edf5;font-size:.8rem}@media(max-width:650px){main{padding:18px 10px}.summary{grid-template-columns:repeat(2,1fr)}table{font-size:.88rem}th,td{padding:8px 5px}}")
+                // All CSS is inline so the report is a single file that can be emailed or opened offline; the
+                // ".metric strong.pass" style rules colour the summary numbers, which ".metric strong" would otherwise override.
+                .append("body{font-family:system-ui,sans-serif;line-height:1.45;margin:0;background:#f4f7fb;color:#172033}main{max-width:1100px;margin:auto;padding:32px 20px}header,.card{background:white;border:1px solid #d9e1ee;border-radius:14px;padding:22px;margin-bottom:18px;box-shadow:0 2px 8px #17203312}h1{margin:0 0 6px;color:#123b6d}h2{margin-top:0}.muted{color:#5c6b80;font-size:.9rem}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.metric{background:#edf4ff;border-radius:10px;padding:14px}.metric strong{display:block;font-size:1.7rem;color:#123b6d}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #e3e8f0;vertical-align:top}th{background:#f5f8fc}.pass{color:#087443;font-weight:700}.partial{color:#9a5b00;font-weight:700}.metric strong.pass{color:#087443}.metric strong.partial{color:#9a5b00}.metric strong.fail{color:#a32626}.fail{color:#a32626;font-weight:700}.error{border-left:4px solid #d25a36;padding:12px 14px;margin:12px 0;background:#fff7f3;border-radius:4px}.error h3{font-size:1rem;margin:0 0 6px}.error p{margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere}.pill{display:inline-block;border-radius:99px;padding:2px 8px;background:#e8edf5;font-size:.8rem}@media(max-width:650px){main{padding:18px 10px}.summary{grid-template-columns:repeat(2,1fr)}table{font-size:.88rem}th,td{padding:8px 5px}}")
                 // Close the stylesheet and open the page header with a Run ID line.
                 .append("</style></head><body><main><header><h1>Grading run report</h1><div class=\"muted\">Run ID: ")
                 // A random id identifies this run; escape() is used on all dynamic text for consistency.
@@ -55,22 +54,23 @@ public final class HtmlReportWriter {
                 .append(escape(Instant.now().toString())).append("</div></header>")
                 // Summary cards, starting with the number of students graded.
                 .append("<section class=\"summary\"><div class=\"metric\"><strong>").append(result.studentCount())
-                // Second card: total question outcomes.
-                .append("</strong>students</div><div class=\"metric\"><strong>").append(outcomeCount)
-                // Third card: passes, styled green by the pass class.
-                .append("</strong>question outcomes</div><div class=\"metric\"><strong class=\"pass\">").append(passCount)
-                // Fourth card: failures, styled red.
-                .append("</strong>passed</div><div class=\"metric\"><strong class=\"fail\">").append(failedCount)
+                // Second card: question results with full marks, styled green by the pass class.
+                .append("</strong>students</div><div class=\"metric\"><strong class=\"pass\">").append(fullCount)
+                // Third card: question results with some of the marks, styled amber.
+                .append("</strong>full marks</div><div class=\"metric\"><strong class=\"partial\">").append(partialCount)
+                // Fourth card: question results with no marks, styled red.
+                .append("</strong>partial marks</div><div class=\"metric\"><strong class=\"fail\">").append(zeroCount)
                 // Close the last card and the summary section.
-                .append("</strong>failed</div></section>");
+                .append("</strong>no marks</div></section>");
         // Open the results table with its Student, Question and Score columns.
         html.append("<section class=\"card\"><h2>Student outcomes</h2><table><thead><tr><th>Student</th><th>Question</th><th>Score</th></tr></thead><tbody>");
         // Walk every student and every question, emitting one table row per result in insertion order.
         result.scores().forEach((student, scores) -> scores.forEach((question, score) -> html.append("<tr><td>")
                 // Student and question names come from folder names, so they are escaped before being placed in HTML.
                 .append(escape(student)).append("</td><td>").append(escape(question)).append("</td><td class=\"")
-                // Green PASS for a score of 1, otherwise red FAIL, with the numeric score in brackets.
-                .append(score == 1 ? "pass\">PASS" : "fail\">FAIL").append(" (" ).append(score).append(")</td></tr>")));
+                // PASS, PARTIAL or FAIL with its colour class, then the marks as earned/available, e.g. "PARTIAL (1/2)".
+                .append(Outcome.of(score, result.marksFor(question)).cell).append(" (").append(score).append('/')
+                .append(result.marksFor(question)).append(")</td></tr>")));
         // Close the results table.
         html.append("</tbody></table></section>");
         // Open the second section, which lists every recorded error.
@@ -111,6 +111,39 @@ public final class HtmlReportWriter {
         Files.writeString(absolute, html, StandardCharsets.UTF_8, StandardOpenOption.CREATE,
                 // TRUNCATE_EXISTING discards any previous report, so the file only describes this run.
                 StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+    }
+
+    // How one student-question result is shown: the label and colour class used in the score table.
+    private enum Outcome {
+        // Every available mark earned.
+        FULL("pass\">PASS"),
+        // Some marks earned, but not all.
+        PARTIAL("partial\">PARTIAL"),
+        // No marks, including a question worth nothing because its testers are missing.
+        ZERO("fail\">FAIL");
+
+        // The end of the class attribute plus the label, appended right after class=".
+        private final String cell;
+
+        Outcome(String cell) {
+            this.cell = cell;
+        }
+
+        // Classifies marks earned against marks available; a question worth 0 can never be full marks.
+        static Outcome of(int score, int available) {
+            if (available > 0 && score >= available) {
+                return FULL;
+            }
+            return score > 0 ? PARTIAL : ZERO;
+        }
+    }
+
+    // Number of student-question results in the run that fall in the given outcome.
+    private static int countOutcomes(GradeResult result, Outcome outcome) {
+        // Walk each student's question marks and keep those whose outcome matches.
+        return result.scores().values().stream().mapToInt(scores -> (int) scores.entrySet().stream()
+                .filter(entry -> Outcome.of(entry.getValue(), result.marksFor(entry.getKey())) == outcome)
+                .count()).sum();
     }
 
     // Builds the escaped "student=... submission=... question=..." text for one error.

@@ -1,5 +1,6 @@
 package autogradesys;
 
+import autogradesys.config.ConfigDAO;
 import autogradesys.grading.ErrorHistory;
 import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
@@ -136,6 +137,11 @@ public final class App {
                 // Reuse the same catch block for this validation error.
                 throw new NumberFormatException("timeout must be positive");
             }
+            // Same upper bound as the menu, so a typo such as an extra few zeros cannot let one submission stall grading.
+            if (timeout.compareTo(Duration.ofSeconds(ConfigDAO.MAX_TIMEOUT_SECONDS)) > 0) {
+                // Handled by the catch below, like the other timeout errors.
+                throw new NumberFormatException("timeout must be at most " + ConfigDAO.MAX_TIMEOUT_SECONDS + " seconds");
+            }
         // Not a number, or not positive.
         } catch (NumberFormatException exception) {
             // Show what was wrong with the timeout.
@@ -154,6 +160,11 @@ public final class App {
             if (outputLimitBytes <= 0) {
                 // Handled by the catch below.
                 throw new NumberFormatException("output limit must be positive");
+            }
+            // Same upper bound as the menu: the captured output is held in memory, so the cap must stay modest.
+            if (outputLimitBytes > ConfigDAO.MAX_OUTPUT_LIMIT_BYTES) {
+                // Handled by the catch below.
+                throw new NumberFormatException("output limit must be at most " + ConfigDAO.MAX_OUTPUT_LIMIT_BYTES + " bytes");
             }
         // Invalid or non-positive output limit.
         } catch (NumberFormatException exception) {

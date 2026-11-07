@@ -71,17 +71,20 @@ public class CLI {
     }
 
     /**
-     * Ask the user for a positive whole number, such as the grading timeout in seconds.
+     * Ask the user for a positive whole number no larger than a maximum, such as the grading timeout in seconds.
      *
-     * Re-prompts when the line is not a whole number or is zero or negative, the same way
-     * {@link #promptFile} re-prompts on a bad path.
+     * Re-prompts when the line is not a whole number, is zero or negative, or is above the maximum,
+     * the same way {@link #promptFile} re-prompts on a bad path.
      *
-     * @param label        Name shown in the prompt, e.g. "Grading timeout (seconds)".
+     * @param label        Name shown in the prompt, e.g. "Grading timeout in seconds".
      * @param defaultValue The current value, kept when the user just presses Enter.
+     * @param maxValue     The largest value accepted.
      * @param sc           The scanner object to read user input.
-     * @return The positive number typed, or defaultValue if the line was blank.
+     * @return The number typed (from 1 to maxValue), or defaultValue if the line was blank.
      */
-    public static long promptPositiveLong(String label, long defaultValue, Scanner sc) {
+    public static long promptPositiveLong(String label, long defaultValue, long maxValue, Scanner sc) {
+        // One message for every kind of bad line, naming the accepted range so the user knows what to type.
+        String invalid = "Invalid input: " + label + " must be a whole number from 1 to " + maxValue + ".\n";
         // Loops until a valid value is returned from inside the body.
         while (true) {
             // Show the current value in brackets so Enter visibly means "keep this".
@@ -99,13 +102,13 @@ public class CLI {
             try {
                 // Long.parseLong rejects "1.5", "abc" and values beyond the long range, all as NumberFormatException.
                 long value = Long.parseLong(text);
-                // Zero and negatives parse fine but would stop every process at once, so they are refused here.
-                if (value > 0) {
+                // Zero and negatives would stop every process at once, and a huge value could hang or crash grading, so only 1 to maxValue is kept.
+                if (value > 0 && value <= maxValue) {
                     return value;
                 }
-                System.out.println("Invalid input: " + label + " must be a positive whole number.\n");
+                System.out.println(invalid);
             } catch (NumberFormatException e) {
-                System.out.println("Invalid input: " + label + " must be a positive whole number.\n");
+                System.out.println(invalid);
             }
         }
     }

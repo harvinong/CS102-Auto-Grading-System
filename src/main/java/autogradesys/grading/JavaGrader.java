@@ -15,10 +15,12 @@ import java.util.stream.Stream;
  * Local Java-source grader: the engine behind the "grade students" menu option.
  *
  * <p>Grading flow: the menu runs the submission preflight, then calls {@link #grade}. For every
- * student and every question this class compiles {@code Main.java} with javac, runs it through
- * {@link ProcessRunner} with the question's input, compares stdout with {@code expected.txt},
- * records any problem in the {@link ErrorReporter}, and finally hands the 0/1 scores to
- * {@link CsvScoresheet}. The HTML report is written afterwards from the reporter's records.</p>
+ * student and every question this class either hands a tester-based question to
+ * {@link TesterGrader} (one mark per passing instructor tester) or, for the older layout, compiles
+ * {@code Main.java} with javac, runs it through {@link ProcessRunner} with the question's input and
+ * compares stdout with {@code expected.txt} (one mark). Every problem is recorded in the
+ * {@link ErrorReporter}, and the marks are finally handed to {@link CsvScoresheet}. The HTML report
+ * is written afterwards from the result and the reporter's records.</p>
  *
  * <p>Submission and question defects are recorded as recoverable so grading
  * can continue; missing or unreadable grading setup is fatal.</p>
@@ -69,8 +71,16 @@ public final class JavaGrader {
         List<String> questions = questionNames(questionsRoot, reporter);
         // List one entry per student folder, also sorted, so the CSV rows and report follow a predictable order.
         List<Student> students = studentDirectories(submissionsRoot, reporter);
-        // Result table of student name -> (question name -> 0 or 1); LinkedHashMap keeps insertion order for the CSV.
+        // Result table of student name -> (question name -> marks earned); LinkedHashMap keeps insertion order for the CSV.
         Map<String, Map<String, Integer>> scores = new LinkedHashMap<>();
+        // Marks each question is worth, so the report can tell full marks from partial marks.
+        Map<String, Integer> availableMarks = new LinkedHashMap<>();
+        // A tester-based question is worth one mark per tester; the Main.java layout is worth one mark.
+        for (String question : questions) {
+            Path questionDir = questionsRoot.resolve(question);
+            availableMarks.put(question, TesterGrader.usesTesters(questionDir)
+                    ? TesterGrader.testerCount(questionDir) : 1);
+        }
 
         // Step 4: grade students one at a time; any problem inside is recorded and the loop carries on with the next student.
         for (Student student : students) {
@@ -78,7 +88,7 @@ public final class JavaGrader {
             Map<String, Integer> studentScores = new LinkedHashMap<>();
             // Register the map now so the student appears in the results even if every question fails.
             scores.put(student.name(), studentScores);
-            // Visit every question for this student, including ones the student did not submit, so each gets an explicit 0 or 1.
+            // Visit every question for this student, including ones the student did not submit, so each gets an explicit mark (0 when not submitted).
             for (String question : questions) {
                 // A tester-based question (instructor Tester classes in the testers folder) is graded by
                 // TesterGrader against the student's template-shaped folder; it reports its own errors.
@@ -132,7 +142,8 @@ public final class JavaGrader {
                     "Pass a CSV scoresheet path before running a non-interactive grading session.");
         }
         // Summarise the session for the caller: students graded, total errors recorded, whether any was fatal, and all scores.
-        return new GradeResult(students.size(), reporter.records().size(), reporter.hasFatalError(), scores);
+        return new GradeResult(students.size(), reporter.records().size(), reporter.hasFatalError(), scores,
+                availableMarks);
     }
 
     /** Checks that the submissions folder, questions folder and scoresheet CSV are usable, reporting every failure found. */
@@ -316,7 +327,7 @@ public final class JavaGrader {
                 reporter.recoverable("question", "output-limit",
                         "Compiler output exceeded the combined stdout/stderr limit of "
                                 + outputLimitDescription(outputLimitBytes) + "; retained output is truncated.",
-                        "Reduce compiler diagnostics or increase --output-limit-bytes.",
+                        "Reduce compiler diagnostics or raise the output limit (menu option 2, or --output-limit-bytes).",
                         student, display(submission), question);
                 // A compile that was cut short cannot be trusted, so score 0.
                 return 0;

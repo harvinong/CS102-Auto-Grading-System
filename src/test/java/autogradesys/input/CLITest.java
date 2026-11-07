@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 /** Checks that the positive-number prompt re-asks on bad input like the path prompts do. */
 class CLITest {
 
-    // Feeds the typed lines to CLI.promptPositiveLong with default 2 and returns the value plus what was printed.
+    // Feeds the typed lines to CLI.promptPositiveLong with default 2 and maximum 3600, and returns the value plus what was printed.
     private record Run(long value, String printed) {
     }
 
@@ -22,7 +22,7 @@ class CLITest {
         // Capture the prompt text, since the method prints directly to System.out.
         System.setOut(new PrintStream(captured));
         try {
-            long value = CLI.promptPositiveLong("Grading timeout in seconds", 2, new Scanner(typed));
+            long value = CLI.promptPositiveLong("Grading timeout in seconds", 2, 3600, new Scanner(typed));
             return new Run(value, captured.toString());
         } finally {
             System.setOut(original);
@@ -47,6 +47,15 @@ class CLITest {
         Run run = prompt("abc\n1.5\n0\n-3\n8\n");
         assertEquals(8, run.value());
         assertEquals(4, run.printed().split("Invalid input", -1).length - 1);
+    }
+
+    @Test
+    void valueAboveTheMaximumIsRejectedAndAskedAgain() {
+        // 9999999999999999 seconds used to be saved and then crash grading with "long overflow".
+        Run run = prompt("9999999999999999\n3601\n3600\n");
+        // The maximum itself is accepted; the two larger values are each refused with the range named.
+        assertEquals(3600, run.value());
+        assertEquals(2, run.printed().split("must be a whole number from 1 to 3600", -1).length - 1);
     }
 
     @Test

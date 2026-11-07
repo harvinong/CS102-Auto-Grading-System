@@ -8,11 +8,12 @@ This program requires three configuration parameters:
 
 2. Tester Files Folder
    - A folder containing your tester files.
-   - These files prints out evaluation and must print out 
-     the score at the end.
+   - One folder per question, each holding <Name>Tester.java
+     classes and the <Name>Tester.expected.txt output each
+     must print. Every matching tester earns one mark.
 
 3. Scoresheet File
    - A csv file containing a list of your students along 
      with their grades.
-   - This program will create a new copy with the grades 
-     column filled.
+   - Grading writes the marks into this file in place, so
+     keep a backup copy if you need the blank sheet.

@@ -24,6 +24,22 @@ class AppTest {
     }
 
     @Test
+    void outOfRangeLimitsAreUsageErrors() throws Exception {
+        // Each pair is one limit option with a value above its maximum; all must stop with status 2 before grading.
+        String[][] cases = { { "--timeout-ms", "3600001" }, { "--timeout", "1e300" },
+                { "--output-limit-bytes", "67108865" } };
+        for (String[] limit : cases) {
+            Process process = new ProcessBuilder("java", "-cp", "target/classes", "autogradesys.App",
+                    "--non-interactive", "--submissions-dir", "s", "--questions-dir", "q", "--scoresheet", "c.csv",
+                    limit[0], limit[1]).redirectErrorStream(true).start();
+            assertTrue(process.waitFor(10, TimeUnit.SECONDS));
+            String printed = new String(process.getInputStream().readAllBytes());
+            assertEquals(2, process.exitValue(), printed);
+            assertTrue(printed.contains("at most"), printed);
+        }
+    }
+
+    @Test
     void fatalSetupHasNonzeroStatusAndDoesNotGrade() throws Exception {
         Path root = Files.createTempDirectory("fatal-setup-");
         Path submissions = Files.createDirectories(root.resolve("submissions/alice/q1"));

@@ -153,6 +153,25 @@ class JavaGraderTest {
     }
 
     @Test
+    void htmlReportJudgesMultiMarkQuestionsAgainstTheirAvailableMarks() throws Exception {
+        Path report = temporary.resolve("multi-mark.html");
+        // Q1 has two testers: alice earned both, bob one, carol none.
+        GradeResult result = new GradeResult(3, 0, false,
+                Map.of("alice", Map.of("Q1", 2), "bob", Map.of("Q1", 1), "carol", Map.of("Q1", 0)),
+                Map.of("Q1", 2));
+        HtmlReportWriter.write(report, result, List.of());
+        String html = Files.readString(report);
+        // Full marks used to be shown as a red "FAIL (2)" because only a score of exactly 1 counted as a pass.
+        assertTrue(html.contains("PASS (2/2)"), html);
+        assertTrue(html.contains("PARTIAL (1/2)"), html);
+        assertTrue(html.contains("FAIL (0/2)"), html);
+        // One result in each summary card.
+        assertTrue(html.contains("1</strong>full marks"), html);
+        assertTrue(html.contains("1</strong>partial marks"), html);
+        assertTrue(html.contains("1</strong>no marks"), html);
+    }
+
+    @Test
     void htmlReportWriteFailureIsClear() throws Exception {
         Path parentFile = temporary.resolve("not-a-directory");
         Files.writeString(parentFile, "occupied", StandardCharsets.UTF_8);

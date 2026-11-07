@@ -146,16 +146,17 @@ class RunGraderPreflightTest {
         Files.writeString(scores, "username,final_score\n");
 
         // First-run setup (3 paths), view (1), edit (2) keeping all three paths with blank lines, then the
-        // timeout gets "0", "abc" and "1.5" (all refused) before 6, and the output limit gets "-1" before 2048; view again, quit.
+        // timeout gets "0", "abc", "1.5" and the old crash value 9999999999999999 (all refused) before 6, and the output
+        // limit gets "-1" and 67108865 (one above the maximum) before 2048; view again, quit.
         String typed = String.join("\n", template.toString(), testers.toString(), scores.toString(),
-                "1", "2", "", "", "", "0", "abc", "1.5", "6", "-1", "2048", "1", "0") + "\n";
+                "1", "2", "", "", "", "0", "abc", "1.5", "9999999999999999", "6", "-1", "67108865", "2048", "1", "0") + "\n";
         String output = runMenu(typed);
 
         // The first view shows the defaults a new config gets.
         assertTrue(output.contains("Grading timeout: 2 second(s) per process"), output);
         assertTrue(output.contains("Output limit:    1048576 bytes per process"), output);
-        // Each of the four bad inputs was refused and the prompt came back.
-        assertEquals(4, output.split("must be a positive whole number", -1).length - 1, output);
+        // Each of the six bad inputs was refused with the accepted range named, and the prompt came back.
+        assertEquals(6, output.split("must be a whole number from 1 to", -1).length - 1, output);
         // The second view shows the edited values.
         assertTrue(output.contains("Grading timeout: 6 second(s) per process"), output);
         assertTrue(output.contains("Output limit:    2048 bytes per process"), output);

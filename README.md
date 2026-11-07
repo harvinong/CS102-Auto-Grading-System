@@ -6,7 +6,7 @@ This repository contains a small, local Java auto-grader demo. It compiles the g
 
 The grader compiles and runs submitted Java code directly on the instructor's machine, as the instructor's user, with no sandbox or container isolation.
 It is intended for trusted local fixtures and reviewed coursework submissions, not untrusted or anonymous code.
-The per-run timeout and 1 MiB combined stdout/stderr limit stop runaway or flooding programs, but they are resource limits, not security isolation.
+The per-run timeout and combined stdout/stderr limit (2 seconds and 1 MiB by default) stop runaway or flooding programs, but they are resource limits, not security isolation.
 Running untrusted submissions safely would require OS or container isolation, which is out of scope for this MVP.
 
 ## Prerequisites
@@ -103,7 +103,7 @@ mvn -q exec:java \
   -Dexec.args="--non-interactive --submissions-dir /path/submissions --questions-dir /path/questions --scoresheet /path/scores.csv --history /path/errors.jsonl --timeout-ms 2000"
 ```
 
-Use `--timeout` for seconds instead of `--timeout-ms`. Menu grading reads its limits from `config.json` instead: `grading_timeout_seconds` (default 2) and `output_limit_bytes` (default 1048576), both positive whole numbers. Missing or invalid values fall back to the defaults, "View configuration paths" shows them, and "Edit configuration paths" changes them (Enter keeps the current value). Invalid arguments return a nonzero status. Invalid setup and scoresheet read/write failures are reported as fatal, return a nonzero status, and stop before student programs or scoresheet writes run. A per-student or per-question failure is recoverable and does not stop unrelated work.
+Use `--timeout` for seconds instead of `--timeout-ms`. Menu grading reads its limits from `config.json` instead: `grading_timeout_seconds` (default 2, at most 3600) and `output_limit_bytes` (default 1048576, at most 67108864), both whole numbers from 1 up to their maximum. The same maximums apply to `--timeout`, `--timeout-ms` and `--output-limit-bytes`. Missing or invalid values in `config.json` fall back to the defaults, "View configuration paths" shows them, and "Edit configuration paths" changes them (Enter keeps the current value). Invalid arguments return a nonzero status. Invalid setup and scoresheet read/write failures are reported as fatal, return a nonzero status, and stop before student programs or scoresheet writes run. A per-student or per-question failure is recoverable and does not stop unrelated work.
 
 ## Generated files
 
@@ -173,7 +173,7 @@ The script runs the real menu over `demo/preflight` (template, `testers`, `score
 | erin | 2 | 0 | 2 | Q2b.java is empty so the Q2 testers do not compile |
 | frank | | | | `frank.zip` is not extracted, so it is not graded |
 
-To grade by hand, run `./run.sh`, enter `demo/preflight/RenameToYourStudentID` as the starting folder, `demo/preflight/testers` as the testers folder and a copy of `demo/preflight/scores.csv` as the scoresheet (grading overwrites the scoresheet), choose option 3 and enter `demo/preflight/submissions`.
+To grade by hand, run `./run.sh` and enter absolute paths (the prompts reject relative ones): `<repo>/demo/preflight/RenameToYourStudentID` as the starting folder, `<repo>/demo/preflight/testers` as the testers folder and the absolute path of a copy of `demo/preflight/scores.csv` as the scoresheet (grading overwrites the scoresheet in place), choose option 3 and enter `<repo>/demo/preflight/submissions`, where `<repo>` is the output of `pwd` in the repository root. The run also writes `.grader-report.html` (scores shown as marks earned out of marks available, such as `PARTIAL (1/2)`) and appends to `.grader-error-history.jsonl` in the current folder.
 
 ## Submission check
 

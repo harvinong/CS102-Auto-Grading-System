@@ -17,7 +17,7 @@ import java.util.Set;
  * Reads and atomically updates a CSV scoresheet while preserving existing rows.
  *
  * <p>Grading flow: JavaGrader first calls {@link #isValid} during setup, grades everything, then
- * calls {@link #update} once to write each 0/1 score into the matching student row and question
+ * calls {@link #update} once to write each student's marks into the matching student row and question
  * column. The new file is written to a temp file and swapped in, so a crash cannot leave a
  * half-written scoresheet.</p>
  *
@@ -174,7 +174,7 @@ public final class CsvScoresheet {
             Map<String, Integer> studentScores = scores.get(student);
             // Rows for students who were not graded are left untouched.
             if (studentScores != null) {
-                // One entry per question: key is the question name, value is 0 or 1.
+                // One entry per question: key is the question name, value is the marks earned.
                 for (Map.Entry<String, Integer> score : studentScores.entrySet()) {
                     // The question name must match a column header exactly.
                     int questionColumn = header.indexOf(score.getKey());
@@ -186,7 +186,7 @@ public final class CsvScoresheet {
                                 "Add the question column before the next grading session; existing rows are safe.",
                                 student, absolute.toString(), score.getKey());
                     } else {
-                        // Write the 0 or 1 into the matching column of this student's row.
+                        // Write the marks into the matching column of this student's row.
                         row.set(questionColumn, Integer.toString(score.getValue()));
                     }
                 }
