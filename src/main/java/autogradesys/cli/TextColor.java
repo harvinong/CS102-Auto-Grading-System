@@ -2,7 +2,7 @@ package autogradesys.cli;
 
 public enum TextColor {
     SUCCESS("\33[1;32m"),
-    INFO("\33[1;36m"),
+    INFO("\33[1;34m"),
     WARNING("\33[1;33m"),
     ERROR("\33[1;31m");
     
