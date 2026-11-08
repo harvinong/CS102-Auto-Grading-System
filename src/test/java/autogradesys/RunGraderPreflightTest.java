@@ -53,7 +53,8 @@ class RunGraderPreflightTest {
         // run.bat does.
         Process process = new ProcessBuilder(
                 Path.of(System.getProperty("java.home"), "bin", "java").toString(),
-                "-cp", System.getProperty("java.class.path"), "autogradesys.App")
+                // Headless, like a server or an SSH session, so no browser or window can ever pop up during a test.
+                "-Djava.awt.headless=true", "-cp", System.getProperty("java.class.path"), "autogradesys.App")
                 .directory(work.toFile())
                 // Merge error output so a crash would show up in the assertions.
                 .redirectErrorStream(true)
@@ -289,5 +290,27 @@ class RunGraderPreflightTest {
         assertFalse(output.contains("Could not start grading"), output);
         // Nothing was graded.
         assertEquals("student,Q1\nalice,\n", Files.readString(scores));
+    }
+
+    @Test
+    void reportOptionBeforeAnyGradingReturnsToTheMenu() throws Exception {
+        // A valid first-run setup, so the main menu is reached.
+        Path template = root.resolve("RenameToYourStudentID");
+        file(template, "Q1/Q1a.java", "class Q1a {}");
+        Path testers = Files.createDirectories(root.resolve("testers"));
+        Path scores = root.resolve("scores.csv");
+        Files.writeString(scores, "student,Q1\nalice,\n");
+
+        // Setup, then option 4 (no report exists yet), then option 1 to prove the menu still answers, then 0 to quit.
+        // The child JVM is headless, as on a server or over SSH.
+        String output = runMenu(String.join("\n", template.toString(), testers.toString(), scores.toString(),
+                "4", "1", "0") + "\n");
+
+        // The missing report is explained instead of ending the program.
+        assertTrue(output.contains("No report yet: run option 3 (Grade students) first."), output);
+        assertFalse(output.contains("Could not start grading"), output);
+        // The menu came back: option 1 printed the configuration and option 0 said goodbye with exit status 0.
+        assertTrue(output.contains("__ Configuration __"), output);
+        assertTrue(output.contains("Thank you for using!"), output);
     }
 }

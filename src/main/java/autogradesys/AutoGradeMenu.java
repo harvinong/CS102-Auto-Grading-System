@@ -3,7 +3,7 @@ package autogradesys;
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
-import java.io.FileNotFoundException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.nio.file.Path;
 import java.util.Scanner;
@@ -129,6 +129,7 @@ public class AutoGradeMenu {
         if (ignoredTotal > 0) System.out.println(ignoredTotal + " ignored files logged to the error report.");
         // A fatal finding means the template or submissions folder is unusable, so grading would only produce noise.
         if (preflight.fatal()) {
+            // Use the same tag-and-message banner as a normal run so the output layout is the same either way.
             // Say plainly that grading did not start, so nobody mistakes the empty result for a pass.
             System.out.printf("%n%s Autograder not started because submission setup is invalid.%n%n", TextColor.ERROR.getActionTag());
             // Back to the menu without touching the scoresheet, history or report.
@@ -136,7 +137,7 @@ public class AutoGradeMenu {
         }
 
         // Keep the validation feature reachable: the instructor may fix, recheck, or proceed.
-        // The loop only ends by returning (option 0) or breaking out (option 3).
+        // The loop only ends by returning (option 0) or choosing option 3, which fails the while test below.
         int choice;
         do {
             // The four choices offered after each preflight report.
@@ -147,6 +148,7 @@ public class AutoGradeMenu {
             // Read a whole number from 0 to 3, asking again on bad input.
             choice = Input.promptOption(0, 3, sc);
           
+            // Dispatch the choice: 1 fixes, 2 re-checks, 0 cancels; 3 does nothing here and ends the loop.
             switch (choice) {
                 case 1:
                     // run the automatic fixes (headers, folder names, missing files), asking yes/no questions where a fix is a guess.
@@ -161,18 +163,22 @@ public class AutoGradeMenu {
                     preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
                     // Show the updated report.
                     preflight.print(System.out);
+                    // Back to the choices.
                     break;
                 case 2:
+                    // Re-check only: useful after the instructor edited the working copy by hand.
                     // Run the layout check again so the report reflects the edits.
                     preflight = SubmissionPreflight.check(ctrl.getStartingFolder().toPath(), gradingPath);
                     // Show the fresh report before offering the choices again.
                     preflight.print(System.out);
+                    // Back to the choices.
                     break;
                 case 0:
                     // Cancel: leave without grading, so no scoresheet, history or report changes happen.
                     System.out.println(); // Pad the inner menu to the main menu
                     return;
             }
+        // Start grading: choice 3 ends this loop, then carry on with the banner and JavaGrader below.
         } while (choice != 3);
 
         // Separate the preflight report from the grading output with a blank line and a banner.
@@ -195,6 +201,7 @@ public class AutoGradeMenu {
                 java.util.Set.of(preflight.templateName()), reporter);
         // Writing the report can fail on disk problems; the grades are already saved, so only a message is shown.
         try {
+            // The report lands in the current folder, overwritten on every run.
             // Render the scores and every recorded error into one HTML file.
             HtmlReportWriter.write(result, reporter.records());
             // Print the absolute path so the instructor can open the report.
@@ -254,33 +261,59 @@ public class AutoGradeMenu {
 
     /** Menu Option 4: open the recent html report */
     private void viewRecentReport() {
+        // Announce the action first, so the instructor sees something even if opening fails.
         System.out.printf("%n%s Viewing recent report...%n", TextColor.INFO.getActionTag());
+        // The report file is always written to the same place by option 3.
+        File report = HtmlReportWriter.HTML_REPORT_PATH.toFile();
         try {
-            Desktop.getDesktop().open(HtmlReportWriter.HTML_REPORT_PATH.toFile());
+            // No report yet: tell the instructor what to do and go back to the menu.
+            if (!report.isFile()) {
+                System.out.printf("%s No report yet: run option 3 (Grade students) first.%n", TextColor.WARNING.getActionTag());
+                return;
+            }
+            // No desktop (SSH, headless, server): show the path so the instructor can open the file by hand.
+            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                System.out.printf("%s Cannot open a browser here. Open this file yourself: %s%n",
+                        TextColor.WARNING.getActionTag(), report.getAbsolutePath());
+                return;
+            }
+            // Ask the operating system to open the file in the default browser.
+            Desktop.getDesktop().open(report);
+            // Confirm that it worked.
             System.out.printf("%s Opened on your browser!%n", TextColor.SUCCESS.getActionTag());
-        } catch (IOException e) {
+        // Any failure to open must return to the menu, never end the whole program.
+        } catch (IOException | RuntimeException e) {
+            // Show the reason in the error colour.
             System.out.printf("%s %s%n", TextColor.ERROR.getActionTag(), e.getMessage());
         } finally {
+            // Blank line before the menu comes back.
             System.out.println();
         }
     }
 
     /** Menu Option 5: clear the cache folder */
     private void clearCache() {
+        // Where the working copies of the submissions are kept.
         Path cachePath = AppSettings.load().getCacheDir();
 
+        // Nothing on disk means there is nothing to delete.
         if (!cachePath.toFile().exists()) {
             System.out.printf("%n%s Cache has been cleared%n%n", TextColor.INFO.getActionTag());
             return;
         }
 
+        // Announce the action before deleting.
         System.out.printf("%n%s Clearing cache...%n", TextColor.INFO.getActionTag());
         try {
+            // Remove the cache folder and everything inside it.
             FolderDeleter.delete(cachePath);
+            // Confirm the deletion.
             System.out.printf("%s Cache cleared%n", TextColor.SUCCESS.getActionTag());
         } catch (IOException e) {
+            // Show why the folder could not be deleted.
             System.out.printf("%s %s%n", TextColor.ERROR.getActionTag(), e.getMessage());
         } finally {
+            // Blank line before the menu comes back.
             System.out.println();
         }
     }
@@ -323,14 +356,19 @@ public class AutoGradeMenu {
     }
 
     private static String getText(String textPathString) {
-        try (Scanner sc = new Scanner(new File(textPathString))) {
+        // Read as UTF-8 so the box-drawing title survives a platform default such as windows-1252 (JDK 17 on Windows).
+        try (Scanner sc = new Scanner(new File(textPathString), StandardCharsets.UTF_8)) {
+            // Collect the whole file here.
             StringBuilder result = new StringBuilder();
+            // Copy line by line, always ending a line with \n.
             while (sc.hasNextLine()) {
                 result.append(sc.nextLine());
                 result.append('\n');
             }
+            // Trim the blank lines at both ends.
             return result.toString().trim();
-        } catch (FileNotFoundException e) {
+        // A missing or unreadable file gives a short notice instead of stopping the program.
+        } catch (IOException e) {
             return String.format("[%s not found. You may reinstall this program]", textPathString);
         }
     }

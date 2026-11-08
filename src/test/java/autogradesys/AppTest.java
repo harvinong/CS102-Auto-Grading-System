@@ -17,7 +17,7 @@ import autogradesys.grading.JavaGrader;
 class AppTest {
     @Test
     void invalidArgumentsHaveNonzeroProcessStatus() throws Exception {
-        Process process = new ProcessBuilder("java", "-cp", "target/classes", "autogradesys.App",
+        Process process = new ProcessBuilder("java", "-cp", System.getProperty("java.class.path"), "autogradesys.App",
                 "--not-an-option").redirectErrorStream(true).start();
         assertTrue(process.waitFor(10, TimeUnit.SECONDS));
         assertEquals(2, process.exitValue());
@@ -29,7 +29,7 @@ class AppTest {
         String[][] cases = { { "--timeout-ms", "3600001" }, { "--timeout", "1e300" },
                 { "--output-limit-bytes", "67108865" } };
         for (String[] limit : cases) {
-            Process process = new ProcessBuilder("java", "-cp", "target/classes", "autogradesys.App",
+            Process process = new ProcessBuilder("java", "-cp", System.getProperty("java.class.path"), "autogradesys.App",
                     "--non-interactive", "--submissions-dir", "s", "--questions-dir", "q", "--scoresheet", "c.csv",
                     limit[0], limit[1]).redirectErrorStream(true).start();
             assertTrue(process.waitFor(10, TimeUnit.SECONDS));
@@ -52,7 +52,7 @@ class AppTest {
         Files.writeString(scoresheet, "student,q1\nalice,old\n");
         Path history = root.resolve("history.jsonl");
 
-        Process process = new ProcessBuilder("java", "-cp", "target/classes", "autogradesys.App",
+        Process process = new ProcessBuilder("java", "-cp", System.getProperty("java.class.path"), "autogradesys.App",
                 "--non-interactive", "--submissions-dir", root.resolve("submissions").toString(),
                 "--questions-dir", questions.getParent().toString(), "--scoresheet",
                 root.resolve("missing.csv").toString(), "--history", history.toString(),
