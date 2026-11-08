@@ -1,14 +1,21 @@
 package autogradesys.cli;
 
 public enum TextColor {
+    // Bold green for good news.
     SUCCESS("\33[1;32m"),
+    // Bold blue for plain progress messages.
     INFO("\33[1;34m"),
+    // Bold yellow for things that need a look.
     WARNING("\33[1;33m"),
+    // Bold red for failures.
     ERROR("\33[1;31m");
     
+    // The code that switches every colour back off.
     private static final String SUFFIX_ESCAPE_SEQUENCE = "\33[m";
+    // The code that switches this colour on.
     private String prefixEscapeCode;
 
+    // Each constant above passes its own colour code in here.
     private TextColor(String prefixEscapeCode) {
         this.prefixEscapeCode = prefixEscapeCode;
     }
@@ -19,11 +26,15 @@ public enum TextColor {
      * @return Colored string
      */
     public String apply(String s) {
+        // Colour only a real terminal: piped output, log files and tests get plain text, and NO_COLOR turns colour off.
+        if (System.console() == null || System.getenv("NO_COLOR") != null) return s;
+        // Wrap the text in this colour's start code and the reset code.
         return this.prefixEscapeCode + s + SUFFIX_ESCAPE_SEQUENCE;
     }
 
     /** Get action tag such as [INFO] with its color */
     public String getActionTag() {
+        // Use the constant's own name (SUCCESS, INFO, ...) as the tag text.
         return getActionTag(this.toString());
     }
 
@@ -32,6 +43,7 @@ public enum TextColor {
      * @param s text to be put inside the square brackets
      */
     public String getActionTag(String s) {
+        // Put the text in square brackets, then colour the whole tag.
         return apply("[" + s + "]");
     }
 

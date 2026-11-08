@@ -172,9 +172,13 @@ public class Input {
         String pathString = sc.nextLine().trim();
 
         // if pathString is encased with quotation mark, trim it.
+        // Try a double-quoted pattern, then a single-quoted one (paths pasted or dragged in often carry quotes).
         for (String p : new String[]{"\"(?:[^\"]|\"\")*\"", "'(?:[^']|'')*'"}) {
+            // The whole text must be wrapped in the quotes.
             if (Pattern.matches(p, pathString)) {
+                // Drop the first and last character, which are the quotes.
                 pathString = pathString.substring(1, pathString.length() - 1);
+                // Only one kind of quote is ever removed.
                 break;
             }
         }
