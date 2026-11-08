@@ -205,7 +205,7 @@ public final class App {
         // One scanner for the whole session, closed automatically on exit.
         try (Scanner scanner = new Scanner(System.in)) {
             // Create the menu with a fresh controller (the shared state of the session).
-            AutoGradeMenu menu = new AutoGradeMenu(scanner, new AutoGradeCtrl());
+            MainMenu menu = new MainMenu(scanner, new MainCtrl());
             // Hand control to the menu, which shows options and handles them until the user quits.
             menu.readOption();
             // Normal exit after the user leaves the menu.

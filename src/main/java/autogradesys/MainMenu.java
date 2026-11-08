@@ -21,12 +21,12 @@ import autogradesys.io.FolderDeleter;
 import autogradesys.preflight.SubmissionPreflight;
 import autogradesys.validation.CacheReport;
 
-public class AutoGradeMenu {
+public class MainMenu {
 
     private Scanner sc;
-    private AutoGradeCtrl ctrl;
+    private MainCtrl ctrl;
 
-    public AutoGradeMenu(Scanner sc, AutoGradeCtrl ctrl) {
+    public MainMenu(Scanner sc, MainCtrl ctrl) {
         this.sc = sc;
         this.ctrl = ctrl;
 

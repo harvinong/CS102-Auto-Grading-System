@@ -15,12 +15,12 @@ import autogradesys.validation.SubmissionCache;
 import autogradesys.validation.SubmissionValidation;
 import autogradesys.validation.ValidationReport;
 
-public class AutoGradeCtrl {
+public class MainCtrl {
     
     private ConfigDAO configDAO;
     private final SubmissionCache cache = new SubmissionCache(SubmissionCache.DEFAULT_ROOT);
 
-    public AutoGradeCtrl() {
+    public MainCtrl() {
         this.configDAO = new ConfigDAO();
     }
 
