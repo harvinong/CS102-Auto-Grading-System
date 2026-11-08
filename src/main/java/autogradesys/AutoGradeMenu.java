@@ -11,13 +11,13 @@ import java.util.Scanner;
 import autogradesys.cli.Input;
 import autogradesys.cli.TextColor;
 import autogradesys.config.AppSettings;
-import autogradesys.filemanager.FolderDeleter;
 import autogradesys.cli.Field;
 import autogradesys.grading.ErrorHistory;
 import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
 import autogradesys.grading.HtmlReportWriter;
 import autogradesys.grading.JavaGrader;
+import autogradesys.io.FolderDeleter;
 import autogradesys.preflight.SubmissionPreflight;
 import autogradesys.validation.CacheReport;
 

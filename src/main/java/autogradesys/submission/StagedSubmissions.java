@@ -3,7 +3,7 @@ package autogradesys.submission;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import autogradesys.filemanager.FolderDeleter;
+import autogradesys.io.FolderDeleter;
 
 /** The folder to grade. If it was made from zips, it is deleted again when closed. */
 public final class StagedSubmissions implements AutoCloseable {

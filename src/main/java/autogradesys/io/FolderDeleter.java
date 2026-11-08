@@ -1,4 +1,4 @@
-package autogradesys.filemanager;
+package autogradesys.io;
 
 import java.io.IOException;
 import java.nio.file.Files;

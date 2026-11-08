@@ -5,8 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import autogradesys.config.AppSettings;
-import autogradesys.filemanager.FolderDeleter;
 import autogradesys.grading.ErrorReporter;
+import autogradesys.io.FolderDeleter;
 
 /**
  * Unzips every submission into the cache folder, one folder per student, so the checker and

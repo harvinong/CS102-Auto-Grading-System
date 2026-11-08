@@ -7,11 +7,11 @@ import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
-import autogradesys.filemanager.FileValidator;
+import autogradesys.io.FileManager;
 
 /**
  *
- * autogradesys.display.CLI (Command Line Interface)
+ * autogradesys.cli.Input
  * provides utilities to facilitate user input and configuration
  * through a command line terminal.
  *
@@ -20,18 +20,21 @@ public class Input {
 
     private Input() {} // disable instancing
 
-    /**
+    /**<p>
      * Ask user for the path of the file/directory and returns the file object.
-     *
+     * </p><p>
      * When this method is called, the terminal will show a prompt, then the user
      * inputs the
      * absolute path of the file/directory.
-     *
+     * </p><p>
      * The method will ask the user to re-enter the path if:
-     * - the user enters a non-absolute (relative) path;
-     * - the file/directory does not exist; and
-     * - the prompt ask for directory and user inputs a file, and vice versa.
-     * - the file extension is invalid.
+     * </p>
+     * <ul>
+        * <li>the user enters a non-absolute (relative) path;</li>
+        * <li>the file/directory does not exist;</li>
+        * <li>the prompt ask for directory and user inputs a file, and vice versa; and</li>
+        * <li>the file extension is invalid.</li>
+     * </ul>
      *
      * @param fileField   The prompt to be printed out to the user.
      * @param defaultFile The default file returned if user enters none.
@@ -48,12 +51,12 @@ public class Input {
                         fileField.getName(), defaultFile != null ? " (" + defaultFile.getName() + ")" : "");
 
                 Path filepath = promptPath(prompt, fileField.getName(), defaultFile != null ? defaultFile.toPath() : null, sc);
-                file = getFile(filepath);
+                file = FileManager.getFile(filepath);
 
                 if (fileField.isDir()) {
-                    FileValidator.validateDirectory(file);
+                    FileManager.validateDirectory(file);
                 } else {
-                    FileValidator.validateFile(file, fileField.getExtensions());
+                    FileManager.validateFile(file, fileField.getExtensions());
                 }
 
             } catch (IllegalArgumentException e) {
@@ -73,12 +76,12 @@ public class Input {
         return file;
     }
 
-    /**
+    /**<p>
      * Ask the user for a positive whole number no larger than a maximum, such as the grading timeout in seconds.
-     *
+     * </p><p>
      * Re-prompts when the line is not a whole number, is zero or negative, or is above the maximum,
      * the same way {@link #promptFile} re-prompts on a bad path.
-     *
+     * </p>
      * @param label        Name shown in the prompt, e.g. "Grading timeout in seconds".
      * @param defaultValue The current value, kept when the user just presses Enter.
      * @param maxValue     The largest value accepted.
@@ -103,9 +106,11 @@ public class Input {
                 return defaultValue;
             }
             try {
-                // Long.parseLong rejects "1.5", "abc" and values beyond the long range, all as NumberFormatException.
+                // Long.parseLong rejects "1.5", "abc" and values beyond the long range, 
+                // all as NumberFormatException.
                 long value = Long.parseLong(text);
-                // Zero and negatives would stop every process at once, and a huge value could hang or crash grading, so only 1 to maxValue is kept.
+                // Zero and negatives would stop every process at once, and 
+                // a huge value could hang or crash grading, so only 1 to maxValue is kept.
                 if (value > 0 && value <= maxValue) {
                     return value;
                 }
@@ -116,7 +121,8 @@ public class Input {
         }
     }
 
-    /**Prompt an option, which is a number from <code>min</code> to <code>max</code>
+    /**
+     * Prompt an option, which is a number from <code>min</code> to <code>max</code>
      * with 0 usually used to go to the previous menu or exit the program.
      * 
      * @param min the lowest option
@@ -138,7 +144,12 @@ public class Input {
         }
     }
 
-    /** Ask a yes/no question, retrying until a valid answer is entered. */
+    /** 
+     * Ask a yes/no question, retrying until a valid answer is entered.
+     * @param question to be printed as the prompt
+     * @param sc the scanner used to read user input
+     * @return boolean value representing the user input ("Y" -> <code>true</code>; "N" -> <code>false</code>)
+     */
     public static boolean promptYesNo(String question, Scanner sc) {
         while (true) {
             System.out.print(question + " (Y/N): ");
@@ -160,7 +171,7 @@ public class Input {
      * @param defaultFilePath The default file path.
      * @param sc              The reader to reads the user input.
      * @return The path the user has input in absolute form. If user inputs nothing,
-     *         it returns [defaultFilePath].
+     *         it returns <code>defaultFilePath</code>.
      * @throws IllegalArgumentException If the path is blank (with no default) or not absolute.
      */
     private static Path promptPath(String prompt, String label, Path defaultFilePath, Scanner sc)
@@ -198,23 +209,6 @@ public class Input {
         }
 
         return path;
-    }
-
-    /**
-     * Get the file/directory object from the given filepath.
-     *
-     * @param path The path of the file/directory.
-     * @return The file/directory object that exist in the file system.
-     * @throws FileNotFoundException If the file/directory does not exist.
-     */
-    private static File getFile(Path path) throws FileNotFoundException {
-        File file = path.toFile();
-
-        if (!file.exists()) {
-            throw new FileNotFoundException(path.toString());
-        }
-
-        return file;
     }
 
 }

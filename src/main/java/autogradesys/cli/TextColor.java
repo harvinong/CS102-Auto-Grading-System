@@ -11,7 +11,7 @@ public enum TextColor {
     ERROR("\33[1;31m");
     
     // The code that switches every colour back off.
-    private static final String SUFFIX_ESCAPE_SEQUENCE = "\33[m";
+    private static final String SUFFIX_ESCAPE_CODE = "\33[m";
     // The code that switches this colour on.
     private String prefixEscapeCode;
 
@@ -29,21 +29,24 @@ public enum TextColor {
         // Colour only a real terminal: piped output, log files and tests get plain text, and NO_COLOR turns colour off.
         if (System.console() == null || System.getenv("NO_COLOR") != null) return s;
         // Wrap the text in this colour's start code and the reset code.
-        return this.prefixEscapeCode + s + SUFFIX_ESCAPE_SEQUENCE;
+        return this.prefixEscapeCode + s + SUFFIX_ESCAPE_CODE;
     }
 
-    /** Get action tag such as [INFO] with its color */
+    /** 
+     * Get action tag such as [INFO] with its color
+     * using the enum's own name (SUCCESS, INFO, ...) as the tag text.
+     * @return the text in square brackets, then colored.
+     */
     public String getActionTag() {
-        // Use the constant's own name (SUCCESS, INFO, ...) as the tag text.
         return getActionTag(this.toString());
     }
 
     /**
      * Get action tag such as [INFO] with its color
      * @param s text to be put inside the square brackets
+     * @return the text in square brackets, then colored.
      */
     public String getActionTag(String s) {
-        // Put the text in square brackets, then colour the whole tag.
         return apply("[" + s + "]");
     }
 

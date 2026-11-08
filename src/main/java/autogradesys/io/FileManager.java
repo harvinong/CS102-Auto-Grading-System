@@ -1,9 +1,11 @@
-package autogradesys.filemanager;
+package autogradesys.io;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.nio.file.Path;
 import java.util.Arrays;
 
-public class FileValidator {
+public class FileManager {
 
     /**
      * Validate the file object if it is a directory.
@@ -58,6 +60,23 @@ public class FileValidator {
         } else {
             return fileName.substring(dotIndex + 1);
         }
+    }
+
+    /**
+     * Get the file/directory object from the given filepath.
+     *
+     * @param path The path of the file/directory.
+     * @return The file/directory object that exist in the file system.
+     * @throws FileNotFoundException If the file/directory does not exist.
+     */
+    public static File getFile(Path path) throws FileNotFoundException {
+        File file = path.toFile();
+
+        if (!file.exists()) {
+            throw new FileNotFoundException(path.toString());
+        }
+
+        return file;
     }
 
 
