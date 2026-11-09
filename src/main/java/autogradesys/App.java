@@ -27,7 +27,7 @@ public final class App {
     /** Program start: runs the chosen mode and exits with its status code. */
     public static void main(String[] args) {
         // Hand the exit code from run() to the operating system so scripts and CI can detect failure.
-        GradingEntry.main(null);
+        System.exit(run(args, System.out));
     }
 
     // Testable core of main(): takes the stream explicitly so tests can capture the output.

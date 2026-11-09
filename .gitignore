@@ -11,7 +11,6 @@
 .mtj.tmp/
 
 # Package Files #
-*.jar
 *.war
 *.nar
 *.ear
@@ -33,7 +32,7 @@ config.json
 cache/
 
 # Generated grading run reports
-.grader-report.html
-.grader-error-history.jsonl
+*.html
+*.jsonl
 demo/target/run/grading-report.html
 demo/output-limit/target/grading-report.html
