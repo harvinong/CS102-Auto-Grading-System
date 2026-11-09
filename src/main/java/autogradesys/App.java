@@ -66,9 +66,9 @@ public final class App {
             return EXIT_RUNTIME;
         // Unexpected failure while starting or running the menu.
         } catch (RuntimeException exception) {
+            output.print(TextColor.ERROR.getActionTag() + " ");
             if (debugMode) {
                 // Show a detailed message in debugging mode.
-                output.print(TextColor.ERROR.getActionTag() + " ");
                 exception.printStackTrace(output);
             } else {
                 // Show a short message instead of a stack trace.

@@ -1,7 +1,6 @@
 package autogradesys.cli;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
@@ -53,10 +52,11 @@ public class Input {
                 Path filepath = promptPath(prompt, fileField.getName(), defaultFile != null ? defaultFile.toPath() : null, sc);
                 file = filepath.toFile();
 
+                // the file/directory does not exist.
                 if (!file.exists()) {
-                    // the file/directory does not exist.
                     System.out.println("File not found: " + filepath.toString() + "\n");
                     file = null;
+                    continue;
                 }
 
                 if (fileField.isDir()) {
