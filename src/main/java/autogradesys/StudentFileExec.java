@@ -34,16 +34,15 @@ public class StudentFileExec {
     static TestCase expectValue(String label, Object[] args, Object expected) {
         return new TestCase(label, args, expected, null);
     }
-
+  
     // Convenience factory for exception-expecting cases
     static TestCase expectException(String label, Object[] args,String expectedExceptionName) {
         return new TestCase(label, args, null, expectedExceptionName);
     }
 }
-    // Describes "new <className>(<args>)" 
+    // Describes "new <className>(<args>)"  im so sorry....
     record ObjSpec(String className, Object... ctorArgs) {}
 
-    
     
     // method name like (compareShape, IsIsogramWord, ...) paramTypes is what type of parameter it is expected. testCases is the testcases it will be put against
     record MethodSpec(String methodName, Class<?>[] paramTypes, List<TestCase> testCases) {}
@@ -113,15 +112,20 @@ public class StudentFileExec {
                             TestCase.expectException("SMU101", new Object[]{"studentstester.txt", "SMU101"}, "DataException"),
                             TestCase.expectValue("CS101", new Object[]{"studentstester.txt","CS101"}, "LEE Teck Yang-4.0"),
                             TestCase.expectValue("CS102", new Object[]{"studentstester.txt", "CS102"}, "Jason LEE-4.0"),
-                            TestCase.expectValue("CS103", new Object[]{"studentstester.txt", "CS103"}, "Tay Evelyn-4.0")
+                            TestCase.expectValue("CS103", new Object[]{"studentstester.txt", "CS103"}, "TAY Evelyn-4.0")
 
                     )
             ),
             "Q3", new MethodSpec(
                 "sortShapes",
-                 new Class<?>[]{ArrayList.class},
+                 new Class<?>[]{List.class},
                  List.of(
-                        TestCase.expectValue("test1", new Object[]{new ArrayList<>(Arrays.asList(new ObjSpec("Rectangle", "R1",1000,2)))}, "[R2=>10.0:13.0]")
+                        TestCase.expectValue("test1", new Object[]{new ArrayList<>(Arrays.asList(
+                            new ObjSpec("Rectangle", "R1", 10, 2),
+                            new ObjSpec("Rectangle", "R2", 5, 3),
+                            new ObjSpec("Rectangle", "R3", 20, 3),
+                            new ObjSpec("Rectangle", "R4", 500, 3)
+                            ))}, List.of("R3=>60.0:46.0", "R1=>20.0:24.0", "R2=>15.0:16.0"))
                  )
                  )
 
@@ -301,47 +305,7 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
         Method method = studentClass.getMethod(spec.methodName(), spec.paramTypes());
 
         return spec.testCases().stream().map(tc ->
-    (DynamicNode) DynamicTest.dynamicTest(tc.label(), () -> {
-    List<Path> copiedFiles = copyResourceFilesToWorkingDir(questionDir);
-    try {
-        Object[] realArgs = resolveArgs(tc.args(), loader);
-        Object freshInstance = studentClass.getDeclaredConstructor().newInstance();
-
-        if (tc.expectedException() != null) {
-            Throwable thrown = null;
-            try {
-                method.invoke(freshInstance, realArgs);
-            } catch (java.lang.reflect.InvocationTargetException e) {
-                thrown = e.getCause();
-            }
-            if (thrown == null) {
-                throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
-                        + " expected " + tc.expectedException() + " but no exception was thrown");
-            }
-            String actualName = thrown.getClass().getSimpleName();
-            if (!actualName.equals(tc.expectedException())) {
-                throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
-                        + " expected " + tc.expectedException() + " but got " + actualName, thrown);
-            }
-        } else {
-            Object actual;
-            try {
-                
-                actual = method.invoke(freshInstance, realArgs);
-            } catch (java.lang.reflect.InvocationTargetException e) {     
-                throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
-                        + " threw " + e.getCause(), e.getCause());
-            }
-
-            Object expected = tc.expected();
-          
-            assertEquals(expected, actual,
-                    () -> className + "." + spec.methodName() + " failed on " + tc.label());
-        }
-    } finally {
-        cleanupCopiedFiles(copiedFiles);
-    }
-}));
+    (DynamicNode) DynamicTest.dynamicTest(tc.label(), () -> runTestCase(className, spec, tc, studentClass, method, loader, questionDir)));
 
     } catch (NoSuchMethodException e) {
         return Stream.of(DynamicTest.dynamicTest(
@@ -388,7 +352,57 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
 
     return new CompileResult(firstAttempt.errorsByFile());
 }
+private void runTestCase(String className, MethodSpec spec, TestCase tc,
+                         Class<?> studentClass, Method method,
+                         ClassLoader loader, Path questionDir) throws Throwable {
+    List<Path> copiedFiles = copyResourceFilesToWorkingDir(questionDir);
+    try {
+        Object[] realArgs = resolveArgs(tc.args(), loader);
+        Object freshInstance = studentClass.getDeclaredConstructor().newInstance();
+        //when exception testing
+        if (tc.expectedException() != null) {
+            Throwable thrown = null;
+            try {
+                method.invoke(freshInstance, realArgs);
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                thrown = e.getCause();
+            }
+            if (thrown == null) {
+                throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
+                        + " expected " + tc.expectedException() + " but no exception was thrown");
+            }
+            String actualName = thrown.getClass().getSimpleName();
+            if (!actualName.equals(tc.expectedException())) {
+                throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
+                        + " expected " + tc.expectedException() + " but got " + actualName, thrown);
+            }
+            return;
+        }
+        //value for value testing
+        Object actual;
+        try {
+            actual = method.invoke(freshInstance, realArgs);
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
+                    + " threw " + e.getCause(), e.getCause());
+        }
 
+        Object expected = tc.expected();
+        if (expected instanceof List<?> el && actual instanceof List<?> al) {
+            List<String> exp = new ArrayList<>();
+            for (Object o : el) {exp.add(String.valueOf(o));}
+            List<String> act = new ArrayList<>();
+            for (Object o : al) {act.add(String.valueOf(o));}
+            expected = exp;
+            actual = act;
+        }
+
+        assertEquals(expected, actual,
+                className + "." + spec.methodName() + " failed on " + tc.label());
+    } finally {
+        cleanupCopiedFiles(copiedFiles);
+    }
+}
 private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles, Path questionDir) throws Exception {
     DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
     StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);

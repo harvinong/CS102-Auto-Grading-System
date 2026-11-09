@@ -3,13 +3,22 @@
  * Email ID:
  */
 
-import java.util.*;
 
+import java.util.*;
+import java.util.Collections;
 public class Q3 {
     public static List<Shape> sortShapes(List<Shape> shapeList) {
-        // insert your code here
         
-        return new ArrayList<Shape>();
+        Collections.sort(shapeList, (Shape lh, Shape rh) -> lh.getArea() > rh.getArea() ? -1 : lh.getArea() < rh.getArea() ? 1 : 0);
+        Shape rem;
+        for (Shape elem : shapeList) {
+            if (elem.getArea() > 1000) {
+                rem = elem;
+            }
+        }
+        shapeList.remove(rem);
+        List<Shape> hai = shapeList;
+        return hai;
     }
 
     //Do not modify the following codes
