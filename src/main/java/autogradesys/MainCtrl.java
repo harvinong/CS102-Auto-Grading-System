@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Predicate;
 
+import autogradesys.config.Config;
 import autogradesys.config.ConfigDAO;
 import autogradesys.preflight.PreflightReport;
 import autogradesys.validation.CacheReport;
@@ -18,7 +19,6 @@ import autogradesys.validation.ValidationReport;
 public class MainCtrl {
     
     private ConfigDAO configDAO;
-    private final SubmissionCache cache = new SubmissionCache(SubmissionCache.DEFAULT_ROOT);
 
     public MainCtrl() {
         this.configDAO = new ConfigDAO();
@@ -53,6 +53,11 @@ public class MainCtrl {
         return ConfigDAO.MAX_OUTPUT_LIMIT_BYTES;
     }
 
+    public Config getConfig() {
+        return new Config(getStartingFolder(), getTestersFolder(), getScoresheetFile(), getTimeoutSeconds(), getOutputLimitBytes());
+    }
+
+
     public boolean loadConfig() {
         return configDAO.load();
     }
@@ -71,21 +76,6 @@ public class MainCtrl {
         configDAO.setTimeoutSeconds(timeoutSeconds);
         configDAO.setOutputLimitBytes(outputLimitBytes);
         return saveConfig(startingFolder, testers, scoresheet);
-    }
-
-    public CacheReport prepareWorkingCopy(File submissions) {
-        return cache.prepare(submissions.toPath());
-    }
-
-    public ValidationReport validateSubmissions(Path workingDir, PreflightReport preflight,
-            Predicate<String> confirm) throws IOException {
-        List<Student> students = ScoresheetReader.read(configDAO.getScoresheetFile());
-        return new SubmissionValidation(students, confirm, cache).run(workingDir, preflight);
-    }
-
-    public ValidationReport validateSubmissions(File submissions, PreflightReport preflight,
-            Predicate<String> confirm) throws IOException {
-        return validateSubmissions(submissions.toPath(), preflight, confirm);
     }
 
 }
