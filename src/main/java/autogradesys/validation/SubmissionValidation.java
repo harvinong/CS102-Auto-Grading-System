@@ -4,8 +4,10 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 
@@ -46,6 +48,10 @@ public class SubmissionValidation {
     public ValidationReport run(Path submissions, PreflightReport preflight) {
         List<ValidationEvent> events = new ArrayList<>();
         Map<String, Path> identified = new TreeMap<>();
+        // Which folder already has each registered username, so a mistyped folder is never renamed onto another one unasked.
+        Map<String, String> owners = UsernameResolver.owners(preflight.students(), students);
+        // Folders that were replaced by a renamed one. The name may now belong to the new folder, so it is not looked at again.
+        Set<String> replacedFolders = new HashSet<>();
 
         // Both steps use the preflight's paths, which a rename would make out of date, so they come first.
         // Restoring comes before the hierarchy fix because the preflight reported paths inside any wrapper folder.
@@ -54,12 +60,19 @@ public class SubmissionValidation {
 
         for (String folder : preflight.students()) {
             Path dir = submissions.resolve(folder);
-            // The template copy, archives and links have no student folder to fix.
-            if (folder.equals(preflight.templateName()) || !Files.isDirectory(dir, LinkOption.NOFOLLOW_LINKS)) {
+            // The template copy, archives, links and replaced folders have no student folder to fix.
+            if (folder.equals(preflight.templateName()) || replacedFolders.contains(folder)
+                    || !Files.isDirectory(dir, LinkOption.NOFOLLOW_LINKS)) {
                 continue;
             }
-            resolver.resolve(folder, dir, events).ifPresent(identity -> {
+            resolver.resolve(folder, dir, events, owners).ifPresent(identity -> {
                 String username = identity.student().username();
+                if (identity.replaced() != null) {
+                    // The folder that used this name was replaced: forget what was found or fixed in it.
+                    replacedFolders.add(identity.replaced());
+                    identified.remove(username);
+                    events.removeIf(event -> event.student().equals(identity.replaced()));
+                }
                 String workingName = SubmissionFiles.nameOf(identity.dir());
                 if (!workingName.equals(folder)) {
                     // Keep the link to the original submission after a rename.

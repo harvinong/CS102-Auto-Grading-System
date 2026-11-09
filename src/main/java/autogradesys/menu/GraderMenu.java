@@ -16,7 +16,6 @@ import autogradesys.grading.GradeResult;
 import autogradesys.grading.HtmlReportWriter;
 import autogradesys.grading.JavaGrader;
 import autogradesys.preflight.PreflightReport;
-import autogradesys.preflight.SubmissionPreflight;
 import autogradesys.validation.CacheReport;
 
 /**
@@ -94,7 +93,8 @@ public class GraderMenu {
         // SubmissionPreflight.check(...) compares every submission with the template and returns a report (it changes nothing);
         // the template path comes from the saved configuration, the submissions path from the working copy built above;
         // SubmissionPreflight.print(...) writes the report to the console.
-        this.preflight = SubmissionPreflight.check(ctrl.config.startingFolder().toPath(), gradingPath);
+        // ctrl.checkSubmissions(...) runs that check and also adds a USERNAME_TYPO finding for every folder whose name looks like a mistyped username.
+        this.preflight = ctrl.checkSubmissions(gradingPath);
         // Persist ignored clutter silently; PreflightReport intentionally omits it from console output.
         // This is the same quiet recording as above, but for junk found inside the student folders.
         long ignored = this.preflight.findings().stream()
@@ -165,6 +165,8 @@ public class GraderMenu {
     // -- Menu Actions --
     /** Automatically fix common mistakes, and then report preflight. */
     private void fixSubmissions() {
+        // The fixes follow the findings, so start from a fresh check in case files were edited by hand since the last one.
+        preflight = ctrl.checkSubmissions(gradingPath);
         // run the automatic fixes (headers, folder names, missing files), asking yes/no questions where a fix is a guess.
         try {
             ctrl.validateSubmissions(gradingPath, preflight, question -> Input.promptYesNo(question, sc)).print(System.out);
@@ -174,7 +176,7 @@ public class GraderMenu {
             System.out.println(TextColor.ERROR.getActionTag() + " Could not validate the submissions: " + exception.getMessage());
         }
         // Check again after the fixes, because the earlier report no longer describes the copy.
-        preflight = SubmissionPreflight.check(ctrl.config.startingFolder().toPath(), gradingPath);
+        preflight = ctrl.checkSubmissions(gradingPath);
         // Show the updated report.
         preflight.print(System.out);
     }
@@ -182,7 +184,7 @@ public class GraderMenu {
     /** Re-check only: useful after the instructor edited the working copy by hand. */
     private void checkSubmissions() {
         // Run the layout check again so the report reflects the edits.
-        preflight = SubmissionPreflight.check(ctrl.config.startingFolder().toPath(), gradingPath);
+        preflight = ctrl.checkSubmissions(gradingPath);
         // Show the fresh report before offering the choices again.
         preflight.print(System.out);
     }
