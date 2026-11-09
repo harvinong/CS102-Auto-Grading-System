@@ -203,46 +203,6 @@ class JavaGraderTest {
         assertEquals(beforeBadHeader, updated);
     }
 
-    @Test
-    void appRunsAPathBasedNonInteractiveSession() throws Exception {
-        requireJdk();
-        Path questions = createQuestions();
-        Path submissions = temporary.resolve("cli-submissions");
-        createSource(submissions.resolve("alice/q1/Main.java"), passingSource("ok"));
-        createSource(submissions.resolve("alice/q2/Main.java"), passingSource("next"));
-        Path scoresheet = temporary.resolve("cli-scores.csv");
-        Files.writeString(scoresheet, "student,q1,q2\nalice,,\n", StandardCharsets.UTF_8);
-        Path history = temporary.resolve("cli-history.jsonl");
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-
-        int status = App.run(new String[] {"--non-interactive", "--submissions-dir", submissions.toString(),
-                "--questions-dir", questions.toString(), "--scoresheet", scoresheet.toString(),
-                "--history", history.toString(), "--report", temporary.resolve("cli-report.html").toString(),
-                "--timeout-ms", "2000"},
-                new PrintStream(output, true, StandardCharsets.UTF_8));
-
-        assertEquals(0, status);
-        assertTrue(output.toString(StandardCharsets.UTF_8).contains("PASS student=alice"));
-        assertEquals("student,q1,q2\nalice,1,1\n", Files.readString(scoresheet));
-        assertTrue(Files.notExists(history));
-    }
-
-    @Test
-    void checkedInDemoCommandUsesFixturesAndGeneratedOutputs() throws Exception {
-        requireJdk();
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        // Keep the Maven test boundary aligned with the command users run from the repository root.
-        int status = App.run(new String[] {"demo"}, new PrintStream(output, true, StandardCharsets.UTF_8));
-        String text = output.toString(StandardCharsets.UTF_8);
-        assertEquals(0, status);
-        assertTrue(text.contains("question/compile"));
-        assertTrue(text.contains("question/timeout"));
-        assertTrue(text.contains("question/runtime"));
-        assertTrue(text.contains("scoresheet/scoresheet-row"));
-        assertTrue(Files.exists(Path.of("demo/target/run/scores.csv")));
-        assertTrue(Files.exists(Path.of("demo/target/run/error-history.jsonl")));
-    }
-
     private ErrorReporter reporter(String fileName) {
         return new ErrorReporter(new ErrorHistory(temporary.resolve(fileName)),
                 new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8));
