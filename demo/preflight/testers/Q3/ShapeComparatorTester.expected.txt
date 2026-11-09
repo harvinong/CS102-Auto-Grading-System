@@ -1,3 +1,0 @@
-compare=-1
-compare=0
-compare=1

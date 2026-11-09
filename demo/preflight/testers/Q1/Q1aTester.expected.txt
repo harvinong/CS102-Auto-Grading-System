@@ -1,3 +1,0 @@
-square(3)=9
-square(-4)=16
-square(0)=0
