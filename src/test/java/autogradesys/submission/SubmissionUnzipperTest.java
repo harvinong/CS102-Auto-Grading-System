@@ -1,0 +1,55 @@
+package autogradesys.submission;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class SubmissionUnzipperTest {
+    @TempDir
+    Path dir;
+
+    private Path target() throws IOException {
+        return Files.createDirectories(dir.resolve("out")).toAbsolutePath().normalize();
+    }
+
+    @Test
+    void keepsTheFolderStructureAndSkipsMacJunk() throws IOException {
+        Path zip = TestZips.create(dir.resolve("a.zip"),
+                "ping.lee.2023/Q1/Q1a.java",
+                "ping.lee.2023/Q1/.DS_Store",
+                "ping.lee.2023/Q2/",
+                "__MACOSX/ping.lee.2023/._Q1a.java");
+        Path target = target();
+
+        SubmissionUnzipper.unzip(zip, target);
+
+        assertTrue(Files.exists(target.resolve("ping.lee.2023/Q1/Q1a.java")));
+        assertTrue(Files.isDirectory(target.resolve("ping.lee.2023/Q2")));
+        assertFalse(Files.exists(target.resolve("ping.lee.2023/Q1/.DS_Store")));
+        assertFalse(Files.exists(target.resolve("__MACOSX")));
+    }
+
+    @Test
+    void refusesEntriesThatEscapeTheTargetFolder() throws IOException {
+        Path zip = TestZips.create(dir.resolve("evil.zip"), "../evil.txt");
+        Path target = target();
+
+        assertThrows(IOException.class, () -> SubmissionUnzipper.unzip(zip, target));
+        assertFalse(Files.exists(dir.resolve("evil.txt")));
+    }
+
+    @Test
+    void corruptedZipThrows() throws IOException {
+        Path notAZip = Files.writeString(dir.resolve("broken.zip"), "this is not a zip");
+        Path target = target();
+
+        assertThrows(IOException.class, () -> SubmissionUnzipper.unzip(notAZip, target));
+    }
+}

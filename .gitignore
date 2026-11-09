@@ -26,4 +26,14 @@ replay_pid*
 # Maven and IDE files
 .mvn
 .vscode
-target/*
+target/
+
+# Project specific files
+config.json
+cache/
+
+# Generated grading run reports
+.grader-report.html
+.grader-error-history.jsonl
+demo/target/run/grading-report.html
+demo/output-limit/target/grading-report.html

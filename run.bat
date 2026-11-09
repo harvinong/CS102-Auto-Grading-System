@@ -1,1 +1,5 @@
-java -cp "target/CS102-Auto-Grading-System-1.0-SNAPSHOT.jar" autogradesys.App
+@echo off
+setlocal
+set "ROOT=%~dp0"
+java -cp "%ROOT%classes;%ROOT%lib\*" autogradesys.App %*
+endlocal
