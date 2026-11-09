@@ -1,13 +1,13 @@
 package autogradesys;
 
+import java.io.PrintStream;
+import java.nio.file.Path;
+import java.util.Scanner;
+
 import autogradesys.cli.InputEndedException;
 import autogradesys.cli.TextColor;
 import autogradesys.controller.MainCtrl;
 import autogradesys.menu.MainMenu;
-
-import java.io.PrintStream;
-import java.nio.file.Path;
-import java.util.Scanner;
 
 /**
  * CLI entry point for grading.
@@ -27,7 +27,7 @@ public final class App {
     /** Program start: runs the chosen mode and exits with its status code. */
     public static void main(String[] args) {
         // Hand the exit code from run() to the operating system so scripts and CI can detect failure.
-        System.exit(run(args, System.out));
+        GradingEntry.main(null);
     }
 
     // Testable core of main(): takes the stream explicitly so tests can capture the output.
