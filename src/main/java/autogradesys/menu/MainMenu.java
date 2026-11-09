@@ -1,26 +1,20 @@
-package autogradesys;
+package autogradesys.menu;
 
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.nio.file.Path;
 import java.util.Scanner;
 
 import autogradesys.cli.Input;
 import autogradesys.cli.TextColor;
 import autogradesys.config.AppSettings;
+import autogradesys.controller.GraderCtrl;
+import autogradesys.controller.MainCtrl;
 import autogradesys.cli.Field;
-import autogradesys.grading.ErrorHistory;
-import autogradesys.grading.ErrorReporter;
-import autogradesys.grading.GradeResult;
 import autogradesys.grading.HtmlReportWriter;
-import autogradesys.grading.JavaGrader;
 import autogradesys.io.FolderDeleter;
-import autogradesys.preflight.PreflightReport;
-import autogradesys.preflight.SubmissionPreflight;
-import autogradesys.validation.CacheReport;
 
 public class MainMenu {
 
@@ -73,15 +67,6 @@ public class MainMenu {
 
     }
 
-    /**
-     * Menu option 3: the full grade-students flow,
-     */
-    public void runGrader() {
-        GraderMenu innerMenu = new GraderMenu(sc, new GraderCtrl(ctrl.getConfig()));
-        innerMenu.setup();
-        innerMenu.readOption();
-    }
-
     // -- Displays --
     private void displayMenuTitle() {
         System.out.println("+== Auto-Grading System ==+");
@@ -94,7 +79,7 @@ public class MainMenu {
         System.out.println("2. Edit configuration paths");
         System.out.println("3. Grade students (run auto-grader)");
         System.out.println("4. View Recent HTML Report");
-        System.out.println("5. Clear Grading Cache");
+        System.out.println("5. Clear Student Grading Cache");
         System.out.println("0. Quit Application");
     }
 
@@ -124,6 +109,14 @@ public class MainMenu {
     /** Menu Option 2: edit the configurations */
     private void editConfig() {
         inputConfig(false);
+    }
+
+    /**Menu option 3: the full grade-students flow. */
+    // Set to public to be used non-interactively.
+    public void runGrader() {
+        GraderMenu innerMenu = new GraderMenu(sc, new GraderCtrl(ctrl.getConfig()));
+        innerMenu.setup();
+        innerMenu.readOption();
     }
 
     /** Menu Option 4: open the recent html report */
@@ -200,18 +193,23 @@ public class MainMenu {
                 askNewFiles ? null : ctrl.getScoresheetFile(),
                 sc);
 
-        // First-run setup keeps the three prompts it always had and uses the defaults; 
-        // only "Edit configuration paths" asks for the limits.
         long timeoutSeconds = ctrl.getTimeoutSeconds();
         long outputLimitBytes = ctrl.getOutputLimitBytes();
-        if (!askNewFiles) {
-            // Enter keeps the current value; anything else must be a whole number from 1 
-            // to the maximum or the prompt repeats.
-            timeoutSeconds = Input.promptPositiveLong("Grading timeout in seconds", timeoutSeconds,
-                    ctrl.getMaxTimeoutSeconds(), sc);
-            outputLimitBytes = Input.promptPositiveLong("Output limit in bytes", outputLimitBytes,
-                    ctrl.getMaxOutputLimitBytes(), sc);
-        }
+
+        // Enter keeps the current value; anything else must be a whole number from 1 
+        // to the maximum or the prompt repeats.
+        timeoutSeconds = Input.promptPositiveLong(
+            "Grading timeout in seconds", 
+            timeoutSeconds, 
+            ctrl.getMaxTimeoutSeconds(), 
+            sc
+        );
+        outputLimitBytes = Input.promptPositiveLong(
+            "Output limit in bytes", 
+            outputLimitBytes, 
+            ctrl.getMaxOutputLimitBytes(), 
+            sc
+        );
 
         boolean saveSuccess = ctrl.saveConfig(startingFolder, testers, scoresheet, timeoutSeconds, outputLimitBytes);
 

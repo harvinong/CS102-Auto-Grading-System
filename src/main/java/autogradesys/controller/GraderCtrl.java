@@ -1,4 +1,4 @@
-package autogradesys;
+package autogradesys.controller;
 
 import java.io.File;
 import java.io.IOException;

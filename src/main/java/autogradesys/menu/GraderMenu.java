@@ -1,4 +1,4 @@
-package autogradesys;
+package autogradesys.menu;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,6 +9,7 @@ import java.util.Scanner;
 import autogradesys.cli.Field;
 import autogradesys.cli.Input;
 import autogradesys.cli.TextColor;
+import autogradesys.controller.GraderCtrl;
 import autogradesys.grading.ErrorHistory;
 import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;

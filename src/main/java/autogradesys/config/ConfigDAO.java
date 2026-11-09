@@ -13,14 +13,15 @@ public class ConfigDAO {
 
     public static final File DEF_CONFIG_FILE = Path.of(".", "config.json").toFile();
 
+    // Per-process is for one question.
     // Per-process time limit used when config.json has no valid "grading_timeout_seconds"; matches the old hard-coded 2 seconds.
     public static final long DEFAULT_TIMEOUT_SECONDS = 2;
     // Cap on captured stdout plus stderr per process when config.json has no valid "output_limit_bytes"; 1 MiB as before.
-    public static final long DEFAULT_OUTPUT_LIMIT_BYTES = 1024 * 1024L;
+    public static final long DEFAULT_OUTPUT_LIMIT_BYTES = 1L << 20;
     // Largest accepted timeout: one hour per process. Bigger values would let a looping submission stall grading for days, and past about 9e15 seconds the conversion to milliseconds overflows and crashes grading.
     public static final long MAX_TIMEOUT_SECONDS = 3600;
     // Largest accepted output cap: 64 MiB per process. The grader keeps the captured output in memory, so a much larger cap could exhaust the heap on a flooding submission.
-    public static final long MAX_OUTPUT_LIMIT_BYTES = 64 * 1024 * 1024L;
+    public static final long MAX_OUTPUT_LIMIT_BYTES = 64L << 20;
 
     // The file this instance reads and writes; the default constructor points it at ./config.json.
     private final File configFile;

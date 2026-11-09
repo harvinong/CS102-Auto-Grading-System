@@ -103,7 +103,7 @@ class RunGraderPreflightTest {
         // The summary and the wrapper finding appear.
         assertTrue(output.contains("Checked 2 submissions: 1 ready, 1 need attention"), output);
         assertTrue(output.contains("[WRAPPED_FOLDER] bob/RenameToYourStudentID/"), output);
-        // The report comes BEFORE the existing TODO line, which is still printed.
+        // The report comes BEFORE the existing todo line, which is still printed.
         int report = output.indexOf("__ Submission check");
         int todo = output.indexOf("Running autograder!");
         assertTrue(report >= 0 && todo > report, output);

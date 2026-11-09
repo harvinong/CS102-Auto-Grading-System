@@ -1,20 +1,9 @@
-package autogradesys;
+package autogradesys.controller;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.function.Predicate;
 
 import autogradesys.config.Config;
 import autogradesys.config.ConfigDAO;
-import autogradesys.preflight.PreflightReport;
-import autogradesys.validation.CacheReport;
-import autogradesys.validation.ScoresheetReader;
-import autogradesys.validation.Student;
-import autogradesys.validation.SubmissionCache;
-import autogradesys.validation.SubmissionValidation;
-import autogradesys.validation.ValidationReport;
 
 public class MainCtrl {
     
@@ -70,7 +59,7 @@ public class MainCtrl {
         return configDAO.save();
     }
 
-    // Saves the paths and grading limits together.
+    /** Saves the paths and grading limits together. */
     public boolean saveConfig(File startingFolder, File testers, File scoresheet,
             long timeoutSeconds, long outputLimitBytes) {
         configDAO.setTimeoutSeconds(timeoutSeconds);
