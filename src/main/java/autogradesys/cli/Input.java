@@ -45,13 +45,19 @@ public class Input {
     public static File promptFile(Field fileField, File defaultFile, Scanner sc) {
         File file = null;
 
-        while (file == null) {
+        do {
             try {
                 String prompt = String.format("Enter %s%s: ",
                         fileField.getName(), defaultFile != null ? " (" + defaultFile.getName() + ")" : "");
 
                 Path filepath = promptPath(prompt, fileField.getName(), defaultFile != null ? defaultFile.toPath() : null, sc);
-                file = FileManager.getFile(filepath);
+                file = filepath.toFile();
+
+                if (!file.exists()) {
+                    // the file/directory does not exist.
+                    System.out.println("File not found: " + filepath.toString() + "\n");
+                    file = null;
+                }
 
                 if (fileField.isDir()) {
                     FileManager.validateDirectory(file);
@@ -66,12 +72,8 @@ public class Input {
                 // - file path with invalid extensions or when prompted for a directory path.
                 System.out.println("Invalid input: " + e.getMessage() + "\n");
                 file = null;
-            } catch (FileNotFoundException e) {
-                // the file/directory does not exist.
-                System.out.println("File not found: " + e.getMessage() + "\n");
-                file = null;
             }
-        }
+        } while (file == null);
 
         return file;
     }
