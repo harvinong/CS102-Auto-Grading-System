@@ -36,7 +36,7 @@ public class FileManager {
             }
         }
 
-        if (validExtension) {
+        if (!validExtension) {
             throw new IllegalArgumentException(
                     "Please enter a file with extensions: " + String.join(", ", fileExtensions));
         }

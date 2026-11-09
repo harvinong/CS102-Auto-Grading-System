@@ -54,7 +54,7 @@ public class Input {
 
                 // the file/directory does not exist.
                 if (!file.exists()) {
-                    System.out.println("File not found: " + filepath.toString() + "\n");
+                    System.out.println(TextColor.ERROR.getActionTag() + " File not found: " + filepath.toString() + "\n");
                     file = null;
                     continue;
                 }
@@ -70,7 +70,7 @@ public class Input {
                 // - non-absolute (relative) path.
                 // - directory path when prompted for a file path.
                 // - file path with invalid extensions or when prompted for a directory path.
-                System.out.println("Invalid input: " + e.getMessage() + "\n");
+                System.out.println(TextColor.ERROR.getActionTag() + " Invalid input: " + e.getMessage() + "\n");
                 file = null;
             }
         } while (file == null);
@@ -92,7 +92,7 @@ public class Input {
      */
     public static long promptPositiveLong(String label, long defaultValue, long maxValue, Scanner sc) {
         // One message for every kind of bad line, naming the accepted range so the user knows what to type.
-        String invalid = "Invalid input: " + label + " must be a whole number from 1 to " + maxValue + ".\n";
+        String invalid = TextColor.ERROR.getActionTag() + "Invalid input: " + label + " must be a whole number from 1 to " + maxValue + ".\n";
         // Loops until a valid value is returned from inside the body.
         while (true) {
             // Show the current value in brackets so Enter visibly means "keep this".
@@ -142,7 +142,7 @@ public class Input {
                 if (option >= min && option <= max) return option;
             } catch (NumberFormatException ignored) { }
             // Same wording as the main menu; the loop then shows "Enter option: " again.
-            System.out.println("Please enter a number between " + min + " and " + max + ".");
+            System.out.println(TextColor.ERROR.getActionTag() + " Please enter a number between " + min + " and " + max + ".");
         }
     }
 
@@ -159,7 +159,7 @@ public class Input {
             String answer = sc.nextLine().trim();
             if (answer.equalsIgnoreCase("Y")) return true;
             if (answer.equalsIgnoreCase("N")) return false;
-            System.out.println("Please enter Y or N.");
+            System.out.println(TextColor.ERROR.getActionTag() + " Please enter Y or N.");
         }
     }
 
