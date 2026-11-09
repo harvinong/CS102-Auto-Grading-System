@@ -60,7 +60,9 @@ public record PreflightFinding(
         // A folder that could not be read (permissions and similar).
         UNREADABLE,
         // Harmless clutter such as .DS_Store, __MACOSX or .class files.
-        IGNORED_JUNK
+        IGNORED_JUNK,
+        // A folder name that is not a registered username but is close to one (probably a typo).
+        USERNAME_TYPO
     }
 
     /** FATAL stops the whole check, ERROR needs attention, WARNING is worth a look, NOTE is information. */

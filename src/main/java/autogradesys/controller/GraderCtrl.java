@@ -9,10 +9,12 @@ import java.util.function.Predicate;
 import autogradesys.config.Config;
 import autogradesys.io.ScoresheetReader;
 import autogradesys.preflight.PreflightReport;
+import autogradesys.preflight.SubmissionPreflight;
 import autogradesys.validation.CacheReport;
 import autogradesys.validation.Student;
 import autogradesys.validation.SubmissionCache;
 import autogradesys.validation.SubmissionValidation;
+import autogradesys.validation.UsernameTypoCheck;
 import autogradesys.validation.ValidationReport;
 
 public class GraderCtrl {
@@ -25,6 +27,20 @@ public class GraderCtrl {
 
     public CacheReport prepareWorkingCopy(File submissions) {
         return cache.prepare(submissions.toPath());
+    }
+
+    /**
+     * Runs the preflight check on the working copy and adds a USERNAME_TYPO finding for every folder whose
+     * name looks like a mistyped username, so the instructor is alerted before any fix is run.
+     */
+    public PreflightReport checkSubmissions(Path workingDir) {
+        PreflightReport report = SubmissionPreflight.check(config.startingFolder().toPath(), workingDir);
+        try {
+            return UsernameTypoCheck.addFindings(report, ScoresheetReader.read(config.scoresheetFile()));
+        } catch (IOException e) {
+            // Without the scoresheet no name can be compared, so only the normal check is shown.
+            return report;
+        }
     }
 
     public ValidationReport validateSubmissions(Path workingDir, PreflightReport preflight,
