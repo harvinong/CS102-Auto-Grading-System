@@ -30,34 +30,18 @@ public class FileManager {
             throw new IllegalArgumentException("Please enter a file path.");
         }
 
-        if (!Arrays.asList(fileExtensions).contains(getExtension(file))) {
+        boolean validExtension = false;
+        for (String ext : fileExtensions) {
+            if (file.getName().endsWith(ext)) {
+                validExtension = true;
+            }
+        }
+
+        if (validExtension) {
             throw new IllegalArgumentException(
                     "Please enter a file with extensions: " + String.join(", ", fileExtensions));
         }
 
-    }
-
-    /**
-     * Get the extension of the file.
-     *
-     * If the file is a directory, or the file has no extension, it will return an
-     * empty string.
-     *
-     * @param file the file object.
-     * @return the extension without the dot separator. E.g. "pdf", "csv".
-     */
-    public static String getExtension(File file) {
-        // Ref:
-        // https://www.geeksforgeeks.org/java/how-to-get-the-file-extension-in-java/
-        String fileName = file.getName();
-        int dotIndex = fileName.lastIndexOf('.');
-
-        // if there is no dot or ends with a dot
-        if (dotIndex == -1 || dotIndex == fileName.length() - 1) {
-            return ""; // No file extension found
-        } else {
-            return fileName.substring(dotIndex + 1);
-        }
     }
 
 }
