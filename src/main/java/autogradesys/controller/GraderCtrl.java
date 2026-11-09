@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import autogradesys.config.Config;
+import autogradesys.io.ScoresheetReader;
 import autogradesys.preflight.PreflightReport;
 import autogradesys.validation.CacheReport;
-import autogradesys.validation.ScoresheetReader;
 import autogradesys.validation.Student;
 import autogradesys.validation.SubmissionCache;
 import autogradesys.validation.SubmissionValidation;

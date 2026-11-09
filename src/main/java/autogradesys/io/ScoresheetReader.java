@@ -1,4 +1,4 @@
-package autogradesys.validation;
+package autogradesys.io;
 
 import java.io.File;
 import java.io.IOException;
@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+
+import autogradesys.validation.Student;
 
 /**
  * Reads registered students from the CSV scoresheet. The username comes from a "Username" column
