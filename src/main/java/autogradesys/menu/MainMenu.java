@@ -4,15 +4,16 @@ import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Scanner;
 
+import autogradesys.cli.Field;
 import autogradesys.cli.Input;
 import autogradesys.cli.TextColor;
 import autogradesys.config.AppSettings;
 import autogradesys.controller.GraderCtrl;
 import autogradesys.controller.MainCtrl;
-import autogradesys.cli.Field;
 import autogradesys.grading.HtmlReportWriter;
 import autogradesys.io.FolderDeleter;
 
@@ -155,6 +156,9 @@ public class MainMenu {
     private void clearCache() {
         // Where the working copies of the submissions are kept.
         Path cachePath = AppSettings.load().getCacheDir();
+
+        System.out.println("Cache directory: " + cachePath.toAbsolutePath());
+        System.out.println("Cache exists: " + Files.exists(cachePath));
 
         // Nothing on disk means there is nothing to delete.
         if (!cachePath.toFile().exists()) {
