@@ -98,7 +98,7 @@ public class MainMenu {
         System.out.println();
         System.out.println("__ Configuration __");
         System.out.println("Starting folder: " + ctrl.getStartingFolder());
-        System.out.println("Testers folder:  " + ctrl.getTestersFolder());
+        System.out.println("Testers folder:  " + ctrl.getTestersFile());
         System.out.println("Scoresheet file: " + ctrl.getScoresheetFile());
         // The two grading limits come from config.json (or the defaults when it has none), 
         // so show what grading will really use.
@@ -190,7 +190,7 @@ public class MainMenu {
                 sc);
         File testers = Input.promptFile(
                 Field.TESTERS,
-                askNewFiles ? null : ctrl.getTestersFolder(),
+                askNewFiles ? null : ctrl.getTestersFile(),
                 sc);
         File scoresheet = Input.promptFile(
                 Field.SCORESHEET,

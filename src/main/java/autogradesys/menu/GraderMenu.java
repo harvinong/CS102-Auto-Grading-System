@@ -214,7 +214,7 @@ public class GraderMenu {
         // Grade with the configured testers folder (questions) and scoresheet; the configured timeout (default 2 seconds) stops infinite loops and the output limit (default 1 MiB) stops flooding.
         // A copy of the starter template in the submissions folder is not a student, so it is skipped.
         GradeResult result = JavaGrader.grade(gradingPath,
-                ctrl.config.testersFolder().toPath(), ctrl.config.scoresheetFile().toPath(),
+                ctrl.config.testersFile().toPath(), ctrl.config.scoresheetFile().toPath(),
                 Duration.ofSeconds(ctrl.config.timeoutSeconds()), ctrl.config.outputLimitBytes(),
                 java.util.Set.of(preflight.templateName()), reporter);
         // Writing the report can fail on disk problems; the grades are already saved, so only a message is shown.

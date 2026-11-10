@@ -9,7 +9,8 @@ public enum Field {
             "Submissions Folder"),
     // The folder holding the instructor's tester files.
     TESTERS(
-            "Tester Files Folder"),
+            "Testers File",
+            "java"),
     // The scoresheet, which must be a .csv file.
     SCORESHEET(
             "Scoresheet File",
