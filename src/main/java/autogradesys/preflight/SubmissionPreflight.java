@@ -512,7 +512,7 @@ public final class SubmissionPreflight {
         for (String resource : q.resources()) {
             // Exact name only: resources are not matched by letter case.
             if (!regular.containsKey(resource)) {
-                add(student, Category.MISSING_RESOURCE, Severity.WARNING, rel(questionDir) + "/" + resource,
+                add(student, Category.MISSING_RESOURCE, Severity.ERROR, rel(questionDir) + "/" + resource,
                         "a resource file from the template is missing", "Add " + resource + " to " + q.name() + "/");
             }
         }
@@ -713,10 +713,11 @@ public final class SubmissionPreflight {
         return Files.isDirectory(dir, LinkOption.NOFOLLOW_LINKS);
     }
 
-    // Names we ignore: hidden files, macOS resource folders and compiled classes.
+    // Names we ignore: hidden files and macOS resource folders.
+    // .class files are deliberately NOT ignored because they may be required
+    // by the grading algorithm and are part of the Starting Folder template.
     private static boolean isJunk(String name) {
-        // Hidden (leading dot), the macOS __MACOSX folder, or a compiled .class file.
-        return name.startsWith(".") || name.equals("__MACOSX") || name.endsWith(".class");
+        return name.startsWith(".") || name.equals("__MACOSX");
     }
 
     // True for .zip names in any letter case.
