@@ -512,7 +512,7 @@ public final class SubmissionPreflight {
         for (String resource : q.resources()) {
             // Exact name only: resources are not matched by letter case.
             if (!regular.containsKey(resource)) {
-                add(student, Category.MISSING_RESOURCE, Severity.WARNING, rel(questionDir) + "/" + resource,
+                add(student, Category.MISSING_RESOURCE, Severity.ERROR, rel(questionDir) + "/" + resource,
                         "a resource file from the template is missing", "Add " + resource + " to " + q.name() + "/");
             }
         }
