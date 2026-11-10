@@ -2,7 +2,7 @@ package autogradesys.submission;
 
 import java.nio.file.Path;
 
-/** One student's zip file, with the username taken from its file name. */
+// One student's zip file, with the username taken from its file name
 public class Submission {
     private final String username;
     private final Path zipPath;
