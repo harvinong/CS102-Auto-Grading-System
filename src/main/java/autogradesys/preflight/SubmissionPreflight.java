@@ -62,7 +62,11 @@ public final class SubmissionPreflight {
     }
 
     /** What the template says one question folder contains. */
-    private record Question(String name, TreeSet<String> javaFiles, TreeSet<String> resources) {
+    private record Question(
+            String name,
+            TreeSet<String> javaFiles,
+            TreeSet<String> resources,
+            TreeSet<String> folders) {
     }
 
     /**
@@ -146,7 +150,11 @@ public final class SubmissionPreflight {
                     continue;
                 }
                 // Start the expectation record for this question folder.
-                Question q = new Question(nameOf(dir), new TreeSet<>(), new TreeSet<>());
+                Question q = new Question(
+                        nameOf(dir),
+                        new TreeSet<>(),
+                        new TreeSet<>(),
+                        new TreeSet<>());
                 // Does one of this folder's sub-folders directly contain .java files?
                 boolean hasNestedJava = false;
                 // Look at everything inside the question folder.
@@ -160,10 +168,11 @@ public final class SubmissionPreflight {
                     }
                     // A sub-folder: remember if it holds Java, then move on.
                     if (isRealDirectory(entry)) {
-                        // Becomes true if any sub-folder holds a .java file, and never goes back to
-                        // false.
                         hasNestedJava |= containsJava(entry);
-                        // A sub-folder is not itself a required file or resource.
+
+                        // Remember this folder as part of the expected template structure.
+                        q.folders().add(name);
+
                         continue;
                     }
                     // Links and special files are not part of the expected layout.
@@ -525,10 +534,31 @@ public final class SubmissionPreflight {
                 addExtra(student, e.getValue(), false);
             }
         }
-        // Sub-folders inside a question are extras too.
+        // Match the student's subfolders against those in the template.
+        Map<String, Path> actualFolders = new TreeMap<>();
+
         for (Path sub : subfolders) {
-            // true = a folder.
-            addExtra(student, sub, true);
+            actualFolders.put(nameOf(sub), sub);
+        }
+
+        Map<String, Path> matchedFolders = matchNames(q.folders(), actualFolders);
+
+        // Report folders that exist in both places but have different casing.
+        for (String expected : q.folders()) {
+            Path actual = matchedFolders.get(expected);
+
+            if (actual != null && !nameOf(actual).equals(expected)) {
+                add(student, Category.MISNAMED, Severity.ERROR, rel(actual) + "/",
+                        "expected the name " + expected,
+                        "Rename " + nameOf(actual) + " to " + expected);
+            }
+        }
+
+        // Only folders that are not in the template are extras.
+        for (Path sub : subfolders) {
+            if (!matchedFolders.containsValue(sub)) {
+                addExtra(student, sub, true);
+            }
         }
     }
 
