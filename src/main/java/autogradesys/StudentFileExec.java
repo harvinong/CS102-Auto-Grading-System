@@ -33,10 +33,13 @@ import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
+import autogradesys.controller.MainCtrl;
+
 public class StudentFileExec {
 
     // label is test case name (preferably function call in string) args is args, expected is expected output.
     
+    MainCtrl mc = new MainCtrl();
 
     record CompileAttempt(boolean success, Map<String, List<String>> errorsByFile) {}
 
@@ -54,7 +57,7 @@ public class StudentFileExec {
     //entry point from GradingEntry
     @TestFactory
     Stream<DynamicNode> testAllSubmissions() throws Exception {
-        Path submissionsRoot = Paths.get("submissions");
+        Path submissionsRoot = Paths.get(mc.getStartingFolder().getPath());
         List<Path> studentDirs = Files.list(submissionsRoot)
                 .filter(Files::isDirectory)
                 .toList();
@@ -294,7 +297,7 @@ private void runTestCase(String className, MethodSpec spec, TestCase tc,
             });
             try {
                 Future<Object> future = exec.submit(() -> method.invoke(freshInstance,realArgs));
-                future.get(5,TimeUnit.SECONDS); //after 5s
+                future.get(mc.getTimeoutSeconds(),TimeUnit.SECONDS); //after 5s
             } catch (TimeoutException e) {
                 throw new AssertionError(className + "." + spec.methodName() + "on" + tc.label() + "timed out");
             } catch (ExecutionException e) {
@@ -324,9 +327,12 @@ private void runTestCase(String className, MethodSpec spec, TestCase tc,
         });
         try {
             Future<Object> future = exec.submit(() -> method.invoke(freshInstance,realArgs));
-            actual = future.get(5,TimeUnit.SECONDS);
+            actual = future.get(mc.getTimeoutSeconds(),TimeUnit.SECONDS);
+            if (SizeObject.getObjectSize(actual) > mc.getOutputLimitBytes()) {
+                throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label() + " returned too big.");
+            }
         } catch (TimeoutException t) {
-            throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label() + "timed out (5s)");
+            throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label() + " timed out (5s)");
         
         } catch (ExecutionException e) {
             throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
