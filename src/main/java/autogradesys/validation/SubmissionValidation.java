@@ -20,6 +20,7 @@ public class SubmissionValidation {
     private final UsernameResolver resolver;
     private final MissingRestorer restorer;
     private final SubmissionCache cache;
+    private final TemplateResourceSynchronizer resourceSynchronizer;
 
     public SubmissionValidation(
             List<Student> students,
@@ -37,6 +38,7 @@ public class SubmissionValidation {
         this.students = students;
         this.resolver = new UsernameResolver(students, confirm);
         this.restorer = new MissingRestorer(cache, templateDir);
+        this.resourceSynchronizer = new TemplateResourceSynchronizer(templateDir);
         this.cache = cache;
     }
 
@@ -46,8 +48,7 @@ public class SubmissionValidation {
         Map<String, Path> identified = new TreeMap<>();
 
         // Which folder already has each registered username.
-        Map<String, String> owners =
-                UsernameResolver.owners(preflight.students(), students);
+        Map<String, String> owners = UsernameResolver.owners(preflight.students(), students);
 
         Set<String> replacedFolders = new HashSet<>();
 
@@ -56,7 +57,40 @@ public class SubmissionValidation {
 
         // Restore missing files before flattening wrapper folders.
         events.addAll(restorer.restore(submissions, preflight));
+
+        // Flatten wrapper folders before synchronising resources.
         events.addAll(HierarchyFixer.flattenWrappers(submissions, preflight));
+
+        // Make every student's non-Java files match the template.
+        for (String folder : preflight.students()) {
+
+            // Do not modify the blank template.
+            if (folder.equals(preflight.templateName())) {
+                continue;
+            }
+
+            Path studentDir = submissions.resolve(folder);
+
+            if (!Files.isDirectory(studentDir, LinkOption.NOFOLLOW_LINKS)) {
+                continue;
+            }
+
+            // If a wrapper could not be flattened, do not synchronise against
+            // the wrong directory structure.
+            boolean hasWrapper = preflight.findings().stream()
+                    .anyMatch(finding -> finding.student().equals(folder)
+                            && finding.category() == autogradesys.preflight.PreflightFinding.Category.WRAPPED_FOLDER);
+
+            boolean wrapperFlattened = events.stream()
+                    .anyMatch(event -> event.student().equals(folder)
+                            && event.type() == Type.FOLDER_FLATTENED);
+
+            if (hasWrapper && !wrapperFlattened) {
+                continue;
+            }
+
+            events.addAll(resourceSynchronizer.synchronize(folder, studentDir));
+        }
 
         for (String folder : preflight.students()) {
 
@@ -76,8 +110,7 @@ public class SubmissionValidation {
                     replacedFolders.add(identity.replaced());
                     identified.remove(username);
 
-                    events.removeIf(event ->
-                            event.student().equals(identity.replaced()));
+                    events.removeIf(event -> event.student().equals(identity.replaced()));
                 }
 
                 String workingName = SubmissionFiles.nameOf(identity.dir());
