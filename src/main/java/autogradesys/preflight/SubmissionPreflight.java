@@ -20,15 +20,21 @@ import autogradesys.preflight.PreflightFinding.Category;
 import autogradesys.preflight.PreflightFinding.Severity;
 
 /**
- * Read-only check of a folder of student submissions against the instructor's starter template.
+ * Read-only check of a folder of student submissions against the instructor's
+ * starter template.
  *
- * The expected layout is derived only from the template: every direct sub-folder is a question,
- * every {@code .java} file directly inside it is a required file, and every other file is an
- * expected resource. The check never compiles or runs anything, never follows symbolic links, and
- * never writes, renames, moves or deletes. It does not grade; "ready" only means the layout
+ * The expected layout is derived only from the template: every direct
+ * sub-folder is a question,
+ * every {@code .java} file directly inside it is a required file, and every
+ * other file is an
+ * expected resource. The check never compiles or runs anything, never follows
+ * symbolic links, and
+ * never writes, renames, moves or deletes. It does not grade; "ready" only
+ * means the layout
  * matches the template.
  */
-// Compares the submitted directory layout with the expected questions before grading starts.
+// Compares the submitted directory layout with the expected questions before
+// grading starts.
 public final class SubmissionPreflight {
 
     // How many bytes of a file we read to decide whether it is only whitespace.
@@ -36,9 +42,11 @@ public final class SubmissionPreflight {
 
     // The folder whose children are the student submissions.
     private final Path submissions;
-    // The template's own folder name (e.g. RenameToYourStudentID), used to spot copies of it.
+    // The template's own folder name (e.g. RenameToYourStudentID), used to spot
+    // copies of it.
     private final String templateName;
-    // What the template expects, keyed by question folder name (sorted for stable output).
+    // What the template expects, keyed by question folder name (sorted for stable
+    // output).
     private final Map<String, Question> questions;
     // Everything we notice is collected here, in the order we notice it.
     private final List<PreflightFinding> findings = new ArrayList<>();
@@ -60,9 +68,12 @@ public final class SubmissionPreflight {
     /**
      * Compares every submission folder with the template.
      *
-     * @param template    The starter template folder (its direct sub-folders are the questions).
-     * @param submissions The folder whose direct children are the student submissions.
-     * @return The report. If the template or submissions folder is unusable, the report is fatal
+     * @param template    The starter template folder (its direct sub-folders are
+     *                    the questions).
+     * @param submissions The folder whose direct children are the student
+     *                    submissions.
+     * @return The report. If the template or submissions folder is unusable, the
+     *         report is fatal
      *         and no submission is scanned.
      */
     public static PreflightReport check(Path template, Path submissions) {
@@ -71,25 +82,29 @@ public final class SubmissionPreflight {
         // Problems that make the whole check impossible are collected here.
         List<PreflightFinding> fatal = new ArrayList<>();
 
-        // Learn the expected layout from the template (adds to "fatal" if the template is unusable).
+        // Learn the expected layout from the template (adds to "fatal" if the template
+        // is unusable).
         Map<String, Question> questions = readTemplate(template, templateName, fatal);
         // Only bother with the submissions folder if the template is fine.
         if (fatal.isEmpty() && !isReadableDirectory(submissions)) {
             // Report it clearly instead of printing an empty "all ready" result.
-            // Run-level finding (empty student name), FATAL so PreflightReport.fatal() stops the menu before grading.
+            // Run-level finding (empty student name), FATAL so PreflightReport.fatal()
+            // stops the menu before grading.
             fatal.add(new PreflightFinding("", Category.SUBMISSIONS_INVALID, Severity.FATAL,
                     submissions.toString(), "the submissions folder is missing, unreadable or not a folder",
                     "Choose the folder that contains one folder per student"));
         }
         // A fatal problem means we stop here and scan nothing.
         if (!fatal.isEmpty()) {
-            // No students were scanned, so the report carries an empty student list and only the fatal findings.
+            // No students were scanned, so the report carries an empty student list and
+            // only the fatal findings.
             return new PreflightReport(templateName, List.of(), fatal);
         }
 
         // Create a one-off scanner holding this run's state.
         SubmissionPreflight run = new SubmissionPreflight(submissions, templateName, questions);
-        // Scan every submission; returns the sorted list of discovered submission names.
+        // Scan every submission; returns the sorted list of discovered submission
+        // names.
         List<String> students = run.scanAll();
         // Bundle the results.
         return new PreflightReport(templateName, students, run.findings);
@@ -97,27 +112,31 @@ public final class SubmissionPreflight {
 
     // Template
 
-    // Reads the template folder into a map of question name -> expected files; reports fatal problems.
+    // Reads the template folder into a map of question name -> expected files;
+    // reports fatal problems.
     private static Map<String, Question> readTemplate(Path template, String templateName,
             List<PreflightFinding> fatal) {
         // The same advice is attached to every template problem.
         String fix = "Set Starting Folder to the starter template (e.g. RenameToYourStudentID)";
         // TreeMap keeps the questions sorted by name.
         Map<String, Question> questions = new TreeMap<>();
-        // Question folders that hold no .java directly but whose sub-folders do (a sign the folder is too high).
+        // Question folders that hold no .java directly but whose sub-folders do (a sign
+        // the folder is too high).
         List<String> nestedTemplates = new ArrayList<>();
         // Total number of required .java files found across all questions.
         int javaCount = 0;
 
         // The template must exist, be a folder and be readable.
         if (!isReadableDirectory(template)) {
-            // Record one FATAL finding and return the empty map, since there is nothing to read.
+            // Record one FATAL finding and return the empty map, since there is nothing to
+            // read.
             fatal.add(new PreflightFinding("", Category.TEMPLATE_INVALID, Severity.FATAL, template.toString(),
                     "the template is missing, unreadable or not a folder", fix));
             return questions;
         }
 
-        // Listing folders can throw, so the whole template read sits in one try; the catch below turns that into a fatal finding.
+        // Listing folders can throw, so the whole template read sits in one try; the
+        // catch below turns that into a fatal finding.
         try {
             // Visit each direct child of the template in name order.
             for (Path dir : sortedChildren(template)) {
@@ -141,7 +160,8 @@ public final class SubmissionPreflight {
                     }
                     // A sub-folder: remember if it holds Java, then move on.
                     if (isRealDirectory(entry)) {
-                        // Becomes true if any sub-folder holds a .java file, and never goes back to false.
+                        // Becomes true if any sub-folder holds a .java file, and never goes back to
+                        // false.
                         hasNestedJava |= containsJava(entry);
                         // A sub-folder is not itself a required file or resource.
                         continue;
@@ -153,15 +173,18 @@ public final class SubmissionPreflight {
                     }
                     // .java files are required files; everything else is an expected resource.
                     if (name.endsWith(".java")) {
-                        // Remember it as a file every student must hand in, and count it for the "one level too high" test below.
+                        // Remember it as a file every student must hand in, and count it for the "one
+                        // level too high" test below.
                         q.javaFiles().add(name);
                         javaCount++;
                     } else {
-                        // Data files such as persons.txt are only warned about, because students may legitimately omit them.
+                        // Data files such as persons.txt are only warned about, because students may
+                        // legitimately omit them.
                         q.resources().add(name);
                     }
                 }
-                // Record the question and note whether it looks like a whole template one level down.
+                // Record the question and note whether it looks like a whole template one level
+                // down.
                 questions.put(q.name(), q);
                 // Only used by the "one level too high" test after the loop.
                 if (hasNestedJava) {
@@ -172,7 +195,8 @@ public final class SubmissionPreflight {
             // Could not read part of the template: say so rather than guessing.
             fatal.add(new PreflightFinding("", Category.TEMPLATE_INVALID, Severity.FATAL, template.toString(),
                     "the template could not be read (" + e.getMessage() + ")", fix));
-            // Return what was read so far; the caller sees the fatal finding first and ignores it.
+            // Return what was read so far; the caller sees the fatal finding first and
+            // ignores it.
             return questions;
         }
 
@@ -181,7 +205,8 @@ public final class SubmissionPreflight {
             // FATAL: with no questions every submission would look "ready".
             fatal.add(new PreflightFinding("", Category.TEMPLATE_INVALID, Severity.FATAL, template.toString(),
                     "the template has no question folders", fix));
-        // No Java files directly in any question, but a folder below holds them: the Starting Folder is one level too high.
+            // No Java files directly in any question, but a folder below holds them: the
+            // Starting Folder is one level too high.
         } else if (javaCount == 0 && !nestedTemplates.isEmpty()) {
             // The fix text names the first folder that holds the real question folders.
             fatal.add(new PreflightFinding("", Category.TEMPLATE_INVALID, Severity.FATAL, template.toString(),
@@ -195,7 +220,8 @@ public final class SubmissionPreflight {
 
     // Submissions
 
-    // Looks at every entry in the submissions folder and returns the sorted submission names.
+    // Looks at every entry in the submissions folder and returns the sorted
+    // submission names.
     private List<String> scanAll() {
         // TreeSet gives sorted, de-duplicated names.
         TreeSet<String> names = new TreeSet<>();
@@ -213,7 +239,8 @@ public final class SubmissionPreflight {
             return List.of();
         }
 
-        // Lower-case names of the real folders, to recognise a .zip that was already extracted.
+        // Lower-case names of the real folders, to recognise a .zip that was already
+        // extracted.
         Set<String> folderNames = new HashSet<>();
         for (Path entry : entries) {
             // Only count real, non-junk folders (links are not followed).
@@ -227,13 +254,16 @@ public final class SubmissionPreflight {
         for (Path entry : entries) {
             // Entry's file name.
             String name = nameOf(entry);
-            // Branches in order: junk, link, folder, already-extracted zip, unextracted zip, any other file.
+            // Branches in order: junk, link, folder, already-extracted zip, unextracted
+            // zip, any other file.
             if (isJunk(name)) {
-                // Clutter is counted as a note, never as a student; AutoGradeMenu.runGrader later records it quietly through ErrorReporter.ignored.
+                // Clutter is counted as a note, never as a student; AutoGradeMenu.runGrader
+                // later records it quietly through ErrorReporter.ignored.
                 add("", Category.IGNORED_JUNK, Severity.NOTE, name, "ignored", "");
             } else if (Files.isSymbolicLink(entry)) {
                 // A link is still a student we must not drop, but we refuse to open it.
-                // Adding the name keeps it in the student list so the report shows it as needing attention.
+                // Adding the name keeps it in the student list so the report shows it as
+                // needing attention.
                 names.add(name);
                 add(name, Category.SYMLINK_NOT_FOLLOWED, Severity.ERROR, name,
                         "a symbolic link, so it was not opened",
@@ -265,7 +295,8 @@ public final class SubmissionPreflight {
 
     // Checks one student folder (after the template-copy test).
     private void scanStudent(String student, Path dir) {
-        // A folder named exactly like the template is probably the blank starter, not a student.
+        // A folder named exactly like the template is probably the blank starter, not a
+        // student.
         if (student.equals(templateName)) {
             add(student, Category.TEMPLATE_COPY, Severity.WARNING, student + "/",
                     "has the template's name, so it is treated as the blank starter template and not graded",
@@ -275,7 +306,10 @@ public final class SubmissionPreflight {
         scanLayout(student, dir, true);
     }
 
-    /** Scans one student folder; {@code allowWrapper} lets it look one level down for the real work. */
+    /**
+     * Scans one student folder; {@code allowWrapper} lets it look one level down
+     * for the real work.
+     */
     private void scanLayout(String student, Path dir, boolean allowWrapper) {
         // Children of the student folder, sorted.
         List<Path> entries;
@@ -308,7 +342,8 @@ public final class SubmissionPreflight {
         }
 
         // A folder whose only content is one .zip has not been extracted.
-        if (items.size() == 1 && isZip(nameOf(items.get(0))) && Files.isRegularFile(items.get(0), LinkOption.NOFOLLOW_LINKS)) {
+        if (items.size() == 1 && isZip(nameOf(items.get(0)))
+                && Files.isRegularFile(items.get(0), LinkOption.NOFOLLOW_LINKS)) {
             // The archive's file name for the fix text.
             String zip = nameOf(items.get(0));
             add(student, Category.UNEXTRACTED_ARCHIVE, Severity.ERROR, rel(items.get(0)),
@@ -322,7 +357,8 @@ public final class SubmissionPreflight {
         Map<String, Path> dirs = new TreeMap<>();
         List<Path> files = new ArrayList<>();
         for (Path item : items) {
-            // Real directories only; symlinked directories are not followed and fall into the else branch.
+            // Real directories only; symlinked directories are not followed and fall into
+            // the else branch.
             if (Files.isDirectory(item, LinkOption.NOFOLLOW_LINKS)) {
                 // Keyed by name so question folders can be looked up directly.
                 dirs.put(nameOf(item), item);
@@ -332,13 +368,16 @@ public final class SubmissionPreflight {
             }
         }
 
-        // Pair each template question with the sub-folder of that name (exact or case-only difference).
+        // Pair each template question with the sub-folder of that name (exact or
+        // case-only difference).
         Map<String, Path> matched = matchNames(questions.keySet(), dirs);
-        // No question folder found directly here: maybe the work is inside one extra folder.
+        // No question folder found directly here: maybe the work is inside one extra
+        // folder.
         if (matched.isEmpty() && allowWrapper) {
             // The single folder below that holds the questions, if there is exactly one.
             Path wrapper = findWrapper(dirs);
-            // null means none or several candidates, in which case the normal comparison below reports the missing questions.
+            // null means none or several candidates, in which case the normal comparison
+            // below reports the missing questions.
             if (wrapper != null) {
                 // Report the wrapper once instead of one MISSING_QUESTION per question.
                 add(student, Category.WRAPPED_FOLDER, Severity.ERROR, rel(wrapper) + "/",
@@ -356,9 +395,12 @@ public final class SubmissionPreflight {
                     // false = a file rather than a folder, so no trailing slash in the report.
                     addExtra(student, file, false);
                 }
-                // Keep checking inside the wrapper so other problems still show (no second wrapper level).
-                scanLayout(student, wrapper, false);
-                // The wrapper's contents were just checked, so skip the comparison below, which would flag every question as missing.
+                // Continue checking recursively in case the work is wrapped inside more than
+                // one extra folder.
+                scanLayout(student, wrapper, true);
+
+                // The wrapper's contents were just checked, so skip the comparison below, which
+                // would flag every question as missing.
                 return;
             }
         }
@@ -400,7 +442,8 @@ public final class SubmissionPreflight {
         }
     }
 
-    // Checks the files inside one question folder against the template's expectations.
+    // Checks the files inside one question folder against the template's
+    // expectations.
     private void scanQuestion(String student, Question q, Path questionDir) {
         // Children of the question folder, sorted.
         List<Path> entries;
@@ -437,7 +480,8 @@ public final class SubmissionPreflight {
             }
         }
 
-        // Pair each required .java name with the student's file (exact or case-only difference).
+        // Pair each required .java name with the student's file (exact or case-only
+        // difference).
         Map<String, Path> matchedJava = matchNames(q.javaFiles(), regular);
         // Check every required file in name order.
         for (String required : q.javaFiles()) {
@@ -491,7 +535,8 @@ public final class SubmissionPreflight {
     // Helpers
 
     /**
-     * Pairs each expected name with the actual entry of that exact name, or else the single entry
+     * Pairs each expected name with the actual entry of that exact name, or else
+     * the single entry
      * that differs only by letter case.
      */
     private static Map<String, Path> matchNames(Iterable<String> expected, Map<String, Path> actual) {
@@ -521,38 +566,74 @@ public final class SubmissionPreflight {
         return matched;
     }
 
-    /** The single non-junk sub-folder that contains at least one template question, if exactly one does. */
+    /**
+     * Finds the single folder containing the student's work, even if
+     * the work is wrapped inside multiple levels of extra folders.
+     */
     private Path findWrapper(Map<String, Path> dirs) {
-        // Folders that look like they hold the real work.
+
+        // Folders that eventually contain at least one expected question folder.
         List<Path> candidates = new ArrayList<>();
+
         for (Path candidate : dirs.values()) {
-            // Listing a candidate can fail; the catch below drops that candidate.
-            try {
-                // The candidate's own sub-folders, by name.
-                Map<String, Path> inside = new TreeMap<>();
-                for (Path child : sortedChildren(candidate)) {
-                    // Ignore clutter like __MACOSX and symlinks, so only genuine sub-folders count as question folders.
-                    if (!isJunk(nameOf(child)) && Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
-                        // Index by name for the later comparison with the template's question names.
-                        inside.put(nameOf(child), child);
-                    }
-                }
-                // It qualifies if at least one template question appears inside it.
-                if (!matchNames(questions.keySet(), inside).isEmpty()) {
-                    // Remember it; if it ends up the only one it is the wrapper.
-                    candidates.add(candidate);
-                }
-            } catch (IOException | SecurityException e) {
-                // Unreadable candidates cannot be a wrapper; they are reported as extras.
+
+            // Check recursively instead of checking only the immediate children.
+            if (containsQuestionFolder(candidate)) {
+                candidates.add(candidate);
             }
         }
-        // Only an unambiguous single candidate counts as the wrapper.
+
+        // Only identify a wrapper when there is exactly one candidate.
         return candidates.size() == 1 ? candidates.get(0) : null;
+    }
+
+    /**
+     * Checks whether a folder contains an expected question folder,
+     * either directly or somewhere deeper in its hierarchy.
+     */
+    private boolean containsQuestionFolder(Path folder) {
+
+        try {
+
+            // Collect the real subfolders.
+            Map<String, Path> inside = new TreeMap<>();
+
+            for (Path child : sortedChildren(folder)) {
+
+                // Ignore junk and symbolic links.
+                if (isJunk(nameOf(child)) || !isRealDirectory(child)) {
+                    continue;
+                }
+
+                inside.put(nameOf(child), child);
+            }
+
+            // If an expected question folder exists directly inside,
+            // we have found the student's actual work.
+            if (!matchNames(questions.keySet(), inside).isEmpty()) {
+                return true;
+            }
+
+            // Otherwise, continue searching deeper.
+            for (Path child : inside.values()) {
+
+                if (containsQuestionFolder(child)) {
+                    return true;
+                }
+            }
+
+        } catch (IOException | SecurityException e) {
+            // An unreadable folder cannot be confirmed as a wrapper.
+            return false;
+        }
+
+        return false;
     }
 
     // Records "this is not in the template" for a file or folder.
     private void addExtra(String student, Path path, boolean folder) {
-        // WARNING (not ERROR): an extra does not stop the student being "ready"; folders get a trailing slash in the path.
+        // WARNING (not ERROR): an extra does not stop the student being "ready";
+        // folders get a trailing slash in the path.
         add(student, Category.EXTRA_FILE, Severity.WARNING, rel(path) + (folder ? "/" : ""),
                 "not in the template", "Graders may ignore it; check it is not part of the answer");
     }
@@ -565,11 +646,13 @@ public final class SubmissionPreflight {
 
     // Path relative to the submissions folder, always with forward slashes.
     private String rel(Path path) {
-        // Relative to the submissions folder; backslashes become slashes so Windows output matches Unix.
+        // Relative to the submissions folder; backslashes become slashes so Windows
+        // output matches Unix.
         return submissions.relativize(path).toString().replace('\\', '/');
     }
 
-    // True when the file is empty or only whitespace (reads at most BLANK_CHECK_BYTES, read-only).
+    // True when the file is empty or only whitespace (reads at most
+    // BLANK_CHECK_BYTES, read-only).
     private static boolean isBlank(Path file) {
         try {
             // Zero bytes is trivially empty.
@@ -608,7 +691,8 @@ public final class SubmissionPreflight {
         }
     }
 
-    // Lists a folder's children sorted by name (so output never depends on the file system's order).
+    // Lists a folder's children sorted by name (so output never depends on the file
+    // system's order).
     private static List<Path> sortedChildren(Path dir) throws IOException {
         // Files.list holds a directory handle, so close it with try-with-resources.
         try (Stream<Path> stream = Files.list(dir)) {

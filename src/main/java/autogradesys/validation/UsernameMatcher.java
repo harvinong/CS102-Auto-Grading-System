@@ -5,7 +5,7 @@ import java.util.Optional;
 
 
 /**
- * Matches a submission's folder name to a registered student, tolerating small typos.
+ * Matches a submission's folder name to a registered student.
  * Moved from the team's original Validation.java.
  */
 
