@@ -6,6 +6,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Scanner;
 
+import javax.tools.JavaCompiler;
+
 import autogradesys.cli.Field;
 import autogradesys.cli.Input;
 import autogradesys.cli.TextColor;
@@ -15,6 +17,7 @@ import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
 import autogradesys.grading.HtmlReportWriter;
 import autogradesys.grading.JavaGrader;
+import autogradesys.grading.TesterRunner;
 import autogradesys.preflight.PreflightReport;
 import autogradesys.validation.CacheReport;
 
@@ -37,6 +40,7 @@ public class GraderMenu {
 
     private Scanner sc;
     private GraderCtrl ctrl;
+    private JavaCompiler compiler;
 
     // Filled during setup
     private File submissions;
@@ -45,9 +49,10 @@ public class GraderMenu {
     private PreflightReport preflight;
     private Path gradingPath;
 
-    public GraderMenu(Scanner sc, GraderCtrl ctrl) {
+    public GraderMenu(Scanner sc, GraderCtrl ctrl, JavaCompiler compiler) {
         this.sc = sc;
         this.ctrl = ctrl;
+        this.compiler = compiler;
     }
     public Path getGradingPath() {
         return this.gradingPath;
@@ -209,6 +214,9 @@ public class GraderMenu {
         }
         // Grade with the configured testers folder (questions) and scoresheet; the configured timeout (default 2 seconds) stops infinite loops and the output limit (default 1 MiB) stops flooding.
         // A copy of the starter template in the submissions folder is not a student, so it is skipped.
+        TesterRunner testerRunner = new TesterRunner(compiler, ctrl.config, gradingPath);
+        testerRunner.run();
+
         GradeResult result = JavaGrader.grade(gradingPath,
                 ctrl.config.testersFolder().toPath(), ctrl.config.scoresheetFile().toPath(),
                 Duration.ofSeconds(ctrl.config.timeoutSeconds()), ctrl.config.outputLimitBytes(),

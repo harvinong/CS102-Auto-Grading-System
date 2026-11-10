@@ -118,7 +118,7 @@ public class MainMenu {
         // clear the cache folder before grading, so the working copy is always fresh.
         clearCache();
 
-        GraderMenu innerMenu = new GraderMenu(sc, new GraderCtrl(ctrl.getConfig()));
+        GraderMenu innerMenu = new GraderMenu(sc, new GraderCtrl(ctrl.getConfig()), ctrl.getCompiler());
         innerMenu.setup();
         innerMenu.readOption();
     }

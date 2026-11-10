@@ -2,18 +2,32 @@ package autogradesys.controller;
 
 import java.io.File;
 
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
+
+import autogradesys.cli.TextColor;
 import autogradesys.config.Config;
 import autogradesys.config.ConfigDAO;
+import autogradesys.io.CompilerNotFoundException;
 
 public class MainCtrl {
     
     private ConfigDAO configDAO;
+    private JavaCompiler compiler;
 
     public MainCtrl() {
         this.configDAO = new ConfigDAO();
+        boolean compilerFound = setCompiler();
+        if (!compilerFound) {
+            throw new CompilerNotFoundException();
+        }
     }
 
     // Getters
+    public JavaCompiler getCompiler() {
+        return compiler;
+    }
+
     public File getStartingFolder() {
         return configDAO.getStartingFolder();
     }
@@ -65,6 +79,15 @@ public class MainCtrl {
         configDAO.setTimeoutSeconds(timeoutSeconds);
         configDAO.setOutputLimitBytes(outputLimitBytes);
         return saveConfig(startingFolder, testers, scoresheet);
+    }
+
+    // helper function
+    private boolean setCompiler() {
+        compiler = ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) {
+            return false;
+        }
+        return true;
     }
 
 }
