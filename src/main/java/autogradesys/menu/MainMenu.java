@@ -115,6 +115,9 @@ public class MainMenu {
     /**Menu option 3: the full grade-students flow. */
     // Set to public to be used non-interactively.
     public void runGrader() {
+        // clear the cache folder before grading, so the working copy is always fresh.
+        clearCache();
+
         GraderMenu innerMenu = new GraderMenu(sc, new GraderCtrl(ctrl.getConfig()));
         innerMenu.setup();
         innerMenu.readOption();
@@ -156,9 +159,6 @@ public class MainMenu {
     private void clearCache() {
         // Where the working copies of the submissions are kept.
         Path cachePath = AppSettings.load().getCacheDir();
-
-        System.out.println("Cache directory: " + cachePath.toAbsolutePath());
-        System.out.println("Cache exists: " + Files.exists(cachePath));
 
         // Nothing on disk means there is nothing to delete.
         if (!cachePath.toFile().exists()) {
