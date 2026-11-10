@@ -1,5 +1,6 @@
 package autogradesys;
 // java
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -12,6 +13,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import javax.tools.Diagnostic;
@@ -30,12 +37,12 @@ public class StudentFileExec {
     // label is test case name (preferably function call in string) args is args, expected is expected output.
     record TestCase(String label, Object[] args, Object expected, String expectedException) {
 
-    // Convenience factory for the common case: expecting a normal return value
+    // use for object or value return
     static TestCase expectValue(String label, Object[] args, Object expected) {
         return new TestCase(label, args, expected, null);
     }
   
-    // Convenience factory for exception-expecting cases
+    // use for testing exceptions
     static TestCase expectException(String label, Object[] args,String expectedExceptionName) {
         return new TestCase(label, args, null, expectedExceptionName);
     }
@@ -66,8 +73,8 @@ public class StudentFileExec {
                     "METHOD NAME TO TEST",
                     new Class<?>[]{TYPES OF PARAM FOR METHOD.class, ... ...},
                     List.of(
-                        TestCase.expectValue (for non exception testing)
-                        TestCase.expectException (for exception results)
+                        TestCase.expectValue (for non exception testing) (label, new Object[]{ARGUMENTS GO HERE}, EXPECTD REUSLT)
+                        TestCase.expectException (for exception results) (label, new Object[]{ARGUMENTS GO HERE}, EXPECTD ExcepTION)
                     )
             )
     
@@ -131,7 +138,7 @@ public class StudentFileExec {
 
             // ... one entry per sub-question
     );
-
+    //entry point from GradingEntry
     @TestFactory
     Stream<DynamicNode> testAllSubmissions() throws Exception {
         Path submissionsRoot = Paths.get("submissions");
@@ -142,7 +149,7 @@ public class StudentFileExec {
         return studentDirs.stream().map(studentDir ->
             DynamicContainer.dynamicContainer(
                     "2023-2024-" + studentDir.getFileName(),
-                    buildQuestionContainers(studentDir)
+                    buildQuestionContainers(studentDir) //cos yknow the files aint here
             )
         );
     }
@@ -251,11 +258,11 @@ public class StudentFileExec {
     }
 }
 
-
+//actual like dir where question is. so can test
 private DynamicNode buildOneSubQuestionContainer(Path javaFile, Path questionDir,
                                                    CompileResult compileResult, URLClassLoader loader) {
     String className = javaFile.getFileName().toString().replace(".java", "");
-
+                                                    // compilation area
     try {
         Path expectedClassFile = questionDir.resolve(className + ".class");
 
@@ -289,7 +296,8 @@ private DynamicNode buildOneSubQuestionContainer(Path javaFile, Path questionDir
     }
 }
 
-    // each 1a 1b or whatev
+    // each test case within the subquestion yes
+    //dynamicnode cos its what junit thing is for test generated at runtime like instead of @test function {} or whatever
 private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLClassLoader loader, Path questionDir) {
     MethodSpec spec = SPECS_BY_CLASS.get(className);
     if (spec == null) {
@@ -352,21 +360,37 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
 
     return new CompileResult(firstAttempt.errorsByFile());
 }
+//the fun begins
 private void runTestCase(String className, MethodSpec spec, TestCase tc,
                          Class<?> studentClass, Method method,
                          ClassLoader loader, Path questionDir) throws Throwable {
+    //each test case recopies resource files to make sure it is clean
     List<Path> copiedFiles = copyResourceFilesToWorkingDir(questionDir);
     try {
+        //get argument and method instance
         Object[] realArgs = resolveArgs(tc.args(), loader);
         Object freshInstance = studentClass.getDeclaredConstructor().newInstance();
         //when exception testing
         if (tc.expectedException() != null) {
             Throwable thrown = null;
+            //timeout purposes. new thread
+            ExecutorService exec = Executors.newSingleThreadExecutor(r -> {
+            Thread d = new Thread(r, "studentgrading");
+            d.setDaemon(true); //there are daemon and user threads. daemon shutsdown after program shutsdown
+            return d;
+            });
             try {
-                method.invoke(freshInstance, realArgs);
-            } catch (java.lang.reflect.InvocationTargetException e) {
+                Future<Object> future = exec.submit(() -> method.invoke(freshInstance,realArgs));
+                future.get(5,TimeUnit.SECONDS); //after 5s
+            } catch (TimeoutException e) {
+                throw new AssertionError(className + "." + spec.methodName() + "on" + tc.label() + "timed out");
+            } catch (ExecutionException e) {
                 thrown = e.getCause();
+                if (thrown instanceof java.lang.reflect.InvocationTargetException ite) thrown = ite.getCause();
+            } finally {
+                exec.shutdownNow();
             }
+            //testing exceptions
             if (thrown == null) {
                 throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
                         + " expected " + tc.expectedException() + " but no exception was thrown");
@@ -380,14 +404,26 @@ private void runTestCase(String className, MethodSpec spec, TestCase tc,
         }
         //value for value testing
         Object actual;
+        ExecutorService exec = Executors.newSingleThreadExecutor(r -> {
+            Thread d = new Thread(r, "studentgrading");
+            d.setDaemon(true);
+            return d;
+        });
         try {
-            actual = method.invoke(freshInstance, realArgs);
-        } catch (java.lang.reflect.InvocationTargetException e) {
+            Future<Object> future = exec.submit(() -> method.invoke(freshInstance,realArgs));
+            actual = future.get(5,TimeUnit.SECONDS);
+        } catch (TimeoutException t) {
+            throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label() + "timed out (5s)");
+        
+        } catch (ExecutionException e) {
             throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
                     + " threw " + e.getCause(), e.getCause());
+        } finally {
+            exec.shutdownNow();
         }
 
         Object expected = tc.expected();
+        //because collections a bitch i just cast them all to list then compare
         if (expected instanceof List<?> el && actual instanceof List<?> al) {
             List<String> exp = new ArrayList<>();
             for (Object o : el) {exp.add(String.valueOf(o));}
@@ -403,22 +439,21 @@ private void runTestCase(String className, MethodSpec spec, TestCase tc,
         cleanupCopiedFiles(copiedFiles);
     }
 }
+//try compile, if cant compile all java, compile all again without said fail java 
 private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles, Path questionDir) throws Exception {
     DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-    StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);
-    fileManager.setLocation(
-            javax.tools.StandardLocation.CLASS_PATH,
-            List.of(questionDir.toFile())
-    );
-    Iterable<? extends JavaFileObject> compilationUnits =
-            fileManager.getJavaFileObjectsFromStrings(
-                    sourceFiles.stream().map(Path::toString).toList());
-
-    JavaCompiler.CompilationTask task = compiler.getTask(
-            null, fileManager, diagnostics, null, null, compilationUnits);
-
-    boolean success = task.call();
-    fileManager.close();
+    boolean success;
+        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
+            fileManager.setLocation(
+                    javax.tools.StandardLocation.CLASS_PATH,
+                    List.of(questionDir.toFile())
+            );      Iterable<? extends JavaFileObject> compilationUnits =
+                    fileManager.getJavaFileObjectsFromStrings(
+                            sourceFiles.stream().map(Path::toString).toList());
+            JavaCompiler.CompilationTask task = compiler.getTask(
+                    null, fileManager, diagnostics, null, null, compilationUnits);
+            success = task.call();
+        }
 
     Map<String, List<String>> errorsByFile = new HashMap<>();
     for (Diagnostic<? extends JavaFileObject> d : diagnostics.getDiagnostics()) {
@@ -437,6 +472,7 @@ private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles,
         List<Path> copiedPaths = new ArrayList<>();
 
         List<Path> resourceFiles;
+        //basically copy all that is not java or class
         try (Stream<Path> stream = Files.list(questionDir)) { 
             resourceFiles = stream
                     .filter(Files::isRegularFile)                        
@@ -455,13 +491,13 @@ private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles,
                 copiedPaths.add(dest);
                 
             }
-        } catch (Exception e) {                                          
+        } catch (IOException | IllegalStateException e) {                                          
             cleanupCopiedFiles(copiedPaths);
             throw e;
         }
     return copiedPaths;
     }
-
+    //cleanup after each test case run to prevent contaminatioon
     private void cleanupCopiedFiles(List<Path> copiedFiles) {
         for (Path p : copiedFiles) {
             for (int attempt = 0; attempt < 3; attempt++) {

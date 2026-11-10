@@ -135,26 +135,13 @@ git diff --check
 
 Menu option 3 ("Grade students") grades submissions shaped like the CS102 starter template (`RenameToYourStudentID/Q1/Q1a.java`, `Q2/persons.txt`, ...) with the instructor's tester classes.
 
-### Tester contract
 
-The configured testers folder holds one folder per question, named like the template's question folders:
-
-```text
-testers/
-  Q1/Q1aTester.java            a class with a main method that exercises the student's Q1a class
-  Q1/Q1aTester.expected.txt    the exact output Q1aTester must print
-  Q1/Q1bTester.java
-  Q1/Q1bTester.expected.txt
-  Q2/...
-```
-
-- A tester is any `<Name>Tester.java` file in the question folder. It has no package and a `public static void main(String[] args)`.
-- Its expected output is `<Name>Tester.expected.txt` in the same folder.
-- Resource files the question needs (for example `persons.txt`) are taken from the student's question folder, as the template defines them.
 
 ### How a question is graded
 
 For each student and each question the grader:
+
+1. first and foremost, tester creates grading skeleton using defined records. `MethodSpec(String methodName, Class<?>[] paramTypes, List<TestCase> testCases)` is used for the skeleton for each method tested. `record TestCase(String label, Object[] args, Object expected, String expectedException)` is used to define each test case. For testing of returned values, `Object expected` is filled in while `expectedException` is null and vice versa. for `expectedException`, exception's simple name is compared with as any custom exception class would be very difficult without pre-knowledge of existing class.
 
 1. copies the student's files for that question and that question's testers into a fresh temporary build folder (deleted afterwards);
 2. compiles them together with one bounded `javac` call;
