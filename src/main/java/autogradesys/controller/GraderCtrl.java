@@ -8,6 +8,7 @@ import java.util.function.Predicate;
 
 import autogradesys.config.Config;
 import autogradesys.io.ScoresheetReader;
+import autogradesys.preflight.HeaderPreflightCheck;
 import autogradesys.preflight.PreflightReport;
 import autogradesys.preflight.SubmissionPreflight;
 import autogradesys.validation.CacheReport;
@@ -30,15 +31,27 @@ public class GraderCtrl {
     }
 
     /**
-     * Runs the preflight check on the working copy and adds a USERNAME_TYPO finding for every folder whose
-     * name looks like a mistyped username, so the instructor is alerted before any fix is run.
+     * Runs the preflight check on the working copy and adds a USERNAME_TYPO finding
+     * for every folder whose
+     * name looks like a mistyped username, so the instructor is alerted before any
+     * fix is run.
      */
     public PreflightReport checkSubmissions(Path workingDir) {
-        PreflightReport report = SubmissionPreflight.check(config.startingFolder().toPath(), workingDir);
+        PreflightReport report = SubmissionPreflight.check(
+                config.startingFolder().toPath(),
+                workingDir);
+
         try {
-            return UsernameTypoCheck.addFindings(report, ScoresheetReader.read(config.scoresheetFile()));
+            List<Student> students = ScoresheetReader.read(config.scoresheetFile());
+
+            report = UsernameTypoCheck.addFindings(report, students);
+
+            return HeaderPreflightCheck.addFindings(
+                    report,
+                    workingDir,
+                    students);
+
         } catch (IOException e) {
-            // Without the scoresheet no name can be compared, so only the normal check is shown.
             return report;
         }
     }
@@ -46,7 +59,11 @@ public class GraderCtrl {
     public ValidationReport validateSubmissions(Path workingDir, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {
         List<Student> students = ScoresheetReader.read(config.scoresheetFile());
-        return new SubmissionValidation(students, confirm, cache).run(workingDir, preflight);
+        return new SubmissionValidation(
+                students,
+                confirm,
+                cache,
+                config.startingFolder().toPath()).run(workingDir, preflight);
     }
 
     public ValidationReport validateSubmissions(File submissions, PreflightReport preflight,

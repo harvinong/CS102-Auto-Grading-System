@@ -49,7 +49,9 @@ public class GraderMenu {
         this.sc = sc;
         this.ctrl = ctrl;
     }
-
+    public Path getGradingPath() {
+        return this.gradingPath;
+    }
     /**<p> 
      * Process run after the main menu and before the grader (inner) menu
      * </p><p>
@@ -132,17 +134,11 @@ public class GraderMenu {
             // Dispatch the choice: 1 fixes, 2 re-checks, 3 grades, 0 cancels operation;
             // 0 and 3 exits the loop once operations are complete.
             switch (menuOption) {
-                case 1:
-                    fixSubmissions();
-                    break;
-                case 2:
-                    checkSubmissions();
-                    break;
-                case 3:
-                    startGrading();
-                    break;
-                case 0:
-                    break;
+                case 1 -> fixSubmissions();
+                case 2 -> checkSubmissions();
+                case 3 -> startGrading();
+                case 0 -> {
+                }
             }
         } while (menuOption != 3 && menuOption != 0);
     }

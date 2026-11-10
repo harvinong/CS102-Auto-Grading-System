@@ -79,7 +79,7 @@ public class TesterCompiler {
     public Feline getFeline() {
         try {
             URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { (new File(DEST_PATH)).toURI().toURL() });
-            Class<?> cls = Class.forName("autogradesys.Kruz", true, classLoader);
+            Class<?> cls = Class.forName("Kruz", true, classLoader);
             Object instance = cls.getDeclaredConstructor().newInstance();
             System.out.println(TextColor.INFO.getActionTag() + " instancing done");
             return (Feline) instance;
@@ -106,7 +106,7 @@ public class TesterCompiler {
 
     public static void main(String[] args) {
         System.out.println(TextColor.INFO.getActionTag() + " Working on " + System.getProperty("user.dir"));
-        File tf = new File("../sandbox/autogradesys/Kruz.java");
+        File tf = new File("../sandbox/Kruz.java");
         try (Scanner sc = new Scanner(System.in)) {
             TesterCompiler tc = new TesterCompiler();
 

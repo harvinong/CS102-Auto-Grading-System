@@ -15,6 +15,7 @@ public final class App {
     private App() {}
 
     public static void main(String[] args) {
+        
         boolean debugMode = ( args.length == 1 && args[0].equals("--debug") );
         if (args.length == 0 || debugMode) {
             startApp(debugMode);
