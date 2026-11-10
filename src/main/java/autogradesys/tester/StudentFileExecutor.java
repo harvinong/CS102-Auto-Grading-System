@@ -34,14 +34,38 @@ import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
+import autogradesys.config.Config;
 import autogradesys.controller.MainCtrl;
+import autogradesys.io.TesterCompiler;
 
-public class StudentFileExec {
+class ConfigLoader {
+
+    private Config config;
+    private Map<String, MethodSpec> specsByClass;
+
+    public ConfigLoader() {
+        MainCtrl mc = new MainCtrl();
+        mc.loadConfig();
+        this.config = mc.getConfig();
+
+        QuestionTests qt = new TesterCompiler(mc.getTestersFile()).getQuestionTests();
+        this.specsByClass = qt.getSpecs();
+    }
+
+    public Config getConfig() {
+        return config;
+    }
+
+    public Map<String, MethodSpec> getSpecsByClass() {
+        return specsByClass;
+    }
+
+}
+
+public class StudentFileExecutor {
 
     // label is test case name (preferably function call in string) args is args,
     // expected is expected output.
-
-    MainCtrl mc = new MainCtrl();
 
     record CompileAttempt(boolean success, Map<String, List<String>> errorsByFile) {
     }
@@ -56,13 +80,14 @@ public class StudentFileExec {
         }
     }
 
-    // PLEASE FOLLOW ACCORDINGLY
-    private static final Map<String, MethodSpec> SPECS_BY_CLASS = QuestionTests.getSPECS_BY_CLASS();
+    private static final ConfigLoader CL = new ConfigLoader();
+    private static final Map<String, MethodSpec> SPECS_BY_CLASS = CL.getSpecsByClass();
+    private static final Config CONFIG = CL.getConfig();
 
     // entry point from GradingEntry
     @TestFactory
     Stream<DynamicNode> testAllSubmissions() throws Exception {
-        Path submissionsRoot = Paths.get(mc.getStartingFolder().getPath());
+        Path submissionsRoot = Paths.get("cache/student-submission");
         List<Path> studentDirs = Files.list(submissionsRoot)
                 .filter(Files::isDirectory)
                 .toList();
@@ -78,9 +103,9 @@ public class StudentFileExec {
     private Object resolveArg(Object arg, ClassLoader loader) throws Exception {
         if (arg instanceof ObjSpec spec) {
             Class<?> cls = Class.forName(spec.className(), true, loader);
-            Object[] ctorArgs = new Object[spec.ctorArgs().length];
+            Object[] ctorArgs = new Object[spec.constructorArgs().length];
             for (int i = 0; i < ctorArgs.length; i++) {
-                ctorArgs[i] = resolveArg(spec.ctorArgs()[i], loader);
+                ctorArgs[i] = resolveArg(spec.constructorArgs()[i], loader);
             }
             return construct(cls, ctorArgs);
         }
@@ -167,7 +192,7 @@ public class StudentFileExec {
 
             URLClassLoader loader = new URLClassLoader(
                     new URL[] { questionDir.toUri().toURL() },
-                    StudentFileExec.class.getClassLoader());
+                    StudentFileExecutor.class.getClassLoader());
 
             List<Path> javaFiles = Files.list(questionDir)
                     .filter(p -> p.toString().endsWith(".java"))
@@ -318,7 +343,7 @@ public class StudentFileExec {
                 });
                 try {
                     Future<Object> future = exec.submit(() -> method.invoke(freshInstance, realArgs));
-                    future.get(mc.getTimeoutSeconds(), TimeUnit.SECONDS); // after 5s
+                    future.get(CONFIG.timeoutSeconds(), TimeUnit.SECONDS); // after 5s
                 } catch (TimeoutException e) {
                     throw new AssertionError(className + "." + spec.methodName() + "on" + tc.label() + "timed out");
                 } catch (ExecutionException e) {
@@ -349,8 +374,8 @@ public class StudentFileExec {
             });
             try {
                 Future<Object> future = exec.submit(() -> method.invoke(freshInstance, realArgs));
-                actual = future.get(mc.getTimeoutSeconds(), TimeUnit.SECONDS);
-                if (SizeObject.getObjectSize(actual) > mc.getOutputLimitBytes()) {
+                actual = future.get(CONFIG.timeoutSeconds(), TimeUnit.SECONDS);
+                if (SizeObject.getObjectSize(actual) > CONFIG.outputLimitBytes()) {
                     throw new AssertionError(
                             className + "." + spec.methodName() + " on " + tc.label() + " returned too big.");
                 }
