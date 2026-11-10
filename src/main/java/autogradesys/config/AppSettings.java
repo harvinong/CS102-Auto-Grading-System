@@ -4,8 +4,8 @@ import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 /**
- * Fixed defaults for {@link autogradesys.submission.SubmissionStager}: the cache folder and the zip
- * file-name pattern. The menu's own settings are stored in config.json.
+ * Fixed defaults: the cache folder and the zip file-name pattern.
+ * The menu's own settings are stored in config.json.
  */
 public final class AppSettings {
     private static final Path DEFAULT_CACHE_DIR = Path.of("cache");
