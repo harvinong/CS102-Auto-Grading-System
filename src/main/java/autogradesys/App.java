@@ -18,8 +18,9 @@ public final class App {
         boolean debugMode = ( args.length == 1 && args[0].equals("--debug") );
         if (args.length == 0 || debugMode) {
             startApp(debugMode);
+        } else {
+            System.out.println(TextColor.ERROR.getActionTag() + " Usage: ./run.bat [--demo|--debug]");
         }
-        System.out.println(TextColor.ERROR.getActionTag() + " Usage: ./run.bat [--demo|--debug]");
     }
 
     /** Menu mode: the controller holds session state and the menu drives it. */ 
