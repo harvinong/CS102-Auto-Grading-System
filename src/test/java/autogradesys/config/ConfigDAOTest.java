@@ -77,7 +77,7 @@ class ConfigDAOTest {
         File file = root.resolve("config.json").toFile();
         ConfigDAO writer = new ConfigDAO(file);
         writer.setStartingFolder(root.toFile());
-        writer.setTestersFolder(root.toFile());
+        writer.setTestersFile(root.toFile());
         writer.setScoresheetFile(root.resolve("s.csv").toFile());
         writer.setTimeoutSeconds(9);
         writer.setOutputLimitBytes(2048);

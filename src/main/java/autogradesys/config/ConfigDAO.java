@@ -27,7 +27,7 @@ public class ConfigDAO {
     private final File configFile;
     
     private File startingFolder;
-    private File testersFolder;
+    private File testersFile;
     private File scoresheetFile;
     // Start on the defaults so a DAO that never loads (new user) or loads an older file still has usable limits.
     private long timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
@@ -54,7 +54,7 @@ public class ConfigDAO {
 
             // Load values
             startingFolder = Path.of(jsonNode.get(ConfigKey.STARTING_FOLDER.toString()).asText()).toFile();
-            testersFolder = Path.of(jsonNode.get(ConfigKey.TESTERS.toString()).asText()).toFile();
+            testersFile = Path.of(jsonNode.get(ConfigKey.TESTERS.toString()).asText()).toFile();
             scoresheetFile = Path.of(jsonNode.get(ConfigKey.SCORESHEET.toString()).asText()).toFile();
             // The limits are optional: a missing, non-integer or out-of-range value silently becomes the default instead of failing the whole load.
             timeoutSeconds = integerInRangeOrDefault(jsonNode.get(ConfigKey.TIMEOUT_SECONDS.toString()),
@@ -74,7 +74,7 @@ public class ConfigDAO {
 
         // Write into json object
         jsonNode.put(ConfigKey.STARTING_FOLDER.toString(), this.startingFolder.toPath().toAbsolutePath().toString());
-        jsonNode.put(ConfigKey.TESTERS.toString(), this.testersFolder.toPath().toAbsolutePath().toString());
+        jsonNode.put(ConfigKey.TESTERS.toString(), this.testersFile.toPath().toAbsolutePath().toString());
         jsonNode.put(ConfigKey.SCORESHEET.toString(), this.scoresheetFile.toPath().toAbsolutePath().toString());
 
         // Always write the limits, so the saved file shows the values in effect even when they are the defaults.
@@ -94,8 +94,8 @@ public class ConfigDAO {
         return startingFolder;
     }
 
-    public File getTestersFolder() {
-        return testersFolder;
+    public File getTestersFile() {
+        return testersFile;
     }
 
     public File getScoresheetFile() {
@@ -114,8 +114,8 @@ public class ConfigDAO {
         this.startingFolder = startingFolder;
     }
 
-    public void setTestersFolder(File testersFolder) {
-        this.testersFolder = testersFolder;
+    public void setTestersFile(File testersFolder) {
+        this.testersFile = testersFolder;
     }
 
     public void setScoresheetFile(File scoresheetFile) {

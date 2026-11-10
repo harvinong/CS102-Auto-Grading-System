@@ -1,4 +1,5 @@
 package autogradesys;
+
 // java
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -41,17 +42,19 @@ public class StudentFileExec {
     
     MainCtrl mc = new MainCtrl();
 
-    record CompileAttempt(boolean success, Map<String, List<String>> errorsByFile) {}
+    record CompileAttempt(boolean success, Map<String, List<String>> errorsByFile) {
+    }
 
     record CompileResult(Map<String, List<String>> errorsByFile) {
-    String errorsForFile(Path javaFile) {
-        String fileName = javaFile.getFileName().toString();
-        List<String> errors = errorsByFile.getOrDefault(fileName, List.of());
-        return errors.isEmpty()
-                ? "(no specific diagnostic captured -- check dependent files for errors)"
-                : String.join("\n", errors);
+        String errorsForFile(Path javaFile) {
+            String fileName = javaFile.getFileName().toString();
+            List<String> errors = errorsByFile.getOrDefault(fileName, List.of());
+            return errors.isEmpty()
+                    ? "(no specific diagnostic captured -- check dependent files for errors)"
+                    : String.join("\n", errors);
+        }
     }
-}
+
     // PLEASE FOLLOW ACCORDINGLY
     private static final Map<String, MethodSpec> SPECS_BY_CLASS = QuestionTests.getSPECS_BY_CLASS();
     //entry point from GradingEntry
@@ -62,15 +65,14 @@ public class StudentFileExec {
                 .filter(Files::isDirectory)
                 .toList();
 
-        return studentDirs.stream().map(studentDir ->
-            DynamicContainer.dynamicContainer(
-                    "2023-2024-" + studentDir.getFileName(),
-                    buildQuestionContainers(studentDir) //cos yknow the files aint here
-            )
-        );
+        return studentDirs.stream().map(studentDir -> DynamicContainer.dynamicContainer(
+                "2023-2024-" + studentDir.getFileName(),
+                buildQuestionContainers(studentDir) // cos yknow the files aint here
+        ));
     }
 
-        // Recursively turns ObjSpec / List into real objects using the student's classloader
+    // Recursively turns ObjSpec / List into real objects using the student's
+    // classloader
     private Object resolveArg(Object arg, ClassLoader loader) throws Exception {
         if (arg instanceof ObjSpec spec) {
             Class<?> cls = Class.forName(spec.className(), true, loader);
@@ -82,7 +84,8 @@ public class StudentFileExec {
         }
         if (arg instanceof List<?> list) {
             ArrayList<Object> resolved = new ArrayList<>();
-            for (Object o : list) resolved.add(resolveArg(o, loader));
+            for (Object o : list)
+                resolved.add(resolveArg(o, loader));
             return resolved;
         }
         return arg; // plain values (String, Integer, ...) pass through untouched
@@ -90,22 +93,29 @@ public class StudentFileExec {
 
     private Object[] resolveArgs(Object[] args, ClassLoader loader) throws Exception {
         Object[] out = new Object[args.length];
-        for (int i = 0; i < args.length; i++) out[i] = resolveArg(args[i], loader);
+        for (int i = 0; i < args.length; i++)
+            out[i] = resolveArg(args[i], loader);
         return out;
     }
 
-    // Finds a constructor whose parameters can accept the args (allows int -> double widening)
+    // Finds a constructor whose parameters can accept the args (allows int ->
+    // double widening)
     private Object construct(Class<?> cls, Object[] args) throws Exception {
         for (java.lang.reflect.Constructor<?> c : cls.getConstructors()) {
             Class<?>[] pts = c.getParameterTypes();
-            if (pts.length != args.length) continue;
+            if (pts.length != args.length)
+                continue;
             Object[] converted = new Object[args.length];
             boolean ok = true;
             for (int i = 0; i < pts.length && ok; i++) {
                 Object converted_i = coerce(args[i], pts[i]);
-                if (converted_i == NO_MATCH) ok = false; else converted[i] = converted_i;
+                if (converted_i == NO_MATCH)
+                    ok = false;
+                else
+                    converted[i] = converted_i;
             }
-            if (ok) return c.newInstance(converted);
+            if (ok)
+                return c.newInstance(converted);
         }
         throw new NoSuchMethodException("No matching constructor on " + cls.getName()
                 + " for args " + Arrays.toString(args));
@@ -115,15 +125,20 @@ public class StudentFileExec {
 
     private Object coerce(Object arg, Class<?> target) {
         if (arg instanceof Number n) {
-            if (target == double.class || target == Double.class) return n.doubleValue();
+            if (target == double.class || target == Double.class)
+                return n.doubleValue();
             if (target == int.class || target == Integer.class)
                 return (n instanceof Integer) ? n : NO_MATCH;
-            if (target == float.class || target == Float.class) return n.floatValue();
-            if (target == long.class || target == Long.class) return n.longValue();
+            if (target == float.class || target == Float.class)
+                return n.floatValue();
+            if (target == long.class || target == Long.class)
+                return n.longValue();
         }
-        if (arg == null) return target.isPrimitive() ? NO_MATCH : null;
+        if (arg == null)
+            return target.isPrimitive() ? NO_MATCH : null;
         return target.isInstance(arg) ? arg : NO_MATCH;
     }
+
     // this is the MAIN question container
     private Stream<DynamicNode> buildQuestionContainers(Path studentDir) {
         try {
@@ -131,86 +146,83 @@ public class StudentFileExec {
                     .filter(Files::isDirectory)
                     .toList();
 
-            return questionDirs.stream().map(questionDir ->
-                DynamicContainer.dynamicContainer(
-                        questionDir.getFileName().toString(), // e.g. "Q1"
-                        buildSubQuestionContainers(questionDir)
-                )
-            );
+            return questionDirs.stream().map(questionDir -> DynamicContainer.dynamicContainer(
+                    questionDir.getFileName().toString(), // e.g. "Q1"
+                    buildSubQuestionContainers(questionDir)));
         } catch (Exception e) {
             return Stream.of(DynamicTest.dynamicTest(
                     "Setup failed for " + studentDir.getFileName(),
-                    () -> { throw new AssertionError("Could not list question folders: " + e.getMessage(), e); }
-            ));
+                    () -> {
+                        throw new AssertionError("Could not list question folders: " + e.getMessage(), e);
+                    }));
         }
     }
 
-    // this is the SUB QUESTION (1a, 1b, 1c etc) container 
+    // this is the SUB QUESTION (1a, 1b, 1c etc) container
     private Stream<DynamicNode> buildSubQuestionContainers(Path questionDir) {
-    try {
-        CompileResult compileResult = compileAll(questionDir);
+        try {
+            CompileResult compileResult = compileAll(questionDir);
 
-        URLClassLoader loader = new URLClassLoader(
-                new URL[]{ questionDir.toUri().toURL() },
-                StudentFileExec.class.getClassLoader()
-        );
+            URLClassLoader loader = new URLClassLoader(
+                    new URL[] { questionDir.toUri().toURL() },
+                    StudentFileExec.class.getClassLoader());
 
-        List<Path> javaFiles = Files.list(questionDir)
-                .filter(p -> p.toString().endsWith(".java"))
-                .toList();
+            List<Path> javaFiles = Files.list(questionDir)
+                    .filter(p -> p.toString().endsWith(".java"))
+                    .toList();
 
-        return javaFiles.stream()
-                .filter(javaFile -> SPECS_BY_CLASS.containsKey(
-                        javaFile.getFileName().toString().replace(".java", "")))
-                .map(javaFile -> buildOneSubQuestionContainer(javaFile, questionDir, compileResult, loader))
-                
-                ;
+            return javaFiles.stream()
+                    .filter(javaFile -> SPECS_BY_CLASS.containsKey(
+                            javaFile.getFileName().toString().replace(".java", "")))
+                    .map(javaFile -> buildOneSubQuestionContainer(javaFile, questionDir, compileResult, loader))
 
-    } catch (Exception e) {
-        return Stream.of(DynamicTest.dynamicTest(
-                "Setup failed for " + questionDir.getFileName(),
-                () -> { throw new AssertionError("Could not compile/load: " + e.getMessage(), e); }
-        ));
+            ;
+
+        } catch (Exception e) {
+            return Stream.of(DynamicTest.dynamicTest(
+                    "Setup failed for " + questionDir.getFileName(),
+                    () -> {
+                        throw new AssertionError("Could not compile/load: " + e.getMessage(), e);
+                    }));
+        }
     }
-}
 
-//actual like dir where question is. so can test
-private DynamicNode buildOneSubQuestionContainer(Path javaFile, Path questionDir,
-                                                   CompileResult compileResult, URLClassLoader loader) {
-    String className = javaFile.getFileName().toString().replace(".java", "");
-                                                    // compilation area
-    try {
-        Path expectedClassFile = questionDir.resolve(className + ".class");
+    // actual like dir where question is. so can test
+    private DynamicNode buildOneSubQuestionContainer(Path javaFile, Path questionDir,
+            CompileResult compileResult, URLClassLoader loader) {
+        String className = javaFile.getFileName().toString().replace(".java", "");
+        // compilation area
+        try {
+            Path expectedClassFile = questionDir.resolve(className + ".class");
 
-        if (!Files.exists(expectedClassFile)) {
-            String relevantErrors = compileResult.errorsForFile(javaFile);
+            if (!Files.exists(expectedClassFile)) {
+                String relevantErrors = compileResult.errorsForFile(javaFile);
+                return DynamicContainer.dynamicContainer(
+                        className,
+                        Stream.of(DynamicTest.dynamicTest(
+                                className + ": compilation failed",
+                                () -> {
+                                    throw new AssertionError(
+                                            "Compilation failed for " + className + ":\n" + relevantErrors);
+                                })));
+            }
+
+            return DynamicContainer.dynamicContainer(
+                    className,
+                    buildTestCasesForSubQuestion(className, loader, questionDir));
+
+        } catch (Throwable t) {
+
             return DynamicContainer.dynamicContainer(
                     className,
                     Stream.of(DynamicTest.dynamicTest(
-                            className + ": compilation failed",
-                            () -> { throw new AssertionError(
-                                    "Compilation failed for " + className + ":\n" + relevantErrors); }
-                    ))
-            );
+                            className + ": unexpected error during setup",
+                            () -> {
+                                throw new AssertionError(
+                                        "Unexpected failure loading " + className + ": " + t, t);
+                            })));
         }
-
-        return DynamicContainer.dynamicContainer(
-                className,
-                buildTestCasesForSubQuestion(className, loader, questionDir)
-        );
-
-    } catch (Throwable t) {
-      
-        return DynamicContainer.dynamicContainer(
-                className,
-                Stream.of(DynamicTest.dynamicTest(
-                        className + ": unexpected error during setup",
-                        () -> { throw new AssertionError(
-                                "Unexpected failure loading " + className + ": " + t, t); }
-                ))
-        );
     }
-}
 
     // each test case within the subquestion yes
     //dynamicnode cos its what junit thing is for test generated at runtime like instead of @test function {} or whatever
@@ -223,77 +235,112 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
         ));
     }
 
-    try {
-        Class<?> studentClass = Class.forName(className, true, loader);
-        
-        Method method = studentClass.getMethod(spec.methodName(), spec.paramTypes());
+        try {
+            Class<?> studentClass = Class.forName(className, true, loader);
 
-        return spec.testCases().stream().map(tc ->
-    (DynamicNode) DynamicTest.dynamicTest(tc.label(), () -> runTestCase(className, spec, tc, studentClass, method, loader, questionDir)));
+            Method method = studentClass.getMethod(spec.methodName(), spec.paramTypes());
 
-    } catch (NoSuchMethodException e) {
-        return Stream.of(DynamicTest.dynamicTest(
-                className + ": method not found",
-                () -> { throw new AssertionError("Expected method not found on " + className, e); }
-        ));
-    } catch (Throwable t) {  
-        return Stream.of(DynamicTest.dynamicTest(
-                "Load failed: " + className,
-                () -> { throw new AssertionError("Could not instantiate " + className + ": " + t, t); }
-        ));
+            return spec.testCases().stream().map(tc -> (DynamicNode) DynamicTest.dynamicTest(tc.label(),
+                    () -> runTestCase(className, spec, tc, studentClass, method, loader, questionDir)));
+
+        } catch (NoSuchMethodException e) {
+            return Stream.of(DynamicTest.dynamicTest(
+                    className + ": method not found",
+                    () -> {
+                        throw new AssertionError("Expected method not found on " + className, e);
+                    }));
+        } catch (Throwable t) {
+            return Stream.of(DynamicTest.dynamicTest(
+                    "Load failed: " + className,
+                    () -> {
+                        throw new AssertionError("Could not instantiate " + className + ": " + t, t);
+                    }));
+        }
     }
-}
+
     // compiling student .java to .class if they didnt do so
     private CompileResult compileAll(Path dir) throws Exception {
-    javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
 
-    List<Path> allJavaFiles = Files.list(dir)
-            .filter(p -> p.toString().endsWith(".java"))
-            .toList();
+        List<Path> allJavaFiles = Files.list(dir)
+                .filter(p -> p.toString().endsWith(".java"))
+                .toList();
 
-    if (allJavaFiles.isEmpty()) {
-        return new CompileResult(Map.of());
+        if (allJavaFiles.isEmpty()) {
+            return new CompileResult(Map.of());
+        }
+
+        // try all
+
+        CompileAttempt firstAttempt = tryCompile(compiler, allJavaFiles, dir);
+
+        if (firstAttempt.success()) {
+            return new CompileResult(Map.of());
+        }
+
+        // something failed. Retry without file w prob
+        // so files that are actually fine still get their .class produced.
+        Set<String> filesWithErrors = firstAttempt.errorsByFile().keySet();
+        List<Path> cleanFiles = allJavaFiles.stream()
+                .filter(f -> !filesWithErrors.contains(f.getFileName().toString()))
+                .toList();
+
+        if (!cleanFiles.isEmpty()) {
+            tryCompile(compiler, cleanFiles, dir);
+        }
+
+        return new CompileResult(firstAttempt.errorsByFile());
     }
 
-    // try all
-   
-    CompileAttempt firstAttempt = tryCompile(compiler, allJavaFiles,dir);
-
-    if (firstAttempt.success()) {
-        return new CompileResult(Map.of()); 
-    }
-
-    // something failed. Retry without file w prob
-    // so files that are actually fine still get their .class produced.
-    Set<String> filesWithErrors = firstAttempt.errorsByFile().keySet();
-    List<Path> cleanFiles = allJavaFiles.stream()
-            .filter(f -> !filesWithErrors.contains(f.getFileName().toString()))
-            .toList();
-
-    if (!cleanFiles.isEmpty()) {
-        tryCompile(compiler, cleanFiles,dir);
-    }
-
-    return new CompileResult(firstAttempt.errorsByFile());
-}
-//the fun begins
-private void runTestCase(String className, MethodSpec spec, TestCase tc,
-                         Class<?> studentClass, Method method,
-                         ClassLoader loader, Path questionDir) throws Throwable {
-    //each test case recopies resource files to make sure it is clean
-    List<Path> copiedFiles = copyResourceFilesToWorkingDir(questionDir);
-    try {
-        //get argument and method instance
-        Object[] realArgs = resolveArgs(tc.args(), loader);
-        Object freshInstance = studentClass.getDeclaredConstructor().newInstance();
-        //when exception testing
-        if (tc.expectedException() != null) {
-            Throwable thrown = null;
-            //timeout purposes. new thread
+    // the fun begins
+    private void runTestCase(String className, MethodSpec spec, TestCase tc,
+            Class<?> studentClass, Method method,
+            ClassLoader loader, Path questionDir) throws Throwable {
+        // each test case recopies resource files to make sure it is clean
+        List<Path> copiedFiles = copyResourceFilesToWorkingDir(questionDir);
+        try {
+            // get argument and method instance
+            Object[] realArgs = resolveArgs(tc.args(), loader);
+            Object freshInstance = studentClass.getDeclaredConstructor().newInstance();
+            // when exception testing
+            if (tc.expectedException() != null) {
+                Throwable thrown = null;
+                // timeout purposes. new thread
+                ExecutorService exec = Executors.newSingleThreadExecutor(r -> {
+                    Thread d = new Thread(r, "studentgrading");
+                    d.setDaemon(true); // there are daemon and user threads. daemon shutsdown after program shutsdown
+                    return d;
+                });
+                try {
+                    Future<Object> future = exec.submit(() -> method.invoke(freshInstance, realArgs));
+                    future.get(5, TimeUnit.SECONDS); // after 5s
+                } catch (TimeoutException e) {
+                    throw new AssertionError(className + "." + spec.methodName() + "on" + tc.label() + "timed out");
+                } catch (ExecutionException e) {
+                    thrown = e.getCause();
+                    if (thrown instanceof java.lang.reflect.InvocationTargetException ite)
+                        thrown = ite.getCause();
+                } finally {
+                    exec.shutdownNow();
+                }
+                // testing exceptions
+                if (thrown == null) {
+                    throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
+                            + " expected " + tc.expectedException() + " but no exception was thrown");
+                }
+                String actualName = thrown.getClass().getSimpleName();
+                if (!actualName.equals(tc.expectedException())) {
+                    throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
+                            + " expected " + tc.expectedException() + " but got " + actualName, thrown);
+                }
+                return;
+            }
+            // value for value testing
+            Object actual;
             ExecutorService exec = Executors.newSingleThreadExecutor(r -> {
-            Thread d = new Thread(r, "studentgrading");
-            d.setDaemon(true); //there are daemon and user threads. daemon shutsdown after program shutsdown
-            return d;
+                Thread d = new Thread(r, "studentgrading");
+                d.setDaemon(true);
+                return d;
             });
             try {
                 Future<Object> future = exec.submit(() -> method.invoke(freshInstance,realArgs));
@@ -301,20 +348,25 @@ private void runTestCase(String className, MethodSpec spec, TestCase tc,
             } catch (TimeoutException e) {
                 throw new AssertionError(className + "." + spec.methodName() + "on" + tc.label() + "timed out");
             } catch (ExecutionException e) {
-                thrown = e.getCause();
-                if (thrown instanceof java.lang.reflect.InvocationTargetException ite) thrown = ite.getCause();
+                throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
+                        + " threw " + e.getCause(), e.getCause());
             } finally {
                 exec.shutdownNow();
             }
-            //testing exceptions
-            if (thrown == null) {
-                throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
-                        + " expected " + tc.expectedException() + " but no exception was thrown");
-            }
-            String actualName = thrown.getClass().getSimpleName();
-            if (!actualName.equals(tc.expectedException())) {
-                throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
-                        + " expected " + tc.expectedException() + " but got " + actualName, thrown);
+
+            Object expected = tc.expected();
+            // because collections a bitch i just cast them all to list then compare
+            if (expected instanceof List<?> el && actual instanceof List<?> al) {
+                List<String> exp = new ArrayList<>();
+                for (Object o : el) {
+                    exp.add(String.valueOf(o));
+                }
+                List<String> act = new ArrayList<>();
+                for (Object o : al) {
+                    act.add(String.valueOf(o));
+                }
+                expected = exp;
+                actual = act;
             }
             return;
         }
@@ -341,82 +393,73 @@ private void runTestCase(String className, MethodSpec spec, TestCase tc,
             exec.shutdownNow();
         }
 
-        Object expected = tc.expected();
-        //because collections a bitch i just cast them all to list then compare
-        if (expected instanceof List<?> el && actual instanceof List<?> al) {
-            List<String> exp = new ArrayList<>();
-            for (Object o : el) {exp.add(String.valueOf(o));}
-            List<String> act = new ArrayList<>();
-            for (Object o : al) {act.add(String.valueOf(o));}
-            expected = exp;
-            actual = act;
+            assertEquals(expected, actual,
+                    className + "." + spec.methodName() + " failed on " + tc.label());
+        } finally {
+            cleanupCopiedFiles(copiedFiles);
         }
-
-        assertEquals(expected, actual,
-                className + "." + spec.methodName() + " failed on " + tc.label());
-    } finally {
-        cleanupCopiedFiles(copiedFiles);
     }
-}
-//try compile, if cant compile all java, compile all again without said fail java 
-private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles, Path questionDir) throws Exception {
-    DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-    boolean success;
+
+    // try compile, if cant compile all java, compile all again without said fail
+    // java
+    private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles, Path questionDir)
+            throws Exception {
+        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+        boolean success;
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
             fileManager.setLocation(
                     javax.tools.StandardLocation.CLASS_PATH,
-                    List.of(questionDir.toFile())
-            );      Iterable<? extends JavaFileObject> compilationUnits =
-                    fileManager.getJavaFileObjectsFromStrings(
-                            sourceFiles.stream().map(Path::toString).toList());
+                    List.of(questionDir.toFile()));
+            Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromStrings(
+                    sourceFiles.stream().map(Path::toString).toList());
             JavaCompiler.CompilationTask task = compiler.getTask(
                     null, fileManager, diagnostics, null, null, compilationUnits);
             success = task.call();
         }
 
-    Map<String, List<String>> errorsByFile = new HashMap<>();
-    for (Diagnostic<? extends JavaFileObject> d : diagnostics.getDiagnostics()) {
-        if (d.getSource() == null) continue;
-        String fileName = Paths.get(d.getSource().toUri()).getFileName().toString();
-        errorsByFile.computeIfAbsent(fileName, k -> new ArrayList<>()).add(d.toString());
+        Map<String, List<String>> errorsByFile = new HashMap<>();
+        for (Diagnostic<? extends JavaFileObject> d : diagnostics.getDiagnostics()) {
+            if (d.getSource() == null)
+                continue;
+            String fileName = Paths.get(d.getSource().toUri()).getFileName().toString();
+            errorsByFile.computeIfAbsent(fileName, k -> new ArrayList<>()).add(d.toString());
         }
 
-    return new CompileAttempt(success, errorsByFile);
-}
-
-
+        return new CompileAttempt(success, errorsByFile);
+    }
 
     private List<Path> copyResourceFilesToWorkingDir(Path questionDir) throws Exception {
         Path workingDir = Paths.get("").toAbsolutePath();
         List<Path> copiedPaths = new ArrayList<>();
 
         List<Path> resourceFiles;
-        //basically copy all that is not java or class
-        try (Stream<Path> stream = Files.list(questionDir)) { 
+        // basically copy all that is not java or class
+        try (Stream<Path> stream = Files.list(questionDir)) {
             resourceFiles = stream
-                    .filter(Files::isRegularFile)                        
+                    .filter(Files::isRegularFile)
                     .filter(p -> !p.toString().endsWith(".java"))
-                    .filter(p -> !p.toString().endsWith(".class"))        
+                    .filter(p -> !p.toString().endsWith(".class"))
                     .toList();
         }
 
         try {
             for (Path src : resourceFiles) {
                 Path dest = workingDir.resolve(src.getFileName());
-                if (Files.exists(dest)) {                                 
+                if (Files.exists(dest)) {
                     throw new IllegalStateException("Refusing to overwrite existing file in working dir: " + dest);
                 }
                 Files.copy(src, dest);
                 copiedPaths.add(dest);
-                
+
             }
-        } catch (IOException | IllegalStateException e) {                                          
+        } catch (IOException | IllegalStateException e) {
             cleanupCopiedFiles(copiedPaths);
             throw e;
         }
-    return copiedPaths;
+        return copiedPaths;
     }
-    //cleanup after each test case run to prevent contaminatioon
+
+    // cleanup after each test case run to prevent contaminatioon
     private void cleanupCopiedFiles(List<Path> copiedFiles) {
         for (Path p : copiedFiles) {
             for (int attempt = 0; attempt < 3; attempt++) {
@@ -424,8 +467,16 @@ private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles,
                     Files.deleteIfExists(p);
                     break;
                 } catch (Exception e) {
-                    if (attempt == 2) System.err.println("WARNING: could not delete " + p + ": " + e);
-                    else { System.gc(); try { Thread.sleep(50); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); } }
+                    if (attempt == 2)
+                        System.err.println("WARNING: could not delete " + p + ": " + e);
+                    else {
+                        System.gc();
+                        try {
+                            Thread.sleep(50);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
                 }
             }
         }

@@ -18,8 +18,8 @@ public class MainCtrl {
         return configDAO.getStartingFolder();
     }
 
-    public File getTestersFolder() {
-        return configDAO.getTestersFolder();
+    public File getTestersFile() {
+        return configDAO.getTestersFile();
     }
 
     public File getScoresheetFile() {
@@ -43,7 +43,7 @@ public class MainCtrl {
     }
 
     public Config getConfig() {
-        return new Config(getStartingFolder(), getTestersFolder(), getScoresheetFile(), getTimeoutSeconds(), getOutputLimitBytes());
+        return new Config(getStartingFolder(), getTestersFile(), getScoresheetFile(), getTimeoutSeconds(), getOutputLimitBytes());
     }
 
 
@@ -53,7 +53,7 @@ public class MainCtrl {
 
     public boolean saveConfig(File startingFolder, File testers, File scoresheet) {
         configDAO.setStartingFolder(startingFolder);
-        configDAO.setTestersFolder(testers);
+        configDAO.setTestersFile(testers);
         configDAO.setScoresheetFile(scoresheet);
 
         return configDAO.save();
