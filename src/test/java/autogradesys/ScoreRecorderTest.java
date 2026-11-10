@@ -45,26 +45,61 @@ class ScoreRecorderTest {
         assertTrue(reporter.records().isEmpty(), reporter.records().toString());
     }
 
-    // Input: None (a GradeResult is built inside the test)
-    // Function: Checks that exportResults writes username, questions, final_score and the % full marks row
-    // Output: Passes if the exported CSV matches
+    // Input: None (a GradeResult with 5 students and 5 sub-questions is built inside the test)
+    // Function: Checks that exportResults writes username, the sub-question columns (sorted),
+    //           final_score and the % full marks row, including a student with a missing sub-question
+    // Output: Passes if the exported CSV matches exactly
     @Test
     void exportResultsWritesTheResultsCsv() throws IOException {
-        // alice gets full marks on both questions, bob only on Q2. Q1 is worth 3 marks, Q2 is worth 1.
+        // How many marks each sub-question is worth (one mark per tester).
+        Map<String, Integer> worth = new LinkedHashMap<>();
+        worth.put("Q1a", 3);
+        worth.put("Q1b", 2);
+        worth.put("Q2a", 4);
+        worth.put("Q2b", 1);
+        worth.put("Q3", 5);
+
+        // Marks each student earned: 
         Map<String, Map<String, Integer>> scores = new LinkedHashMap<>();
-        scores.put("alice", Map.of("Q1", 3, "Q2", 1));
-        scores.put("bob", Map.of("Q1", 1, "Q2", 1));
-        GradeResult result = new GradeResult(2, 0, false, scores, Map.of("Q1", 3, "Q2", 1));
+        scores.put("chee.teo.2022", marks(3, 2, 4, 1, 5));
+        scores.put("jing.lim.2021", marks(1, 0, 4, 1, 2));
+        Map<String, Integer> david = marks(3, 2, 0, 0, 0);
+        david.remove("Q3");
+        scores.put("david.2024", david);
+        scores.put("ann.tan.2023", marks(3, 2, 2, 0, 4));
+        scores.put("ben.ng.2023", marks(0, 0, 0, 0, 0));
+
+        GradeResult result = new GradeResult(scores.size(), 0, false, scores, worth);
 
         Path file = ScoreRecorder.exportResults(result);
         try {
-            assertEquals("username,\"Q1\",\"Q2\",final_score\r\n"
-                    + "\"alice\",3,1,4\r\n"
-                    + "\"bob\",1,1,2\r\n"
-                    + "\"% full marks\",50.0%,100.0%,\r\n", Files.readString(file));
+            // Full marks per sub-question, out of 5 students:
+            // Q1a: chee, david, ann = 3 -> 60.0%   Q1b: chee, david, ann = 3 -> 60.0%
+            // Q2a: chee, jing       = 2 -> 40.0%   Q2b: chee, jing       = 2 -> 40.0%
+            // Q3:  chee             = 1 -> 20.0%
+            assertEquals("username,\"Q1a\",\"Q1b\",\"Q2a\",\"Q2b\",\"Q3\",final_score\r\n"
+                    + "\"chee.teo.2022\",3,2,4,1,5,15\r\n"
+                    + "\"jing.lim.2021\",1,0,4,1,2,8\r\n"
+                    + "\"david.2024\",3,2,0,0,0,5\r\n"
+                    + "\"ann.tan.2023\",3,2,2,0,4,11\r\n"
+                    + "\"ben.ng.2023\",0,0,0,0,0,0\r\n"
+                    + "\"% full marks\",60.0%,60.0%,40.0%,40.0%,20.0%,\r\n", Files.readString(file));
         } finally {
-            // The export lands in the current folder, so remove it after checking.
             Files.deleteIfExists(file);
         }
+    }
+
+    // Input: one student's marks for Q1a, Q1b, Q2a, Q2b and Q3
+    // Function: builds that student's marks map. Q3 is put in first on purpose, so the test
+    //           also checks that the export sorts the columns into Q1a, Q1b, Q2a, Q2b, Q3.
+    // Output: the map, e.g. {"Q3" -> 5, "Q1a" -> 3, "Q1b" -> 2, "Q2a" -> 4, "Q2b" -> 1}
+    private static Map<String, Integer> marks(int q1a, int q1b, int q2a, int q2b, int q3) {
+        Map<String, Integer> result = new LinkedHashMap<>();
+        result.put("Q3", q3);
+        result.put("Q1a", q1a);
+        result.put("Q1b", q1b);
+        result.put("Q2a", q2a);
+        result.put("Q2b", q2b);
+        return result;
     }
 }
