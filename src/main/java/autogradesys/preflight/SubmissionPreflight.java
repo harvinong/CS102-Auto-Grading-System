@@ -713,10 +713,11 @@ public final class SubmissionPreflight {
         return Files.isDirectory(dir, LinkOption.NOFOLLOW_LINKS);
     }
 
-    // Names we ignore: hidden files, macOS resource folders and compiled classes.
+    // Names we ignore: hidden files and macOS resource folders.
+    // .class files are deliberately NOT ignored because they may be required
+    // by the grading algorithm and are part of the Starting Folder template.
     private static boolean isJunk(String name) {
-        // Hidden (leading dot), the macOS __MACOSX folder, or a compiled .class file.
-        return name.startsWith(".") || name.equals("__MACOSX") || name.endsWith(".class");
+        return name.startsWith(".") || name.equals("__MACOSX");
     }
 
     // True for .zip names in any letter case.
