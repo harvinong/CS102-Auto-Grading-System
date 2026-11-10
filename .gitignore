@@ -34,5 +34,6 @@ cache/
 # Generated grading run reports
 *.html
 *.jsonl
+*.csv
 demo/target/run/grading-report.html
 demo/output-limit/target/grading-report.html
