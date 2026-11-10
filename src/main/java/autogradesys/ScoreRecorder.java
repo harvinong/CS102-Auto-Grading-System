@@ -18,6 +18,14 @@ public class ScoreRecorder {
     private static final int PASSED = 0; // The first element of the int[] is the number of passed test cases.
     private static final int TOTAL = 1; // The second element of the int[] is the number of test cases run.
 
+    // Input: the scoresheet file, the scores (student -> sub-question -> marks), and the error reporter.
+    // Function: Merges the scores into the existing scoresheet. JavaGrader calls this after grading.
+    // Output: true if the scoresheet was updated, false if something went wrong.
+    public static boolean recordScores(Path scoresheet, Map<String, Map<String, Integer>> scores,
+            autogradesys.grading.ErrorReporter reporter) {
+        return autogradesys.grading.CsvScoresheet.update(scoresheet, scores, reporter);
+    }
+
     // Input: Map<String, int[]> from the grader's PerStudentListener (GradingEntry.java).
     //        Keys are paths: "student", "student > Q1" or "student > Q1 > Q1a".
     //        Values are {passed, total}. Each passed test case is worth one mark.

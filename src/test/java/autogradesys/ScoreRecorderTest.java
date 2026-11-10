@@ -1,11 +1,49 @@
 package autogradesys;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException; // The error raised if the CSV file cannot be saved
+import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.Path; // Represents the location of the saved CSV file
 import java.util.LinkedHashMap; // A map that remembers the order items were added
 import java.util.Map; // Key -> value lookup table
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import autogradesys.grading.ErrorHistory;
+import autogradesys.grading.ErrorReporter;
+
 /** Checks the ScoreRecorder entry point that live grading (JavaGrader) uses to save marks. */
 class ScoreRecorderTest {
+    // Fresh temp folder per test, so no real scoresheet is touched.
+    @TempDir
+    Path dir;
+
+    // Input: None (a small scoresheet and scores are built inside the test)
+    // Function: Checks that the method JavaGrader calls writes each mark into the right row and column
+    // Output: Passes if the CSV matches and no errors were reported
+    @Test
+    void liveGradingEntryPointWritesMarksIntoTheScoresheet() throws IOException {
+        // A scoresheet in the documented format: a student column and one column per question.
+        Path scoresheet = Files.writeString(dir.resolve("scores.csv"), "student,Q1,Q2\nalice,,\nbob,,\n");
+        ErrorReporter reporter = new ErrorReporter(new ErrorHistory(dir.resolve("history.jsonl")),
+                new PrintStream(new ByteArrayOutputStream()));
+        // Marks per student and question, as JavaGrader collects them.
+        Map<String, Map<String, Integer>> scores = new LinkedHashMap<>();
+        scores.put("alice", Map.of("Q1", 2, "Q2", 1));
+        scores.put("bob", Map.of("Q1", 0, "Q2", 2));
+
+        assertTrue(ScoreRecorder.recordScores(scoresheet, scores, reporter));
+
+        // Each mark lands in its student's row and question's column, and nothing went wrong.
+        assertEquals("student,Q1,Q2\nalice,2,1\nbob,0,2\n", Files.readString(scoresheet));
+        assertTrue(reporter.records().isEmpty(), reporter.records().toString());
+    }
+
     // Input: None (sample results are built inside the method)
     // Function: Builds sample results in the grader's format and writes them to a CSV with ScoreRecorder
     // Output: Prints the path of the created CSV file, or an error message if it could not be saved
