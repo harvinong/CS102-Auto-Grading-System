@@ -1,0 +1,30 @@
+package autogradesys.submission;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+public final class TestZips {
+    public static final String SAMPLE_CONTENT = "sample content";
+
+    private TestZips() {
+    }
+
+    public static Path create(Path zipPath, String... entryNames) throws IOException {
+        try (OutputStream out = Files.newOutputStream(zipPath);
+                ZipOutputStream zip = new ZipOutputStream(out)) {
+            for (String name : entryNames) {
+                zip.putNextEntry(new ZipEntry(name));
+                if (!name.endsWith("/")) {
+                    zip.write(SAMPLE_CONTENT.getBytes(StandardCharsets.UTF_8));
+                }
+                zip.closeEntry();
+            }
+        }
+        return zipPath;
+    }
+}

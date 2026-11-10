@@ -4,6 +4,7 @@ import java.nio.file.Path; // Represents the location of the saved CSV file
 import java.util.LinkedHashMap; // A map that remembers the order items were added
 import java.util.Map; // Key -> value lookup table
 
+/** Checks the ScoreRecorder entry point that live grading (JavaGrader) uses to save marks. */
 class ScoreRecorderTest {
     // Input: None (sample results are built inside the method)
     // Function: Builds sample results in the grader's format and writes them to a CSV with ScoreRecorder

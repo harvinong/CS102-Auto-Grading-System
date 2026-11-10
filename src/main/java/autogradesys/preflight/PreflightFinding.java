@@ -1,5 +1,7 @@
 package autogradesys.preflight;
 
+import autogradesys.cli.TextColor;
+
 /**
  * One thing the preflight noticed about a submission.
  *
@@ -12,6 +14,7 @@ package autogradesys.preflight;
  * @param fix      What the instructor or student can do about it; empty when nothing is needed.
  */
 // A record is an immutable value holder: Java generates the constructor, getters and equals for us.
+// Describes one submission or setup defect found before compilation begins.
 public record PreflightFinding(
         // Which submission this belongs to ("" means it is about the whole run, not one student).
         String student,
@@ -57,7 +60,9 @@ public record PreflightFinding(
         // A folder that could not be read (permissions and similar).
         UNREADABLE,
         // Harmless clutter such as .DS_Store, __MACOSX or .class files.
-        IGNORED_JUNK
+        IGNORED_JUNK,
+        // A folder name that is not a registered username but is close to one (probably a typo).
+        USERNAME_TYPO
     }
 
     /** FATAL stops the whole check, ERROR needs attention, WARNING is worth a look, NOTE is information. */
@@ -70,5 +75,29 @@ public record PreflightFinding(
         WARNING,
         // Information only.
         NOTE
+    }
+
+    /**<p>
+     * Get a tag like "  [CATEGORY] " (padded with spaces)
+     * applied with TextColor based on its severity:
+     * </p>
+     * - NOTE is applied with TextColor.INFO;
+     * - WARNING is applied with TextColor.WARNING;
+     * - ERROR and FATAL is applied with TextColor.ERROR;
+     */
+    public String getTagWithColor() {
+        TextColor color;
+        switch (this.severity()) {
+            case NOTE:
+                color = TextColor.INFO;
+                break;
+            case WARNING:
+                color = TextColor.WARNING;
+                break;
+            default:
+                color = TextColor.ERROR;
+                break;
+        }
+        return color.getActionTag("" + this.category());
     }
 }
