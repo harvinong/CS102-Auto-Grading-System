@@ -49,7 +49,7 @@ public final class JavaGrader {
      * @param questionsRoot directory containing question fixtures
      * @param scoresheet CSV file to update, or {@code null} to report a fatal setup error
      * @param timeout maximum duration for each compile or execution process
-     * @param outputLimitBytes TODO: document outputLimitBytes
+     * @param outputLimitBytes maximum limit of characters written to the standard output and error stream.
      * @param reporter destination for recoverable and fatal diagnostics
      * @return counts, scores, and fatal status for the grading session
      */

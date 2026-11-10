@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,7 +13,7 @@ public class Is442Test extends QuestionTests {
 
     @Override
     public Map<String, MethodSpec> getSpecs() {
-        Map<String, MethodSpec> thingMap = new HashMap<>();
+        Map<String, MethodSpec> thingMap = new LinkedHashMap<>();
 
         thingMap.put("q1a", new MethodSpec(
             "getIsogramWords",

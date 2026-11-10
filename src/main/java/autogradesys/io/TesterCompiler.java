@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,7 +24,7 @@ import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 
-import autogradesys.Feline;
+import autogradesys.tester.QuestionTests;
 import autogradesys.cli.TextColor;
 
 public class TesterCompiler {
@@ -37,8 +36,10 @@ public class TesterCompiler {
     private static final String DEST_PATH = "classes";
     private static final String[] CLASS_PATHS = recurseLib();
     private final JavaCompiler sysJavaCompiler;
+    private final File testerFile;
 
-    public TesterCompiler() throws CompilerNotFoundException {
+    public TesterCompiler(File testerFile) throws CompilerNotFoundException {
+        this.testerFile = testerFile;
         sysJavaCompiler = ToolProvider.getSystemJavaCompiler();
         if (sysJavaCompiler == null) {
             throw new CompilerNotFoundException();
@@ -46,7 +47,7 @@ public class TesterCompiler {
         System.out.println(TextColor.SUCCESS.getActionTag() + " compiler ready 👍");
     }
 
-    public CompileAttempt compile(File testerFile) {
+    public CompileAttempt compile() {
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         boolean success = false;
         try (StandardJavaFileManager fileManager = sysJavaCompiler.getStandardFileManager(diagnostics, null, null)) {
@@ -76,13 +77,13 @@ public class TesterCompiler {
         return new CompileAttempt(success, errorsByFile);
     }
 
-    public Feline getFeline() {
+    public QuestionTests getQuestionTests() {
         try {
             URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { (new File(DEST_PATH)).toURI().toURL() });
-            Class<?> cls = Class.forName("Kruz", true, classLoader);
+            Class<?> cls = Class.forName(testerFile.getName().substring(0, ".java".length()), true, classLoader);
             Object instance = cls.getDeclaredConstructor().newInstance();
             System.out.println(TextColor.INFO.getActionTag() + " instancing done");
-            return (Feline) instance;
+            return (QuestionTests) instance;
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
             | InvocationTargetException | NoSuchMethodException e) {
             e.printStackTrace();            
@@ -106,12 +107,12 @@ public class TesterCompiler {
 
     public static void main(String[] args) {
         System.out.println(TextColor.INFO.getActionTag() + " Working on " + System.getProperty("user.dir"));
-        File tf = new File("../sandbox/Kruz.java");
-        try (Scanner sc = new Scanner(System.in)) {
-            TesterCompiler tc = new TesterCompiler();
+        File tf = new File("demo/Is442Test.java");
+        try {
+            TesterCompiler tc = new TesterCompiler(tf);
 
             if (args.length != 1 || !args[0].equals("--run")) {
-                TesterCompiler.CompileAttempt status = tc.compile(tf);
+                TesterCompiler.CompileAttempt status = tc.compile();
     
                 if (status.success()) {
                     System.out.print(TextColor.SUCCESS.getActionTag());
@@ -120,16 +121,6 @@ public class TesterCompiler {
                 }
                 System.out.println(" Number of failed compile: " + status.errorsByFile().size());
 
-            }
-            sc.nextLine();
-            // Instantiate
-            Feline kruz = tc.getFeline();
-            if (kruz == null) {
-                System.out.print(TextColor.ERROR.getActionTag());
-                System.out.println(" Can't get Kruz :(");
-            } else {
-                System.out.print(TextColor.SUCCESS.getActionTag());
-                kruz.meow("Hi");
             }
             
         } catch (CompilerNotFoundException | CompileException e) {
