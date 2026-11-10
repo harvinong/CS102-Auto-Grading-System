@@ -1,4 +1,4 @@
-package autogradesys;
+package autogradesys.tester;
 
 import java.lang.instrument.Instrumentation;
 

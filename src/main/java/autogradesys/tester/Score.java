@@ -1,4 +1,4 @@
-package autogradesys;
+package autogradesys.tester;
 
 public record Score(int scored, int total) {
     @Override

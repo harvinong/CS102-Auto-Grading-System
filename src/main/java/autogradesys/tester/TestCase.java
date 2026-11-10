@@ -1,4 +1,4 @@
-package autogradesys;
+package autogradesys.tester;
 
 public record TestCase(String label, Object[] args, Object expected, String expectedException) {
 

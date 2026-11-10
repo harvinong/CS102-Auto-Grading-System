@@ -1,4 +1,4 @@
-package autogradesys;
+package autogradesys.tester;
 
 // java
 import java.io.IOException;
@@ -38,8 +38,9 @@ import autogradesys.controller.MainCtrl;
 
 public class StudentFileExec {
 
-    // label is test case name (preferably function call in string) args is args, expected is expected output.
-    
+    // label is test case name (preferably function call in string) args is args,
+    // expected is expected output.
+
     MainCtrl mc = new MainCtrl();
 
     record CompileAttempt(boolean success, Map<String, List<String>> errorsByFile) {
@@ -57,7 +58,8 @@ public class StudentFileExec {
 
     // PLEASE FOLLOW ACCORDINGLY
     private static final Map<String, MethodSpec> SPECS_BY_CLASS = QuestionTests.getSPECS_BY_CLASS();
-    //entry point from GradingEntry
+
+    // entry point from GradingEntry
     @TestFactory
     Stream<DynamicNode> testAllSubmissions() throws Exception {
         Path submissionsRoot = Paths.get(mc.getStartingFolder().getPath());
@@ -225,15 +227,18 @@ public class StudentFileExec {
     }
 
     // each test case within the subquestion yes
-    //dynamicnode cos its what junit thing is for test generated at runtime like instead of @test function {} or whatever
-private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLClassLoader loader, Path questionDir) {
+    // dynamicnode cos its what junit thing is for test generated at runtime like
+    // instead of @test function {} or whatever
+    private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLClassLoader loader,
+            Path questionDir) {
         MethodSpec spec = SPECS_BY_CLASS.get(className);
-    if (spec == null) {
-        return Stream.of(DynamicTest.dynamicTest(
-                "No spec defined for " + className,
-                () -> { throw new AssertionError("No SPECS_BY_CLASS entry for: " + className); }
-        ));
-    }
+        if (spec == null) {
+            return Stream.of(DynamicTest.dynamicTest(
+                    "No spec defined for " + className,
+                    () -> {
+                        throw new AssertionError("No SPECS_BY_CLASS entry for: " + className);
+                    }));
+        }
 
         try {
             Class<?> studentClass = Class.forName(className, true, loader);
@@ -313,7 +318,7 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
                 });
                 try {
                     Future<Object> future = exec.submit(() -> method.invoke(freshInstance, realArgs));
-                    future.get(5, TimeUnit.SECONDS); // after 5s
+                    future.get(mc.getTimeoutSeconds(), TimeUnit.SECONDS); // after 5s
                 } catch (TimeoutException e) {
                     throw new AssertionError(className + "." + spec.methodName() + "on" + tc.label() + "timed out");
                 } catch (ExecutionException e) {
@@ -343,10 +348,15 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
                 return d;
             });
             try {
-                Future<Object> future = exec.submit(() -> method.invoke(freshInstance,realArgs));
-                future.get(mc.getTimeoutSeconds(),TimeUnit.SECONDS); //after 5s
-            } catch (TimeoutException e) {
-                throw new AssertionError(className + "." + spec.methodName() + "on" + tc.label() + "timed out");
+                Future<Object> future = exec.submit(() -> method.invoke(freshInstance, realArgs));
+                actual = future.get(mc.getTimeoutSeconds(), TimeUnit.SECONDS);
+                if (SizeObject.getObjectSize(actual) > mc.getOutputLimitBytes()) {
+                    throw new AssertionError(
+                            className + "." + spec.methodName() + " on " + tc.label() + " returned too big.");
+                }
+            } catch (TimeoutException t) {
+                throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label() + " timed out (5s)");
+
             } catch (ExecutionException e) {
                 throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
                         + " threw " + e.getCause(), e.getCause());
@@ -368,30 +378,6 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
                 expected = exp;
                 actual = act;
             }
-            return;
-        }
-        //value for value testing
-        Object actual;
-        ExecutorService exec = Executors.newSingleThreadExecutor(r -> {
-            Thread d = new Thread(r, "studentgrading");
-            d.setDaemon(true);
-            return d;
-        });
-        try {
-            Future<Object> future = exec.submit(() -> method.invoke(freshInstance,realArgs));
-            actual = future.get(mc.getTimeoutSeconds(),TimeUnit.SECONDS);
-            if (SizeObject.getObjectSize(actual) > mc.getOutputLimitBytes()) {
-                throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label() + " returned too big.");
-            }
-        } catch (TimeoutException t) {
-            throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label() + " timed out (5s)");
-        
-        } catch (ExecutionException e) {
-            throw new AssertionError(className + "." + spec.methodName() + " on " + tc.label()
-                    + " threw " + e.getCause(), e.getCause());
-        } finally {
-            exec.shutdownNow();
-        }
 
             assertEquals(expected, actual,
                     className + "." + spec.methodName() + " failed on " + tc.label());

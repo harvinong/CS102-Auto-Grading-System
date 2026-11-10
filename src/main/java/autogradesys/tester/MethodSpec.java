@@ -1,4 +1,4 @@
-package autogradesys;
+package autogradesys.tester;
 
 
 import java.util.List;
