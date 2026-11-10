@@ -228,6 +228,14 @@ public class GraderMenu {
             // Explain why no report was produced instead of crashing the menu.
             System.out.println("Could not write HTML report: " + exception.getMessage());
         }
+        // Also export the results in ScoreRecorder's format (username, questions, final_score, % full marks).
+        try {
+            java.nio.file.Path exported = autogradesys.ScoreRecorder.exportResults(result);
+            System.out.println("Score export: " + exported.toAbsolutePath());
+        } catch (java.io.IOException exception) {
+            // The scoresheet was already updated by the grader, so only show a message.
+            System.out.println("Could not export scores: " + exception.getMessage());
+        }
         // Final one-line summary: students graded and total issues recorded (fatal or not).
         System.out.printf("%s Completed: %d submission(s), %d reported issue(s).%n%n",
                 TextColor.INFO.getActionTag(), result.studentCount(), result.issueCount());
