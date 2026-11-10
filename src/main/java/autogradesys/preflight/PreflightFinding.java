@@ -62,7 +62,7 @@ public record PreflightFinding(
         // Harmless clutter such as .DS_Store, __MACOSX or .class files.
         IGNORED_JUNK,
         // A folder name that is not a registered username but is close to one (probably a typo).
-        USERNAME_TYPO
+        USERNAME_TYPO, MISSING_HEADER, INCOMPLETE_HEADER
     }
 
     /** FATAL stops the whole check, ERROR needs attention, WARNING is worth a look, NOTE is information. */
