@@ -32,27 +32,11 @@ import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
+
 public class StudentFileExec {
 
     // label is test case name (preferably function call in string) args is args, expected is expected output.
-    record TestCase(String label, Object[] args, Object expected, String expectedException) {
-
-    // use for object or value return
-    static TestCase expectValue(String label, Object[] args, Object expected) {
-        return new TestCase(label, args, expected, null);
-    }
-  
-    // use for testing exceptions
-    static TestCase expectException(String label, Object[] args,String expectedExceptionName) {
-        return new TestCase(label, args, null, expectedExceptionName);
-    }
-}
-    // Describes "new <className>(<args>)"  im so sorry....
-    record ObjSpec(String className, Object... ctorArgs) {}
-
     
-    // method name like (compareShape, IsIsogramWord, ...) paramTypes is what type of parameter it is expected. testCases is the testcases it will be put against
-    record MethodSpec(String methodName, Class<?>[] paramTypes, List<TestCase> testCases) {}
 
     record CompileAttempt(boolean success, Map<String, List<String>> errorsByFile) {}
 
@@ -66,78 +50,7 @@ public class StudentFileExec {
     }
 }
     // PLEASE FOLLOW ACCORDINGLY
-    private static final Map<String, MethodSpec> SPECS_BY_CLASS = Map.of(
-
-    /*
-            "NAME OF .JAVA FILE", new MethodSpec(
-                    "METHOD NAME TO TEST",
-                    new Class<?>[]{TYPES OF PARAM FOR METHOD.class, ... ...},
-                    List.of(
-                        TestCase.expectValue (for non exception testing) (label, new Object[]{ARGUMENTS GO HERE}, EXPECTD REUSLT)
-                        TestCase.expectException (for exception results) (label, new Object[]{ARGUMENTS GO HERE}, EXPECTD ExcepTION)
-                    )
-            )
-    
-    */
-            "Q1a", new MethodSpec(
-                    "getIsogramWords",
-                    new Class<?>[]{ ArrayList.class},
-                    List.of(
-                            TestCase.expectValue("getIsogramWords(alice,ben,cathy)",   new Object[]{new ArrayList<>(Arrays.asList("alice","ben","cathy"))},  new ArrayList<>(Arrays.asList("alice","ben","cathy"))),
-                            TestCase.expectValue("getIsogramWords(ellen, alan, zoe)", new Object[]{new ArrayList<>(Arrays.asList("ellen","alan","zoe"))}, new ArrayList<>(Arrays.asList("zoe"))),
-                            TestCase.expectValue("getIsogramWords(Elle,alan,Daniel,Canny)", new Object[]{new ArrayList<>(Arrays.asList("Elle","alan","Daniel","Canny"))}, new ArrayList<>(Arrays.asList("Daniel")))
-                    )
-            ),
-
-            "Q1b", new MethodSpec(
-                    "getSumOfEvenIntegers",
-                    new Class<?>[]{ ArrayList.class },
-                    List.of(
-                            TestCase.expectValue("func(2,4)", new Object[]{new ArrayList<>(Arrays.asList(2,4))}, 6),
-                            TestCase.expectValue("func(2,false,4.0,'two')", new Object[]{new ArrayList<>(Arrays.asList(2,false,4.0,"two"))}, 2),
-                            TestCase.expectValue("func(9,2,10,3,5,8)", new Object[]{new ArrayList<>(Arrays.asList(9,2,10,3,5,8))}, 20)
-                    )
-            ),
-
-            "Q2a", new MethodSpec(
-                    "getAverageAge",
-                    new Class<?>[]{ String.class, String.class },
-                    List.of(
-                            TestCase.expectValue("(is442.txt,LEE)", new Object[]{"is442.txt", "LEE"}, -1.0),
-                            TestCase.expectValue("(persontester.txt,TAY)", new Object[]{"personstester.txt", "TAY"}, 30.0),
-                            TestCase.expectValue("(persontester.txt,LEE)", new Object[]{"personstester.txt", "LEE"}, 37.0),
-                            TestCase.expectValue("(persontester.txt,Wong)", new Object[]{"personstester.txt", "Wong"}, 26.0),
-                            TestCase.expectValue("(persontester.txt,Ong)", new Object[]{"personstester.txt", "Ong"}, 0.0)
-
-                    )
-            ),
-            "Q2b", new MethodSpec(
-                    "getTopStudent",
-                    new Class<?>[]{ String.class, String.class },
-                    List.of(
-                            TestCase.expectException("IS442", new Object[]{"is442.txt", "IS101"}, "DataException"),
-                            TestCase.expectException("SMU101", new Object[]{"studentstester.txt", "SMU101"}, "DataException"),
-                            TestCase.expectValue("CS101", new Object[]{"studentstester.txt","CS101"}, "LEE Teck Yang-4.0"),
-                            TestCase.expectValue("CS102", new Object[]{"studentstester.txt", "CS102"}, "Jason LEE-4.0"),
-                            TestCase.expectValue("CS103", new Object[]{"studentstester.txt", "CS103"}, "TAY Evelyn-4.0")
-
-                    )
-            ),
-            "Q3", new MethodSpec(
-                "sortShapes",
-                 new Class<?>[]{List.class},
-                 List.of(
-                        TestCase.expectValue("test1", new Object[]{new ArrayList<>(Arrays.asList(
-                            new ObjSpec("Rectangle", "R1", 10, 2),
-                            new ObjSpec("Rectangle", "R2", 5, 3),
-                            new ObjSpec("Rectangle", "R3", 20, 3),
-                            new ObjSpec("Rectangle", "R4", 500, 3)
-                            ))}, List.of("R3=>60.0:46.0", "R1=>20.0:24.0", "R2=>15.0:16.0"))
-                 )
-                 )
-
-            // ... one entry per sub-question
-    );
+    private static final Map<String, MethodSpec> SPECS_BY_CLASS = QuestionTests.getSPECS_BY_CLASS();
     //entry point from GradingEntry
     @TestFactory
     Stream<DynamicNode> testAllSubmissions() throws Exception {
@@ -299,7 +212,7 @@ private DynamicNode buildOneSubQuestionContainer(Path javaFile, Path questionDir
     // each test case within the subquestion yes
     //dynamicnode cos its what junit thing is for test generated at runtime like instead of @test function {} or whatever
 private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLClassLoader loader, Path questionDir) {
-    MethodSpec spec = SPECS_BY_CLASS.get(className);
+        MethodSpec spec = SPECS_BY_CLASS.get(className);
     if (spec == null) {
         return Stream.of(DynamicTest.dynamicTest(
                 "No spec defined for " + className,

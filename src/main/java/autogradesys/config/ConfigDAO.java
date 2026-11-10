@@ -25,7 +25,7 @@ public class ConfigDAO {
 
     // The file this instance reads and writes; the default constructor points it at ./config.json.
     private final File configFile;
-
+    
     private File startingFolder;
     private File testersFolder;
     private File scoresheetFile;

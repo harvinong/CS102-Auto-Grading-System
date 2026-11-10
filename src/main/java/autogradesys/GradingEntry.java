@@ -1,8 +1,5 @@
 package autogradesys;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,7 +16,7 @@ import org.junit.platform.launcher.TestPlan;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
 
-class PerStudentListener implements TestExecutionListener {
+class PerStudentListener implements TestExecutionListener { //listens to the test's execution
 
     // Key = full path like "2023-2024-chee.teo.2022 > Q2 > Q2b"
     // Value = [passed, total]
@@ -28,7 +25,7 @@ class PerStudentListener implements TestExecutionListener {
 
     @Override
     public void testPlanExecutionStarted(TestPlan testPlan) {
-        this.testPlan = testPlan;
+        this.testPlan = testPlan; //this is just a callback that has the whole tree of what to run where what where why whatever
     }
 
     @Override
@@ -59,60 +56,22 @@ class PerStudentListener implements TestExecutionListener {
         }
     }
 
-    public static Map<String, Map<String, String>> getSubQuestionScoresByStudent(Map<String, int[]> scores) {
-    Map<String, Map<String, String>> result = new LinkedHashMap<>();
+    public static Map<String, Map<String, Score>> getSubQuestionScoresByStudent(Map<String, int[]> scores) {
+    Map<String, Map<String, Score>> result = new LinkedHashMap<>();
 
     for (Map.Entry<String, int[]> entry : scores.entrySet()) {
         String[] parts = entry.getKey().split(" > ");
+        if (parts.length != 5) continue;            // sub-question depth only
 
-        // Only keep paths exactly at the sub-question depth (5 segments)
-        if (parts.length != 5) continue;
-
-        String studentName = parts[2];
-        String subQuestionName = parts[4];
         int[] tally = entry.getValue();
-        String scoreStr = tally[0] + "/" + tally[1];
-
-        result.computeIfAbsent(studentName, k -> new LinkedHashMap<>())
-              .put(subQuestionName, scoreStr);
-        }
-
+        result.computeIfAbsent(parts[2], k -> new LinkedHashMap<>())
+              .put(parts[4], new Score(tally[0], tally[1]));
+    }
     return result;
-    }
-    public static void writeScoresToJson(Map<String, int[]> scores, Path outputFile) throws Exception {
-    Map<String, Map<String, String>> studentScores = getSubQuestionScoresByStudent(scores);
-
-    StringBuilder json = new StringBuilder();
-    json.append("{\n");
-
-    int studentIndex = 0;
-    for (Map.Entry<String, Map<String, String>> studentEntry : studentScores.entrySet()) {
-        json.append("  \"").append(escapeJson(studentEntry.getKey())).append("\": {\n");
-
-        int subQIndex = 0;
-        Map<String, String> subScores = studentEntry.getValue();
-        for (Map.Entry<String, String> subEntry : subScores.entrySet()) {
-            json.append("    \"").append(escapeJson(subEntry.getKey())).append("\": \"")
-                .append(escapeJson(subEntry.getValue())).append("\"");
-            subQIndex++;
-            if (subQIndex < subScores.size()) json.append(",");
-            json.append("\n");
-        }
-
-        json.append("  }");
-        studentIndex++;
-        if (studentIndex < studentScores.size()) json.append(",");
-        json.append("\n");
-        }
-
-    json.append("}\n");
-
-    Files.writeString(outputFile, json.toString());
-    }
-
-private static String escapeJson(String s) {
-    return s.replace("\\", "\\\\").replace("\"", "\\\"");
 }
+   
+
+
     private List<String> collectAncestorDisplayNames(TestIdentifier leaf) {
         LinkedList<String> names = new LinkedList<>();
         Optional<TestIdentifier> current = testPlan.getParent(leaf);
@@ -143,26 +102,20 @@ private static String escapeJson(String s) {
 }
 public class GradingEntry {
     
-    public static void main(String[] args) {
+    public static Map<String, Map<String, Score>> runGrading() {
         LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
-                .selectors(DiscoverySelectors.selectClass(StudentFileExec.class))
+                .selectors(DiscoverySelectors.selectClass(StudentFileExec.class)) // finds this class 
                 .build();
 
         Launcher launcher = LauncherFactory.create();
+        PerStudentListener listener = new PerStudentListener();
+        launcher.registerTestExecutionListeners(listener);
+        launcher.execute(request);               // blocks until all tests finish
 
-        PerStudentListener perStudentListener = new PerStudentListener();
-        launcher.registerTestExecutionListeners(perStudentListener);
-        launcher.execute(request);
-
-        System.out.println("=== Per-student scores ===");
-        perStudentListener.printScores();
-        Path outputJson = Paths.get("scores.json"); // written to project root, same working-dir logic as before
-        try {
-            PerStudentListener.writeScoresToJson(perStudentListener.getScores(), outputJson);
-        } catch (Exception e) {
-            // TODO Auto-generated c
-            System.err.println("Cannot generate JSON file");
-        }
-System.out.println("Scores written to: " + outputJson.toAbsolutePath());
+        return PerStudentListener.getSubQuestionScoresByStudent(listener.getScores());
+    }
+    public static void main(String[] args) {
+        Map<String, Map<String, Score>> results = runGrading();
+        results.forEach((student, subs) -> System.out.println(student + " -> " + subs));
     }
 }

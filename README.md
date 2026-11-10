@@ -143,6 +143,15 @@ For each student and each question the grader:
 
 1. first and foremost, tester creates grading skeleton using defined records. `MethodSpec(String methodName, Class<?>[] paramTypes, List<TestCase> testCases)` is used for the skeleton for each method tested. `record TestCase(String label, Object[] args, Object expected, String expectedException)` is used to define each test case. For testing of returned values, `Object expected` is filled in while `expectedException` is null and vice versa. for `expectedException`, exception's simple name is compared with as any custom exception class would be very difficult without pre-knowledge of existing class.
 
+2. there are configs and options that can be parsed into the program, such as maximum timeout, max return value size, csv storage area etc. The program uses Junit's test factory and dynamic nodes for tests compiled at runtime. since actual question files are a few directories down, i make containers to contain each section of it. Firstly each student, gets a top level question container, then a subcontainer (Q1, Q2, etc...) then a subquestion container (Q1a, Q1b, Q2a, etc...) then each class is a container for the test cases provided from the instructor.
+
+3. At the subquestion container, the java files are tried to compile together with all other java or classes (in the case of Objects/exception what not). If it fails, faulted source file is removed and the rest are tried to compile again. After compilation, I start building the test cases.
+
+4. At the start, if the program can not find the stated class that it is testing, it fails an assertionError and aborts. else, it loads the class, gets the method stated in test. if cant find, it fails assertion there too. if it cant instantiate/load it also throws and fails assertion. else, it goes to the dynamic tests.
+
+5. Running the test case. i get the args that is meant for the test, get an instance of the class', then i create a thread with timer and run the test. (to catch any stray code or non-terminating). same thing for exception testing.timeout or invokation error, fails assertion. after student's code is ran, it is passed to assertEquals to compare if they match. finally, resource files are cleaned up before next test begins.
+
+
 1. copies the student's files for that question and that question's testers into a fresh temporary build folder (deleted afterwards);
 2. compiles them together with one bounded `javac` call;
 3. runs each tester with a bounded `java` call (no shell), with the build folder as the working directory so relative names such as `persons.txt` resolve to the student's copy;
