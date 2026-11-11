@@ -1,3 +1,4 @@
+![CS102 Auto-Grading System](./assets/autogradesys-opaque.png)
 # CS102 Auto-Grading System
 
 A local command-line grader for CS102 Java submissions. It compares student programs with instructor tester programs, records marks in a CSV scoresheet, and writes an HTML report. It runs `javac` and `java` directly on the local machine, so use it only with code you trust or in an isolated environment.
@@ -216,3 +217,9 @@ git diff --check
 ```
 
 The checked-in `DemoRunner` class expects a `demo/fixtures` tree and is not the interactive launcher; use the interactive flow above unless those fixture files have been supplied separately.
+
+## Assets Credit
+
+The [big title ASCII art](./assets/title.txt) is generated from [www.asciiart.eu](https://www.asciiart.eu/text-to-ascii-art) With "ANSI Shadow" font and "Box drawing light" border. Everything else ([Welcome message](./assets/welcome.md) and the cat in the title) are self made.
+
+[Libraries](./lib/) used can be found in [pom.xml](./pom.xml).
