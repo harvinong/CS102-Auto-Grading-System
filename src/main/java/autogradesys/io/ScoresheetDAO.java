@@ -412,18 +412,6 @@ public class ScoresheetDAO {
             line += value;
         }
         return line;
- 
-    // Input: A text value to put in the CSV, e.g. a username or sub-question name.
-    // Function: Wraps the value in double quotes and doubles any quotes inside it, so commas cannot
-    //           break the CSV. Same as ScoreRecorder.quote().
-    // Output: The quoted value, e.g. chee"teo becomes "chee""teo".
-    /**
-     * Escapes a value for safe inclusion in a CSV field.
-     * @param value the value to quote or convert.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     */
-    private static String quote(String value) {
-        return "\"" + value.replace("\"", "\"\"") + "\"";
     }
 
     // Input: the full text of a CSV file.

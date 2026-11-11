@@ -244,8 +244,7 @@ public class GraderMenu {
         }
         // Save the marks into a copy of the scoresheet, named with the date and time; the original is not changed.
         try {
-            java.nio.file.Path exported = autogradesys.ScoreRecorder.exportResults(result,
-                    ctrl.config.scoresheetFile().toPath());
+            java.nio.file.Path exported = autogradesys.ScoreRecorder.exportResults(result);
             System.out.println("Score export: " + exported.toAbsolutePath());
         } catch (java.io.IOException exception) {
             // The copy could not be written; the original scoresheet is untouched, so only show a message.
