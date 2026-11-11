@@ -40,7 +40,7 @@ public final class HeaderPreflightCheck {
             "(?im)^[ \\t]*(?:\\*+|//+)?[ \\t]*(?:name|email(?:[ \\t]*id)?)[ \\t]*:");
 
     /**
-     * Creates a header preflight check instance.
+     * Initializes the read-only checker for student source-file headers.
      */
     private HeaderPreflightCheck() {
     }
@@ -110,7 +110,7 @@ public final class HeaderPreflightCheck {
     }
 
     /**
-     * Scan student.
+     * Scans one submission against the expected folder and file layout.
      */
     private static void scanStudent(
             String folder,
@@ -132,7 +132,7 @@ public final class HeaderPreflightCheck {
     }
 
     /**
-     * Check file.
+     * Checks one source file header against the registered student identity.
      */
     private static void checkFile(
             String folder,
@@ -191,7 +191,7 @@ public final class HeaderPreflightCheck {
     }
 
     /**
-     * First lines.
+     * Returns the first requested lines of a source file for diagnostic messages.
      */
     private static String firstLines(String content, int maxLines) {
         int end = 0;
@@ -208,7 +208,7 @@ public final class HeaderPreflightCheck {
     }
 
     /**
-     * Name matches.
+     * Reports whether a header name identifies the expected student.
      */
     private static boolean nameMatches(String headerName, String fullName) {
         String[] expectedParts = fullName.toLowerCase(Locale.ROOT).trim().split("\\s+");
@@ -224,7 +224,7 @@ public final class HeaderPreflightCheck {
     }
 
     /**
-     * Returns is junk.
+     * Reports whether a path is a generated or otherwise ignored submission file.
      */
     private static boolean isJunk(Path relativePath) {
         for (Path part : relativePath) {

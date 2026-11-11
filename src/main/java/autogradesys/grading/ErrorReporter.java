@@ -73,7 +73,7 @@ public final class ErrorReporter {
     /** Records an issue that should not prevent other submissions from grading. */
     // Convenience wrapper for student or question problems.
     /**
-     * Recoverable.
+     * Creates and records a diagnostic for an error from which grading can continue.
      */
     public ErrorRecord recoverable(String stage, String category, String message, String guidance,
             String student, String submission, String question) {
@@ -84,7 +84,7 @@ public final class ErrorReporter {
     /** Records a setup or infrastructure issue that makes the result untrustworthy. */
     // Convenience wrapper for broken setup, e.g. a missing folder or unreadable CSV.
     /**
-     * Fatal.
+     * Reports whether the findings contain a fatal condition.
      */
     public ErrorRecord fatal(String stage, String category, String message, String guidance) {
         // No student, submission or question applies, and canContinue=false marks the whole run as untrustworthy.
@@ -125,7 +125,7 @@ public final class ErrorReporter {
     /** Prints non-error progress information without adding history. */
     // Used for PASS lines and other progress text that is not a problem.
     /**
-     * Info.
+     * Records an informational diagnostic without marking the grading run as failed.
      */
     public void info(String message) {
         // Console only: info lines are deliberately not saved to history or counted as issues.
@@ -135,7 +135,7 @@ public final class ErrorReporter {
     /** Returns the diagnostics emitted during this grading session. */
     // Accessor used by JavaGrader for counts and by the menu for the HTML report.
     /**
-     * Records.
+     * Returns the diagnostics recorded by this reporter in encounter order.
      */
     public List<ErrorRecord> records() {
         // Read-only view so outside code cannot add to or remove from the session's record.
@@ -145,7 +145,7 @@ public final class ErrorReporter {
     /** Returns whether grading encountered a fatal issue, including history failure. */
     // Asked at the end of grading to decide whether the result can be trusted.
     /**
-     * Returns has fatal error.
+     * Reports whether any recorded diagnostic is fatal.
      */
     public boolean hasFatalError() {
         // Fatal if any record said it could not continue, or if saving history failed.
@@ -154,7 +154,7 @@ public final class ErrorReporter {
 
     // Formats one record as a few readable console lines.
     /**
-     * Print.
+     * Writes the current report or diagnostic information to the supplied output stream.
      */
     private void print(ErrorRecord record) {
         // Headline such as "[ERROR] scoresheet/scoresheet-read: message", with severity in capitals.

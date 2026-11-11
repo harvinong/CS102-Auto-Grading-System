@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 final class ProcessRunner {
     // Static utility class: the private constructor stops anyone creating an instance.
     /**
-     * Creates a process runner instance.
+     * Initializes the stateless utility used to run bounded grading processes.
      */
     private ProcessRunner() {
     }
@@ -207,7 +207,7 @@ final class ProcessRunner {
         private final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 
         /**
-         * Creates a capture instance.
+         * Initializes an output capture with the configured byte limit.
          */
         Capture(long limit) {
             // Remember the cap chosen by the caller of run().
@@ -216,7 +216,7 @@ final class ProcessRunner {
 
         // synchronized: stdout and stderr threads share the byte budget, so the check and update must be atomic.
         /**
-         * Append.
+         * Appends one diagnostic record to the JSON Lines error history.
          */
         synchronized void append(ByteArrayOutputStream output, byte[] bytes, int count) {
             // How many bytes we may still keep before hitting the cap.
@@ -239,7 +239,7 @@ final class ProcessRunner {
 
         // True once any output has been discarded because of the size cap.
         /**
-         * Limit exceeded.
+         * Reports whether captured process output has reached its configured limit.
          */
         boolean limitExceeded() {
             // Read the flag that append() sets; the run() wait loop and both reader threads poll it to stop early.

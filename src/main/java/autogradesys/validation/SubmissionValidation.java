@@ -22,7 +22,7 @@ public class SubmissionValidation {
     private final SubmissionCache cache;
 
     /**
-     * Creates a submission validation instance.
+     * Initializes validation with the cache, registered students, and optional restoration template.
      */
     public SubmissionValidation(
             List<Student> students,
@@ -32,7 +32,7 @@ public class SubmissionValidation {
     }
 
     /**
-     * Creates a submission validation instance.
+     * Initializes validation with the cache, registered students, and optional restoration template.
      */
     public SubmissionValidation(
             List<Student> students,
@@ -47,7 +47,7 @@ public class SubmissionValidation {
     }
 
     /**
-     * Run.
+     * Validates the working submissions and returns their events grouped with resolved student paths.
      */
     public ValidationReport run(Path submissions, PreflightReport preflight) {
 

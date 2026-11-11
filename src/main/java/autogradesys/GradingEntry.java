@@ -25,7 +25,7 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
 
     @Override
     /**
-     * Test plan execution started.
+     * Records the start of a JUnit test plan so score collection can begin.
      */
     public void testPlanExecutionStarted(TestPlan testPlan) {
         this.testPlan = testPlan; //this is just a callback that has the whole tree of what to run where what where why whatever
@@ -33,7 +33,7 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
 
     @Override
     /**
-     * Execution finished.
+     * Records the completed test execution and updates the corresponding score totals.
      */
     public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult result) {
         if (!testIdentifier.isTest()) return; // only count leaf DynamicTests
@@ -63,7 +63,7 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
     }
 
     /**
-     * Returns sub question scores by student.
+     * Groups each recorded sub-question score under its student and question identifiers.
      */
     public static Map<String, Map<String, Score>> getSubQuestionScoresByStudent(Map<String, int[]> scores) {
     Map<String, Map<String, Score>> result = new LinkedHashMap<>();
@@ -82,7 +82,7 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
 
 
     /**
-     * Collect ancestor display names.
+     * Collects the display names of the test identifier and its ancestors.
      */
     private List<String> collectAncestorDisplayNames(TestIdentifier leaf) {
         LinkedList<String> names = new LinkedList<>();
@@ -98,7 +98,7 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
     }
 
     /**
-     * Strip prefix.
+     * Removes the grading prefix from a display name when one is present.
      */
     private String stripPrefix(String displayName) {
         return displayName.startsWith("2023-2024-")
@@ -107,7 +107,7 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
     }
 
     /**
-     * Print scores.
+     * Prints the accumulated student scores in the grading report format.
      */
     public void printScores() {
         scores.forEach((path, s) ->
@@ -115,7 +115,7 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
     }
 
     /**
-     * Returns scores.
+     * Returns the scores collected during the current grading run.
      */
     public Map<String, int[]> getScores() {
         return scores;
@@ -124,7 +124,7 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
 public class GradingEntry {
     
     /**
-     * Run grading.
+     * Runs the configured grading flow and returns scores grouped by student.
      */
     public static Map<String, Map<String, Score>> runGrading() {
         LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()

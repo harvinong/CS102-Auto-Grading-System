@@ -23,14 +23,14 @@ public class GraderCtrl {
     public final Config config;
 
     /**
-     * Creates a grader ctrl instance.
+     * Initializes grading and validation services from the supplied configuration.
      */
     public GraderCtrl(Config config) {
         this.config = config;
     }
 
     /**
-     * Prepare working copy.
+     * Prepares or reuses a cache working copy for the supplied submissions folder.
      */
     public CacheReport prepareWorkingCopy(File submissions) {
         return cache.prepare(submissions.toPath());
@@ -63,7 +63,7 @@ public class GraderCtrl {
     }
 
     /**
-     * Validate submissions.
+     * Validates the working submissions and returns events describing repairs or remaining issues.
      */
     public ValidationReport validateSubmissions(Path workingDir, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {
@@ -76,7 +76,7 @@ public class GraderCtrl {
     }
 
     /**
-     * Validate submissions.
+     * Validates the working submissions and returns events describing repairs or remaining issues.
      */
     public ValidationReport validateSubmissions(File submissions, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {

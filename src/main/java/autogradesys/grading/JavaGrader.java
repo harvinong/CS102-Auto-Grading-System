@@ -32,7 +32,7 @@ public final class JavaGrader {
 
     // Utility class with only static methods, so the constructor is private to block instantiation.
     /**
-     * Creates a java grader instance.
+     * Initializes the utility that grades submissions against Java question projects.
      */
     private JavaGrader() {
     }
@@ -519,7 +519,7 @@ public final class JavaGrader {
 
     // A student's folder name (shown in the CSV and report) plus the path to their submission folder.
     /**
-     * Creates a student instance.
+     * Stores the student name and the directory containing that student submission.
      */
     private record Student(String name, Path directory) {
     }

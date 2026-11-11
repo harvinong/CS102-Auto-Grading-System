@@ -42,7 +42,7 @@ public final class HeaderFixer {
             Pattern.compile("(?im)^[ \\t]*(?:\\*+|//+)?[ \\t]*(?:name|email(?:[ \\t]*id)?)[ \\t]*:");
 
     /**
-     * Creates a header fixer instance.
+     * Initializes the utility that repairs source headers for a known student.
      */
     private HeaderFixer() {
     }
@@ -79,7 +79,7 @@ public final class HeaderFixer {
 
     // Checks one file and adds the header if it is missing.
     /**
-     * Fix file.
+     * Repairs the header of one source file and records the changes made.
      */
     private static void fixFile(String label, Path studentDir, Path file, Student student,
             List<Student> allStudents, List<ValidationEvent> events) {
@@ -123,7 +123,7 @@ public final class HeaderFixer {
 
     // The username of a different registered student that appears in the header, or null.
     /**
-     * Find other student.
+     * Finds another registered student whose identity appears in the header.
      */
     private static String findOtherStudent(String header, Student student, List<Student> allStudents) {
         for (Student other : allStudents) {
@@ -137,7 +137,7 @@ public final class HeaderFixer {
 
     // True if the header holds the username, the email, or every part of the full name.
     /**
-     * Mentions.
+     * Reports whether a header contains identifying text for the student.
      */
     private static boolean mentions(String header, Student student) {
         if (header.contains(student.username().toLowerCase())) {
@@ -152,7 +152,7 @@ public final class HeaderFixer {
 
     // Where the header region (the first HEADER_LINES lines) ends in the content.
     /**
-     * Header end.
+     * Returns the character position immediately after the source header.
      */
     private static int headerEnd(String content) {
         int end = 0;
@@ -172,7 +172,7 @@ public final class HeaderFixer {
 
     // Sets Name and Email ID from the scoresheet wherever they are empty or do not match the student.
     /**
-     * Correct fields.
+     * Corrects the recognized name, username, and email fields in a source header.
      */
     private static FieldFix correctFields(String head, Student student) {
         List<String> changes = new ArrayList<>();
@@ -186,7 +186,7 @@ public final class HeaderFixer {
 
     // Rewrites every line of this field whose value is empty or not accepted, keeping the line's own start.
     /**
-     * Correct field.
+     * Replaces one header field with the student’s registered value when needed.
      */
     private static String correctField(String head, Pattern line, String field, String correct,
             Predicate<String> accepts, List<String> changes) {
@@ -210,7 +210,7 @@ public final class HeaderFixer {
 
     // A name is accepted if it is not empty and holds every part of the registered name, in any order.
     /**
-     * Name accepts.
+     * Reports whether a header name is an accepted form of the student name.
      */
     private static boolean nameAccepts(String value, Student student) {
         return !value.isEmpty() && containsAll(value.toLowerCase(), nameParts(student));
@@ -218,7 +218,7 @@ public final class HeaderFixer {
 
     // The words of the registered name in lower case ("TEO CHEE" gives teo, chee).
     /**
-     * Name parts.
+     * Returns normalized name components used for header matching.
      */
     private static List<String> nameParts(Student student) {
         List<String> parts = new ArrayList<>();
@@ -231,7 +231,7 @@ public final class HeaderFixer {
     }
 
     /**
-     * Contains all.
+     * Reports whether text contains every requested name component.
      */
     private static boolean containsAll(String text, List<String> parts) {
         for (String part : parts) {
@@ -244,7 +244,7 @@ public final class HeaderFixer {
 
     // The file content with a header block at the top (same format as the exam's), using the file's own line endings.
     /**
-     * With header.
+     * Returns source content with a corrected student header prepended.
      */
     private static String withHeader(String content, Student student) {
         String newline = content.contains("\r\n") ? "\r\n" : "\n";
@@ -258,7 +258,7 @@ public final class HeaderFixer {
 
     // The scoresheet writes names in capitals (TEO CHEE); the exam header looks like "Teo Chee".
     /**
-     * Display name.
+     * Returns the preferred human-readable name for a student.
      */
     private static String displayName(Student student) {
         if (student.fullName().isEmpty()) {
@@ -277,7 +277,7 @@ public final class HeaderFixer {
     }
 
     /**
-     * Name of.
+     * Returns the final path component used as a display name.
      */
     private static String nameOf(Path path) {
         Path name = path.getFileName();

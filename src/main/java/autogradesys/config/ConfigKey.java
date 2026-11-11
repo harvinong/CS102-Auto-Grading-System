@@ -15,14 +15,14 @@ enum ConfigKey {
     private String value;
 
     /**
-     * Creates a config key instance.
+     * Stores the JSON key name used to persist one configuration value.
      */
     private ConfigKey(String value) {
         this.value = value;
     }
 
     /**
-     * Returns value.
+     * Returns the configuration key string used when reading or writing JSON.
      */
     public String getValue() {
         return this.value;
@@ -30,7 +30,7 @@ enum ConfigKey {
 
     @Override
     /**
-     * To string.
+     * Returns a readable representation of the submission or configuration value.
      */
     public String toString() {
         return this.value;

@@ -17,7 +17,7 @@ import autogradesys.validation.ValidationEvent.Type;
 public final class HierarchyFixer {
 
     /**
-     * Creates a hierarchy fixer instance.
+     * Initializes the utility that removes unnecessary wrapper directories.
      */
     private HierarchyFixer() {
     }

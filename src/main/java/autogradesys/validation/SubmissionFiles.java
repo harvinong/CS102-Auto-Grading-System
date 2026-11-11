@@ -21,7 +21,7 @@ public final class SubmissionFiles {
     private static final String ZIP_EXTENSION = ".zip";
 
     /**
-     * Creates a submission files instance.
+     * Initializes the file-tree utilities used while repairing submissions.
      */
     private SubmissionFiles() {
     }
@@ -79,7 +79,7 @@ public final class SubmissionFiles {
         Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
             @Override
             /**
-             * Pre visit directory.
+             * Creates missing target directories while copying a submission file tree.
              */
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 if (isJunk(source.relativize(dir))) {
@@ -91,7 +91,7 @@ public final class SubmissionFiles {
 
             @Override
             /**
-             * Visit file.
+             * Copies a file when it is missing from the target submission tree.
              */
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 Path destination = target.resolve(source.relativize(file));
@@ -112,7 +112,7 @@ public final class SubmissionFiles {
             Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
                 @Override
                 /**
-                 * Visit file.
+                 * Copies a file when it is missing from the target submission tree.
                  */
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     Files.delete(file);
@@ -121,7 +121,7 @@ public final class SubmissionFiles {
 
                 @Override
                 /**
-                 * Post visit directory.
+                 * Completes directory traversal while propagating any copy failure.
                  */
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
                     Files.delete(dir);

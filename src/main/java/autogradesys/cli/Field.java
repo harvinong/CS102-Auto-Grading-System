@@ -22,7 +22,7 @@ public enum Field {
 
     // A folder field: no extensions are allowed.
     /**
-     * Creates a field instance.
+     * Describes one prompted input field, including its type and accepted extensions.
      */
     private Field(String field) {
         this.name = field;
@@ -31,7 +31,7 @@ public enum Field {
 
     // A file field: only the listed extensions are accepted.
     /**
-     * Creates a field instance.
+     * Describes one prompted input field, including its type and accepted extensions.
      */
     private Field(String field, String... extensions) {
         this.name = field;
@@ -39,14 +39,14 @@ public enum Field {
     }
 
     /**
-     * Returns name.
+     * Returns the prompt name used when displaying this field.
      */
     public String getName() {
         return this.name;
     }
 
     /**
-     * Returns is dir.
+     * Reports whether this field expects a directory rather than a regular file.
      */
     public boolean isDir() {
         // A field with no extensions is a folder.
@@ -54,14 +54,14 @@ public enum Field {
     }
 
     /**
-     * Returns extensions.
+     * Returns the file extensions accepted by this input field.
      */
     public String[] getExtensions() {
         return this.extensions;
     }
 
     /**
-     * Returns description.
+     * Returns the human-readable prompt description for this field.
      */
     public String getDescription() {
         // Folders are described with one word.

@@ -13,7 +13,7 @@ import autogradesys.menu.MainMenu;
 public final class App {
     // Entry-point class with only static methods; no instances.
     /**
-     * Creates an app instance.
+     * Initializes the command-line application state before opening the main menu.
      */
     private App() {}
 

@@ -1,7 +1,7 @@
 package autogradesys;
 
 /**
- * Creates a score instance.
+ * Stores the marks awarded and the total marks available for a result.
  */
 public record Score(int scored, int total) {
     @Override

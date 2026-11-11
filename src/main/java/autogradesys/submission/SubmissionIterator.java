@@ -22,7 +22,7 @@ public class SubmissionIterator implements Iterable<Submission> {
     private final List<String> duplicates = new ArrayList<>();
 
     /**
-     * Creates a submission iterator instance.
+     * Scans a folder for matching submission archives and indexes their statuses.
      */
     public SubmissionIterator(Path folder, Pattern zipNamePattern) throws IOException {
         if (!Files.isDirectory(folder)) {
@@ -50,7 +50,7 @@ public class SubmissionIterator implements Iterable<Submission> {
     }
 
     /**
-     * Add submission.
+     * Adds a submission unless its username duplicates one already indexed.
      */
     private void addSubmission(Submission submission) {
         String key = submission.getUsername().toLowerCase();
@@ -65,28 +65,28 @@ public class SubmissionIterator implements Iterable<Submission> {
 
     @Override
     /**
-     * Iterator.
+     * Returns an iterator over the accepted submissions.
      */
     public Iterator<Submission> iterator() {
         return submissions.values().iterator();
     }
 
     /**
-     * Size.
+     * Returns the number of accepted submissions.
      */
     public int size() {
         return submissions.size();
     }
 
     /**
-     * Returns skipped.
+     * Returns the archive names skipped because they did not match the configured pattern.
      */
     public List<String> getSkipped() {
         return skipped;
     }
 
     /**
-     * Returns duplicates.
+     * Returns the archive names skipped because their usernames were duplicates.
      */
     public List<String> getDuplicates() {
         return duplicates;

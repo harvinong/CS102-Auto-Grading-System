@@ -53,7 +53,7 @@ public final class ErrorHistory {
      */
     // Called by ErrorReporter after each error; failures propagate so the reporter can mark the history as failed.
     /**
-     * Append.
+     * Appends one diagnostic record to the JSON Lines error history.
      */
     public void append(ErrorRecord record) throws IOException {
         // Resolve to a clean absolute path so relative inputs like "logs/../history.jsonl" behave predictably.

@@ -17,7 +17,7 @@ public enum TextColor {
 
     // Each constant above passes its own colour code in here.
     /**
-     * Creates a text color instance.
+     * Stores the ANSI prefix used to format one category of terminal text.
      */
     private TextColor(String prefixEscapeCode) {
         this.prefixEscapeCode = prefixEscapeCode;

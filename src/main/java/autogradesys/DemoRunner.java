@@ -26,7 +26,7 @@ import java.time.Duration;
 public final class DemoRunner {
     // Static entry point only; no instances.
     /**
-     * Creates a demo runner instance.
+     * Initializes the utility used to run the checked-in demonstration fixtures.
      */
     private DemoRunner() {
     }

@@ -96,7 +96,7 @@ public class UsernameResolver {
 
     // Renames the folder to the registered username, first moving aside the folder that already used the name.
     /**
-     * Rename.
+     * Renames a working submission folder and records the replacement for later matching.
      */
     private Optional<Identity> rename(String folder, Path dir, Student match, String owner,
             Map<String, String> owners, List<ValidationEvent> events) {

@@ -8,7 +8,7 @@ public class Submission {
     private final Path zipPath;
 
     /**
-     * Creates a submission instance.
+     * Associates a student username with the archive containing that submission.
      */
     public Submission(String username, Path zipPath) {
         this.username = username;
@@ -16,14 +16,14 @@ public class Submission {
     }
 
     /**
-     * Returns username.
+     * Returns the username associated with this submission.
      */
     public String getUsername() {
         return username;
     }
 
     /**
-     * Returns zip path.
+     * Returns the archive path associated with this submission.
      */
     public Path getZipPath() {
         return zipPath;
@@ -31,7 +31,7 @@ public class Submission {
 
     @Override
     /**
-     * To string.
+     * Returns a readable representation of the submission or configuration value.
      */
     public String toString() {
         return username;

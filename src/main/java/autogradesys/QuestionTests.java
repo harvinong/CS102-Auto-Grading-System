@@ -9,7 +9,7 @@ import java.util.Map;
 public class QuestionTests {
 
     /**
-     * Returns specs by class.
+     * Returns the configured test specifications indexed by student class name.
      */
     public static Map<String, MethodSpec> getSPECS_BY_CLASS() {
         return SPECS_BY_CLASS;

@@ -4,6 +4,6 @@ package autogradesys;
 import java.util.List;
 
 /**
- * Creates a method spec instance.
+ * Describes a student method together with its parameter types and test cases.
  */
 public record MethodSpec(String methodName, Class<?>[] paramTypes, List<TestCase> testCases) {}

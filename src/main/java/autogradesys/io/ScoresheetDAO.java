@@ -62,7 +62,7 @@ public class ScoresheetDAO {
     // Input: the scoresheet CSV file to read from and write to.
     // Output: a new ScoresheetDAO.
     /**
-     * Creates a scoresheet dao instance.
+     * Opens the configured CSV scoresheet for loading, lookup, and updates.
      */
     public ScoresheetDAO(File scoresheetFile) {
         this.scoresheetFile = scoresheetFile;
@@ -77,7 +77,7 @@ public class ScoresheetDAO {
     //         twice, or has a mark that is not a whole number. On false, whatever was loaded before is kept.
 
     /**
-     * Load.
+     * Loads the persisted configuration or scoresheet data into this object.
      */
     public boolean load() {
         // return false if invalid
@@ -208,7 +208,7 @@ public class ScoresheetDAO {
     //         (the original file is left as it was).
 
     /**
-     * Save.
+     * Persists the current configuration or scoresheet data to its configured file.
      */
     public boolean save() {
         if (!loaded ||  scoresheetFile == null) {
@@ -288,7 +288,7 @@ public class ScoresheetDAO {
     // Function: looks the student up in the map (Read).
     // Output: that student's record, or null if the username is not in the scoresheet.
     /**
-     * Returns .
+     * Returns the scoresheet record for the requested username, or null when absent.
      */
     public ScoresheetRecord get(String username) {
         if (username == null) {
@@ -303,7 +303,7 @@ public class ScoresheetDAO {
     //           because the DAO only reads and updates (no create or delete).
     // Output: true if the record was replaced; false if the username is not in the scoresheet or the record is null.
     /**
-     * Set.
+     * Stores or replaces the scoresheet record for the supplied username.
      */
     public boolean set(String username, ScoresheetRecord record) {
         if (username == null || record == null) {
@@ -322,7 +322,7 @@ public class ScoresheetDAO {
     // Function: lists every student's username, so a caller can go through all the records with get().
     // Output: the usernames in scoresheet order (empty before load()).
     /**
-     * Returns usernames.
+     * Returns the usernames currently represented in the loaded scoresheet.
      */
     public ArrayList<String> getUsernames() {
         return new ArrayList<>(records.keySet());
@@ -332,7 +332,7 @@ public class ScoresheetDAO {
     // Function: gives back the file this DAO reads and writes.
     // Output: the scoresheet file.
     /**
-     * Returns scoresheet file.
+     * Returns the CSV file used by this scoresheet data access object.
      */
     public File getScoresheetFile() {
         return scoresheetFile;
@@ -342,7 +342,7 @@ public class ScoresheetDAO {
     // Function: looks for the column, ignoring spaces and upper/lower case.
     // Output: the column's position, or -1 if it is not there.
     /**
-     * Column of.
+     * Returns the index of a named CSV column, or the absent-column sentinel.
      */
     private static int columnOf(List<String> columns, String name) {
         for (int i = 0; i < columns.size(); i++) {
@@ -358,7 +358,7 @@ public class ScoresheetDAO {
     //           break the CSV. Same as ScoreRecorder.quote().
     // Output: The quoted value, e.g. chee"teo becomes "chee""teo".
     /**
-     * Quote.
+     * Escapes a value for safe inclusion in a CSV field.
      */
     private static String quote(String value) {
         return "\"" + value.replace("\"", "\"\"") + "\"";
@@ -371,7 +371,7 @@ public class ScoresheetDAO {
     // Output: a list of rows, each a list of cells.
     // Throws IOException if a quoted cell is never closed.
     /**
-     * Parse.
+     * Parses CSV text into rows while preserving quoted fields and line structure.
      */
     private static ArrayList<ArrayList<String>> parse(String text) throws IOException {
         // All finished rows.
@@ -439,7 +439,7 @@ public class ScoresheetDAO {
     // Function: adds the row unless it is a blank line (a single empty cell).
     // Output: nothing; "result" is changed directly.
     /**
-     * Add row if not blank.
+     * Adds a parsed row when it contains at least one non-blank value.
      */
     private static void addRowIfNotBlank(ArrayList<ArrayList<String>> result, ArrayList<String> row) {
         boolean blank = row.size() == 1 && row.get(0).trim().isEmpty();

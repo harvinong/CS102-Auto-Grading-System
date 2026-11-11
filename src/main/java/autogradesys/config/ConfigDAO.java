@@ -34,7 +34,7 @@ public class ConfigDAO {
     private long outputLimitBytes = DEFAULT_OUTPUT_LIMIT_BYTES;
 
     /**
-     * Creates a config dao instance.
+     * Initializes access to the JSON configuration file.
      */
     public ConfigDAO() {
         this(DEF_CONFIG_FILE);
@@ -42,14 +42,14 @@ public class ConfigDAO {
 
     // Lets tests point the DAO at a temporary file instead of the developer's ./config.json.
     /**
-     * Creates a config dao instance.
+     * Initializes access to the JSON configuration file.
      */
     public ConfigDAO(File configFile) {
         this.configFile = configFile;
     }
 
     /**
-     * Load.
+     * Loads the persisted configuration or scoresheet data into this object.
      */
     public boolean load() {
         if (!configFile.exists()) {
@@ -78,7 +78,7 @@ public class ConfigDAO {
     }
 
     /**
-     * Save.
+     * Persists the current configuration or scoresheet data to its configured file.
      */
     public boolean save() {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -103,56 +103,56 @@ public class ConfigDAO {
     }
 
     /**
-     * Returns starting folder.
+     * Returns the root folder selected for locating submissions and grading inputs.
      */
     public File getStartingFolder() {
         return startingFolder;
     }
 
     /**
-     * Returns testers folder.
+     * Returns the folder holding the instructor tester files.
      */
     public File getTestersFolder() {
         return testersFolder;
     }
 
     /**
-     * Returns scoresheet file.
+     * Returns the CSV file used by this scoresheet data access object.
      */
     public File getScoresheetFile() {
         return scoresheetFile;
     }
 
     /**
-     * Returns timeout seconds.
+     * Returns the maximum number of seconds allowed for one grading process.
      */
     public long getTimeoutSeconds() {
         return timeoutSeconds;
     }
 
     /**
-     * Returns output limit bytes.
+     * Returns the maximum number of process-output bytes retained during grading.
      */
     public long getOutputLimitBytes() {
         return outputLimitBytes;
     }
 
     /**
-     * Set starting folder.
+     * Stores the folder from which grading inputs are selected.
      */
     public void setStartingFolder(File startingFolder) {
         this.startingFolder = startingFolder;
     }
 
     /**
-     * Set testers folder.
+     * Stores the folder containing instructor tester projects.
      */
     public void setTestersFolder(File testersFolder) {
         this.testersFolder = testersFolder;
     }
 
     /**
-     * Set scoresheet file.
+     * Stores the CSV file used to read and write student scores.
      */
     public void setScoresheetFile(File scoresheetFile) {
         this.scoresheetFile = scoresheetFile;
@@ -160,7 +160,7 @@ public class ConfigDAO {
 
     // Rejects out-of-range limits here too, so a caller that skips the menu prompt cannot save a value that would stop every process at once or crash grading.
     /**
-     * Set timeout seconds.
+     * Stores the maximum duration allowed for a grading process.
      */
     public void setTimeoutSeconds(long timeoutSeconds) {
         // A limit of 0 or less would kill every compile and run immediately; above the maximum it could hang or overflow.
@@ -172,7 +172,7 @@ public class ConfigDAO {
     }
 
     /**
-     * Set output limit bytes.
+     * Stores the maximum process output retained during grading.
      */
     public void setOutputLimitBytes(long outputLimitBytes) {
         // A cap of 0 or less could not hold any output, and JavaGrader would reject it as a fatal setup error; above the maximum it risks running out of memory.
@@ -185,7 +185,7 @@ public class ConfigDAO {
 
     // Reads an optional JSON number: only a whole number from 1 to max counts, everything else (absent, text, 1.5, 0, -3, too big) gives the default.
     /**
-     * Integer in range or default.
+     * Returns the JSON integer when it is within bounds, otherwise the supplied default.
      */
     private static long integerInRangeOrDefault(JsonNode node, long max, long defaultValue) {
         // node is null when the key is missing, and isIntegralNumber() is false for strings and decimals; a long-sized value is required.

@@ -27,7 +27,7 @@ import java.util.Set;
 public final class CsvScoresheet {
     // Static utility class; no instances.
     /**
-     * Creates a csv scoresheet instance.
+     * Initializes the utility that validates and writes CSV scoresheets.
      */
     private CsvScoresheet() {
     }
@@ -294,7 +294,7 @@ public final class CsvScoresheet {
 
     // Minimal RFC 4180 style parser: commas separate cells, quotes wrap cells containing commas or newlines, and "" is a literal quote.
     /**
-     * Parse.
+     * Parses CSV text into rows while preserving quoted fields and line structure.
      */
     private static List<List<String>> parse(String content) throws IOException {
         // Completed rows.
@@ -417,7 +417,7 @@ public final class CsvScoresheet {
 
     // Turns rows back into CSV text, quoting cells that need it.
     /**
-     * Render.
+     * Renders score rows as CSV text using the project scoresheet format.
      */
     private static String render(List<List<String>> rows) {
         // Holds the CSV text being built.

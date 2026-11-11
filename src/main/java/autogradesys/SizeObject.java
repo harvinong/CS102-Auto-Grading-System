@@ -16,7 +16,7 @@ public class SizeObject {
 
     // Method to get the size of an object
     /**
-     * Returns object size.
+     * Returns the shallow JVM-reported size of the supplied object.
      */
     public static long getObjectSize(Object object) {
         if (globalInstrumentation == null) {

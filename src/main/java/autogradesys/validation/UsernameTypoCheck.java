@@ -20,7 +20,7 @@ import autogradesys.preflight.PreflightReport;
 public final class UsernameTypoCheck {
 
     /**
-     * Creates a username typo check instance.
+     * Initializes the check that suggests registered students for misspelled folder names.
      */
     private UsernameTypoCheck() {
     }
@@ -59,7 +59,7 @@ public final class UsernameTypoCheck {
 
     // One USERNAME_TYPO finding; owner is the folder that already uses the correct name, or null.
     /**
-     * Finding.
+     * Creates a preflight finding describing a likely username typo and its owner.
      */
     private static PreflightFinding finding(String folder, String claimed, Student match, String owner) {
         String message = "'" + match.username() + "' is the closest registered name to '" + claimed

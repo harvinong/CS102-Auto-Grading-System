@@ -19,7 +19,7 @@ public final class UsernameMatcher {
     private static final double SUBSTITUTION_COST = 1.0;
 
     /**
-     * Distance.
+     * Computes the normalized edit distance used to detect username typos.
      */
     private static double distance(String a, String b) {
         double[] d = new double[b.length() + 1];
@@ -39,7 +39,7 @@ public final class UsernameMatcher {
     }
 
     /**
-     * Creates a username matcher instance.
+     * Initializes the stateless username matching utility.
      */
     private UsernameMatcher() {
     }
