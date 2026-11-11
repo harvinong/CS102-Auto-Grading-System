@@ -85,7 +85,6 @@ public class ScoresheetDAO {
      * question columns) stored under its username, and the row's other cells are kept so they
      * can be written back unchanged. An empty mark cell means "not graded" and is left out.
      * 
-     * @return true if the file was read; false if it is missing, unreadable, badly quoted, has no
      *         Username (or student) column, repeats a column, has a row longer than the header, lists a student
      *         twice, or has a mark that is not a whole number. On false, whatever was loaded before is kept.
      * Loads the persisted configuration or scoresheet data into this object.
@@ -204,7 +203,6 @@ public class ScoresheetDAO {
      * writes every record back to the scoresheet file it was loaded from. The file is first
      * written to a temporary file and then swapped in, so a failed save never leaves a broken file.
      * 
-     * @return true if the file was written; false if nothing has been loaded or the write failed
      *         (the original file is left as it was).
      * Persists the current configuration or scoresheet data to its configured file.
      * @return the value produced by this operation, including any empty or absent result defined by its contract.
@@ -240,6 +238,11 @@ public class ScoresheetDAO {
     //           It never overwrites an existing file.
     // Output: true if the file was written; false if nothing has been loaded, the file already
     //         exists, or the write failed.
+    /**
+     * Save as.
+     * @param newFile the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     public boolean saveAs(File newFile) {
         if (!loaded || newFile == null) {
             return false;
@@ -321,6 +324,10 @@ public class ScoresheetDAO {
     //           A student with marks gets their total in "Calculated Final Grade Numerator";
     //           a student with no marks keeps empty question cells and their original total cell.
     // Output: the CSV text, ready to write to a file.
+    /**
+     * To text.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     private String toText() {
         // Start from the loaded question columns and add new ones from the records
         ArrayList<String> allQuestions = new ArrayList<>(questions);
@@ -387,6 +394,11 @@ public class ScoresheetDAO {
     // Function: joins them with commas, quoting a cell only when it holds a comma, a quote or a line
     //           break, so the rest of the sheet keeps its original look
     // Output: one CSV line, e.g. #01400001,#ping.lee.2023,_,PING LEE
+    /**
+     * Join line.
+     * @param row the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     private static String joinLine(List<String> row) {
         String line = "";
         for (int i = 0; i < row.size(); i++) {

@@ -5,15 +5,9 @@ import autogradesys.cli.TextColor;
 /**
  * One thing the preflight noticed about a submission.
  *
- * @param student  The submission folder (or archive) name; empty for findings
  *                 about the
  *                 submissions folder or the template as a whole.
- * @param category What kind of problem this is.
- * @param severity How much it matters.
- * @param path     Where it was found, relative to the submissions folder (or
  *                 the template name).
- * @param message  What is wrong.
- * @param fix      What the instructor or student can do about it; empty when
  *                 nothing is needed.
  *                 submissions folder or the template as a whole.
  */

@@ -239,6 +239,7 @@ final class TesterGrader {
      * @param question the value used by this method.
      * @param tester the value used by this method.
      * @param build the value used by this method.
+     * @param out the value used by this method.
      * @param timeout the value used by this method.
      * @param outputLimitBytes the value used by this method.
      * @param reporter the value used by this method.
@@ -342,6 +343,11 @@ final class TesterGrader {
     // Input: everything a program printed
     // Function: finds the last line that is not blank
     // Output: that line without spaces around it, or "" if nothing was printed
+    /**
+     * Last line.
+     * @param output the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     private static String lastLine(String output) {
         String[] lines = output.split("\r?\n");
         for (int i = lines.length - 1; i >= 0; i--) {
@@ -355,6 +361,12 @@ final class TesterGrader {
     // Input: a long message (e.g. compiler errors) and how many lines to keep
     // Function: keeps only the first lines, so one broken submission does not flood the screen and report
     // Output: the shortened message, ending with "... (N more lines)" when lines were cut
+    /**
+     * First lines.
+     * @param text the value used by this method.
+     * @param count the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     static String firstLines(String text, int count) {
         String[] lines = text.split("\r?\n");
         if (lines.length <= count) {
@@ -372,6 +384,11 @@ final class TesterGrader {
     //           A course tester is worth the sum of the numbers in its "score += N;" lines
     //           (Q1aTester has three "score += 1;", so it is worth 3).
     // Output: the question's full marks (at least 1 per tester)
+    /**
+     * Full marks.
+     * @param testerDir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     static int fullMarks(Path testerDir) {
         int total = 0;
         for (Path tester : testerFiles(testerDir)) {
@@ -402,6 +419,12 @@ final class TesterGrader {
     //           the first number, e.g. "Q1"). Any <Name>Tester.expected.txt files are copied along.
     // Output: the temporary folder (delete it after grading), or null when the folder already has
     //         question sub-folders or has no tester files at the top level.
+    /**
+     * Group flat testers.
+     * @param testersRoot the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
+     */
     static Path groupFlatTesters(Path testersRoot) throws IOException {
         List<Path> testers = testerFiles(testersRoot);
         if (testers.isEmpty()) {
@@ -479,8 +502,6 @@ final class TesterGrader {
      * its .java next to it is an old compiled copy of the student's code and is 
      * left out, so the source is always what gets graded. Hidden files such as 
      * .DS_Store are left out too.
-     * @param studentQuestion the student's folder for one question
-     * @return the files, sorted by name
      * Returns the Java source files belonging to the student question.
      * @param studentQuestion the value used by this method.
      * @return the value produced by this operation, including any empty or absent result defined by its contract.

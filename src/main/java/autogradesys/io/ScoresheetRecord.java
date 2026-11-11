@@ -5,8 +5,6 @@ import java.util.LinkedHashMap;
 /**
  * One student's row in the scoresheet.
  *
- * @param username The student's username without the "#", e.g. chee.teo.2022.
- * @param marks    The student's marks per question, e.g. "Q1" -> 6, "Q2" -> 10. Empty if not graded.
  * @param username the value used by this method.
  * @param marks the value used by this method.
  */
