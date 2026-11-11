@@ -1,129 +1,213 @@
 # CS102 Auto-Grading System
 
-This repository contains a small, local Java auto-grader demo. It compiles the grader with Maven, then grades student submissions with bounded `javac` and `java` subprocesses: either the instructor's tester classes against the CS102 template layout (menu option 3), or a raw student `Main.java` (the scripted `demo` argument). The demo needs no credentials, network access, or external service.
+A local command-line grader for CS102 Java submissions. It compares student programs with instructor tester programs, records marks in a CSV scoresheet, and writes an HTML report. It runs `javac` and `java` directly on the local machine, so use it only with code you trust or in an isolated environment.
 
-## Index
+## 1. Prerequisites
 
-- [Safety and scope](#safety-and-scope)
-- [Prerequisites](#prerequisites)
-- [Build and test the grader](#build-and-test-the-grader)
-- [Run without Maven](#run-without-maven)
-- [Run the checked-in demo](#run-the-checked-in-demo)
-- [Fixture layout](#fixture-layout)
-- [Other non-interactive sessions](#other-non-interactive-sessions)
-- [Generated files](#generated-files)
-- [Grading real CS102 submissions with tester files](#grading-real-cs102-submissions-with-tester-files)
-- [Submission check](#submission-check)
-- [Assets Credit](#assets-credit)
+- JDK 17 or newer. Both `java` and `javac` must be on `PATH`.
+- Either Maven 3.9+ or the JARs checked into `lib/`.
+- A terminal. On Windows, use the `.bat` scripts; on macOS/Linux, use the `.sh` scripts.
 
-## Safety and scope
-
-The grader compiles and runs submitted Java code directly on the instructor's machine, as the instructor's user, with no sandbox or container isolation.
-It is intended for trusted local fixtures and reviewed coursework submissions, not untrusted or anonymous code.
-The per-run timeout and combined stdout/stderr limit (2 seconds and 1 MiB by default) stop runaway or flooding programs, but they are resource limits, not security isolation.
-Running untrusted submissions safely would require OS or container isolation, which is out of scope for this MVP.
-
-## Prerequisites
-
-- JDK 17 or newer, with both `java` and `javac` on `PATH`
-- Maven 3.9 or newer (for development and tests only)
-
-Check the tools with:
-
-```sh
-java -version
-javac -version
-mvn -version
+```text
+$ java -version
+$ javac -version
+$ mvn -version                 # only needed for Maven builds/tests
 ```
 
-## Build and test the grader
+## 2. Build
 
-From the repository root:
+From the repository root, choose one route:
+
+### Maven
 
 ```sh
 mvn test
 mvn package
-```
-
-After `mvn clean package`, start the packaged application directly:
-
-```sh
 java -jar target/CS102-Auto-Grading-System-1.0-SNAPSHOT.jar
 ```
 
-The jar bundles its runtime dependencies.
+`mvn package` creates a runnable shaded JAR and `target/` contains build/test output.
 
-Maven builds and tests the auto-grader itself. A student submission is deliberately not a Maven project: the assignment fixture is source-file based, so the grader passes a source path to bounded `javac` and runs the resulting `Main` class with bounded `java`. Neither subprocess uses a shell, so student-controlled paths and text are not interpolated into shell commands.
-
-## Run without Maven
-
-The submission includes portable scripts for assessment. From the repository root, run `./compile.sh` followed by `./run.sh` (or `compile.bat` and `run.bat` on Windows). The scripts compile the application into `classes` and use only the checked-in runtime jars in `lib`; no network or Maven installation is required. `run.sh demo` runs the checked-in demo.
-
-## Run the checked-in demo
-
-The non-interactive Maven command is:
+### Bundled libraries
 
 ```sh
-mvn -q exec:java -Dexec.mainClass=autogradesys.App -Dexec.args=demo
+./compile.sh                  # macOS/Linux
+./run.sh
 ```
 
-The command uses `demo/fixtures` and writes generated state to `demo/target/run`:
+On Windows:
+
+```bat
+compile.bat
+run.bat
+```
+
+`compile.sh`/`compile.bat` compile `src/main/java` into `classes/` using the checked-in JARs in `lib/`; they do not download dependencies. Run the launcher from the repository root because the application reads `assets/title.txt` and `assets/welcome.md` using relative paths. `--debug` is an optional launcher argument that prints a stack trace for an unexpected startup/runtime exception.
+
+## 3. Prepare the three configured inputs
+
+The first launch asks for these paths. **Every path must be absolute**, and the prompt checks that folders/files exist.
+
+1. **Starting Folder** - the blank assignment/template folder. Its question folders and required files define what preflight checks.
+2. **Tester Files Folder** - one folder per question, containing tester source files.
+3. **Scoresheet File** - a `.csv` file. It must have a `Username` column, or the grading-compatible `student` column. Optional columns `Email`, `First Name`, and `Last Name` supply header information. Keep a backup: grading updates this file in place.
+
+A tester source is a regular Java file ending in `Tester.java` (for example, `Q1aTester.java`). Put its expected output beside it as `Q1aTester.expected.txt`. Each tester that produces exactly the expected UTF-8 text earns one mark. `\r\n` and `\n` are treated as equivalent, but other whitespace is significant.
+
+A typical assignment is arranged as follows:
 
 ```text
-demo/target/run/scores.csv
-demo/target/run/error-history.jsonl
+assignment/
+  starting-folder/                 # blank template configured in menu
+    Q1/
+      Q1a.java
+      persons.txt                  # optional/resource file if the template has it
+    Q2/
+      Q2.java
+  testers/                         # Tester Files Folder
+    Q1/
+      Q1aTester.java
+      Q1aTester.expected.txt
+    Q2/
+      Q2aTester.java
+      Q2aTester.expected.txt
+  scores.csv                       # Username or student column; one row/student
+  submissions/                     # selected later in the grading flow
+    alice/
+      Q1/Q1a.java
+      Q2/Q2.java
+    2024-0002-bob.zip              # archives are extracted into a working copy
 ```
 
-The first run copies `demo/fixtures/scores.template.csv` to the generated scoresheet. It never changes the source-controlled template or expected outputs. The history is append-only, and rerunning the demo retains the generated scoresheet and appends new JSONL records. To intentionally start a new local demo session, remove only the generated directory and run the command again:
+Student question folders normally sit directly below each student folder. The grader also tolerates one wrapper folder (for example `bob/RenameToYourStudentID/Q1`) and preflight reports it. Student Java files and resources are copied into a temporary build directory per question; hidden files and `.class` files are ignored.
 
-```sh
-rm -rf demo/target
-mvn -q exec:java -Dexec.mainClass=autogradesys.App -Dexec.args=demo
-```
+## 4. Launch and configure
 
-The output includes `PASS` lines and contextual errors for:
-
-- a passing student and question
-- a compiler failure for Bob
-- a runtime exception for Frank
-- a hung program for Carol, terminated after the per-question timeout
-- an output mismatch for Dave
-- Erin's missing question directory
-- the blank student row in the scoresheet
-
-The run continues with other questions and students after each recoverable error. Human-readable errors include stage, category, severity, guidance, and available student, submission, and question context. The same fields are written as one JSON object per line in `error-history.jsonl`. Scores are updated atomically in `scores.csv`, while the existing `legacy` row and other prior rows remain intact.
-
-## Fixture layout
+Start with `./run.sh`, `run.bat`, or the Maven-built JAR. On a first run, the welcome screen asks for the three paths, then:
 
 ```text
-demo/fixtures/
-  questions/q1/expected.txt
-  questions/q2/expected.txt
-  questions/q3/expected.txt
-  questions/q4/expected.txt
-  submissions/<student>/<question>/Main.java
-  scores.template.csv
+Enter Grading timeout in seconds (2):
+Enter Output limit in bytes (1048576):
+[SUCCESS] Configuration saved!
 ```
 
-Question directories define the required question set. `input.txt` is optional and is sent to the student's standard input when present. `expected.txt` is compared exactly with standard output, including whitespace and line endings. Each question is compiled into a fresh temporary build directory, which is deleted after that question.
+Press Enter to keep a displayed value. Timeout accepts 1-3600 seconds per compile/test process. Output limit accepts 1-67108864 bytes of combined stdout/stderr per process. Settings are saved in `config.json` in the current directory. If an existing setting is missing or invalid, the defaults are 2 seconds and 1048576 bytes.
 
-## Other non-interactive sessions
+The main menu is:
 
-The same Java CLI accepts explicit paths:
-
-```sh
-mvn -q exec:java \
-  -Dexec.mainClass=autogradesys.App \
-  -Dexec.args="--non-interactive --submissions-dir /path/submissions --questions-dir /path/questions --scoresheet /path/scores.csv --history /path/errors.jsonl --timeout-ms 2000"
+```text
+1. View configuration paths
+2. Edit configuration paths
+3. Grade students (run auto-grader)
+4. View Recent HTML Report
+5. Clear Student Grading Cache
+0. Quit Application
 ```
 
-Use `--timeout` for seconds instead of `--timeout-ms`. Menu grading reads its limits from `config.json` instead: `grading_timeout_seconds` (default 2, at most 3600) and `output_limit_bytes` (default 1048576, at most 67108864), both whole numbers from 1 up to their maximum. The same maximums apply to `--timeout`, `--timeout-ms` and `--output-limit-bytes`. Missing or invalid values in `config.json` fall back to the defaults, "View configuration paths" shows them, and "Edit configuration paths" changes them (Enter keeps the current value). Invalid arguments return a nonzero status. Invalid setup and scoresheet read/write failures are reported as fatal, return a nonzero status, and stop before student programs or scoresheet writes run. A per-student or per-question failure is recoverable and does not stop unrelated work.
+- **1** displays the starting folder, tester folder, scoresheet, timeout, and output limit.
+- **2** re-prompts for all three paths and both limits; Enter keeps each current value.
+- **3** starts the complete journey below.
+- **4** opens `.grader-report.html` in the default browser. On a headless/SSH machine it prints the path instead; before the first grade it reports that no report exists.
+- **5** deletes the local `cache/` working-copy directory. Use this when you need to rebuild a submission copy from the original files.
+- **0** exits.
 
-## Generated files
+## 5. Select submissions and preflight
 
-Maven's normal build output is under `target/`. The demo output is under `demo/target/`, which is ignored by Git. `scores.template.csv` and all question expected outputs are fixtures and are never rewritten by the demo.
+Choose **3**, then give an absolute **Submissions Folder** path. The program immediately clears the cache and creates/reuses a working copy under `cache/<submissions-folder-name>/`. It copies folders and extracts ZIPs; the original submissions folder is never edited. It recognizes ordinary folders, ZIPs beside the folder, and archives named like `2024-0002-username.zip`. It ignores OS clutter such as `.DS_Store`, `__MACOSX`, and symlinks are not followed.
 
-Before reporting a change, run:
+It then performs a read-only submission check against the Starting Folder. The check reports fatal setup problems and per-student findings such as:
+
+- missing/unreadable template or submissions folder;
+- an unextracted archive, template copy, or wrapper folder;
+- missing/misnamed question folders, Java files, or template resources;
+- empty files, extra files, unreadable items, or symlinks;
+- Java files with a missing or incomplete `Name`/`Email ID` header; and
+- a folder name that is close to a scoresheet username and may be a typo.
+
+The report ends with counts of ready, needs-attention, and not-graded folders. This stage does not compile, grade, or modify anything.
+
+The grader menu is:
+
+```text
+1. Fix common mistakes automatically
+2. Check the working copy again
+3. Start grading
+0. Cancel and return to the main menu
+```
+
+- **1** works only on the cached copy. It can flatten a wrapper folder, rename a likely username typo after a `Y/N` confirmation, add/correct a Java header, and restore missing questions/files/resources. Restoration first tries the original submission and then the Starting Folder. It does not overwrite an existing destination. A header naming another registered student is reported for human attention rather than silently changed.
+- **2** repeats the read-only check after you manually edit the cached copy.
+- **3** accepts the current copy and begins grading, even if a student still has findings; unresolved problems become grading errors or zero marks where applicable.
+- **0** abandons this run without grading.
+
+After option 1, read the `__ Submission validation __` output. It reports fixed events and events still needing attention, followed by a reminder to run the check again. Select option 2 to confirm the resulting layout. Only the cache is changed, never the original submission folders or the Starting Folder.
+
+## 6. Run grading
+
+Select **3. Start grading** in the grader menu. The program processes each student and each question independently:
+
+1. It finds the question folder (including the supported single wrapper case).
+2. It copies the student's regular source/resource files and the instructor's `*Tester.java` files into a fresh temporary directory.
+3. It runs one bounded `javac` process for that question.
+4. It runs each tester as a bounded `java` process and compares its output with the matching `.expected.txt`.
+5. It awards one mark per passing tester and updates the configured scoresheet.
+
+A compile error, missing question/file/tester/expected file, runtime exception, timeout, output-limit violation, or output mismatch is reported with context and does not stop unrelated students or questions. A missing/unreadable submissions folder, tester folder, or scoresheet is fatal and prevents grading. A template-copy submission named exactly like the Starting Folder is listed as `not graded` and skipped.
+
+Example output from a real run:
+
+```text
+__ Submission check (template: template) __
+alice ...................... needs attention
+  [MISSING_HEADER] alice/Q1/Main.java - Java file is missing a header. -> Choose "Fix common mistakes automatically" to add or repair the header.
+
+--- Grader Options ---
+1. Fix common mistakes automatically
+2. Check the working copy again
+3. Start grading
+0. Cancel and return to the main menu
+Enter option: 3
+[INFO] Running autograder!
+PASS student=alice submission=.../cache/submissions/alice question=Q1 tester=Q1aTester score=1
+```
+
+The grader runs student code as the local user without a sandbox. The timeout and output limit are resource limits, not security isolation.
+
+## 7. Read the outputs
+
+At the end of a successful grading run, the program prints paths for:
+
+- **Updated scoresheet** - the configured CSV, with marks merged into the question columns. Existing rows/columns are preserved where possible.
+- **HTML report** - `.grader-report.html` in the current directory. It contains scores and all recorded diagnostics and can be opened through main-menu option 4.
+- **Score export** - a new timestamped CSV in the current directory with `username`, question columns, `final_score`, and a `% full marks` row.
+- **Error history** - `.grader-error-history.jsonl`, one JSON object per recorded issue. It is append-only across runs.
+
+The console finishes with a summary such as:
+
+```text
+HTML report: .../.grader-report.html
+Score export: .../2026-11-11_11-41-29-889778000.csv
+[INFO] Completed: 1 submission(s), 0 reported issue(s).
+```
+
+Generated files are local run state. Back up the original scoresheet if you need a pristine copy, and remove generated cache/report/export/history files when resetting a run.
+
+## Common errors and fixes
+
+| Message or symptom | Resolution |
+| --- | --- |
+| `The path must be absolute` or `File not found` | Paste an existing absolute path. Check folder/file type and that the scoresheet ends in `.csv`. |
+| No `Username` or `student` column | Add one of those exact header names to the first CSV row. |
+| `Autograder not started because submission setup is invalid` | Fix the Starting Folder or Submissions Folder, permissions, or empty question layout, then choose option 2 or restart. |
+| `UNEXTRACTED_ARCHIVE`, `WRAPPED_FOLDER`, or username typo | Choose option 1, answer its confirmation prompts, then choose option 2. Otherwise repair the cached copy manually. |
+| `MISSING_HEADER` / `INCOMPLETE_HEADER` | Choose option 1 to add/correct `Name:` and `Email ID:` in the first ten lines, or edit the cached Java file. |
+| `missing-tester` or `missing-expected` | Put `<Name>Tester.java` and `<Name>Tester.expected.txt` together in the matching tester question folder. |
+| Compile error or missing resource | Restore the template's required files and correct Java names/classes. Check the detailed error in the console, HTML report, or JSONL history. |
+| Runtime/timeout/output-limit/output-mismatch | Fix the student's program or tester expected text. Increase the configured limit only when the assignment genuinely needs it. |
+| Report will not open | On a headless system open `.grader-report.html` manually. Run option 3 first if it does not exist. |
+| Stale or wrong working copy | Select main-menu option 5, then start option 3 again. |
+
+## Development checks
 
 ```sh
 mvn test
@@ -131,68 +215,4 @@ mvn package
 git diff --check
 ```
 
-## Grading real CS102 submissions with tester files
-
-Menu option 3 ("Grade students") grades submissions shaped like the CS102 starter template (`RenameToYourStudentID/Q1/Q1a.java`, `Q2/persons.txt`, ...) with the instructor's tester classes.
-
-
-
-### How a question is graded
-
-For each student and each question the grader:
-
-1. first and foremost, tester creates grading skeleton using defined records. `MethodSpec(String methodName, Class<?>[] paramTypes, List<TestCase> testCases)` is used for the skeleton for each method tested. `record TestCase(String label, Object[] args, Object expected, String expectedException)` is used to define each test case. For testing of returned values, `Object expected` is filled in while `expectedException` is null and vice versa. for `expectedException`, exception's simple name is compared with as any custom exception class would be very difficult without pre-knowledge of existing class.
-
-2. there are configs and options that can be parsed into the program, such as maximum timeout, max return value size, csv storage area etc. The program uses Junit's test factory and dynamic nodes for tests compiled at runtime. since actual question files are a few directories down, i make containers to contain each section of it. Firstly each student, gets a top level question container, then a subcontainer (Q1, Q2, etc...) then a subquestion container (Q1a, Q1b, Q2a, etc...) then each class is a container for the test cases provided from the instructor.
-
-3. At the subquestion container, the java files are tried to compile together with all other java or classes (in the case of Objects/exception what not). If it fails, faulted source file is removed and the rest are tried to compile again. After compilation, I start building the test cases.
-
-4. At the start, if the program can not find the stated class that it is testing, it fails an assertionError and aborts. else, it loads the class, gets the method stated in test. if cant find, it fails assertion there too. if it cant instantiate/load it also throws and fails assertion. else, it goes to the dynamic tests.
-
-5. Running the test case. i get the args that is meant for the test, get an instance of the class', then i create a thread with timer and run the test. (to catch any stray code or non-terminating). same thing for exception testing.timeout or invokation error, fails assertion. after student's code is ran, it is passed to assertEquals to compare if they match. finally, resource files are cleaned up before next test begins.
-
-
-1. copies the student's files for that question and that question's testers into a fresh temporary build folder (deleted afterwards);
-2. compiles them together with one bounded `javac` call;
-3. runs each tester with a bounded `java` call (no shell), with the build folder as the working directory so relative names such as `persons.txt` resolve to the student's copy;
-4. compares the tester's output with its expected file (text must match exactly; `\r\n` and `\n` line endings are treated as equal).
-
-Each passing tester is worth **one mark**. The scoresheet column for a question (for example `Q1`) holds the number of testers that passed, so a question with two testers is out of 2. The scoresheet needs a `student` column and one column per question, and a row per student whose name matches the student's folder name.
-
-If the student's work sits one folder down (for example `bob/RenameToYourStudentID/Q1`), grading still finds it; the submission check warns about it.
-
-A folder in the submissions folder that has the starting folder's own name (for example `submissions/RenameToYourStudentID`) is a copy of the blank template, not a student: the submission check lists it as `not graded` and grading skips it.
-
-Each of these is reported with the student, folder and question and does not stop grading: compile error, runtime exception, timeout (default 2 seconds per process), output over the limit, wrong output, missing question folder, a question folder without `.java` files, a question folder without testers, and a tester without an expected file. A missing or unreadable testers folder, submissions folder or scoresheet is fatal and nothing is graded.
-
-A question folder in the testers folder that holds no `*Tester.java` but does hold an `expected.txt` keeps using the older `Main.java` layout described under "Fixture layout"; this is what `demo` uses.
-
-### Try it with the checked-in demo data
-
-```sh
-./compile.sh
-sh demo/preflight/run-demo.sh
-```
-
-The script runs the real menu over `demo/preflight` (template, `testers`, `scores.csv`, `submissions`) from a throwaway folder and prints the filled scoresheet. The students show:
-
-| Student | Q1 | Q2 | Q3 | Story |
-| --- | --- | --- | --- | --- |
-| alice | 2 | 2 | 2 | full pass |
-| bob | 1 | 2 | 2 | partial pass (wrong greeting text); work inside a wrapper folder |
-| carol | 0 | 2 | 0 | compile error (`q1a.java` is misnamed); Q3 folder missing |
-| dave | 2 | 1 | 1 | runtime exception in Q2a; infinite loop in ShapeComparator (timeout) |
-| erin | 2 | 0 | 2 | Q2b.java is empty so the Q2 testers do not compile |
-| frank | | | | `frank.zip` is not extracted, so it is not graded |
-
-To grade by hand, run `./run.sh` and enter absolute paths (the prompts reject relative ones): `<repo>/demo/preflight/RenameToYourStudentID` as the starting folder, `<repo>/demo/preflight/testers` as the testers folder and the absolute path of a copy of `demo/preflight/scores.csv` as the scoresheet (grading overwrites the scoresheet in place), choose option 3 and enter `<repo>/demo/preflight/submissions`, where `<repo>` is the output of `pwd` in the repository root. The run also writes `.grader-report.html` (scores shown as marks earned out of marks available, such as `PARTIAL (1/2)`) and appends to `.grader-error-history.jsonl` in the current folder.
-
-## Submission check
-
-The interactive menu's "Grade students" option first runs a read-only submission check. It compares each submission folder with the configured starting-folder template and reports missing, misnamed, extra, or malformed files. The check never changes submissions or scoresheets; grading proceeds afterward using the configured tester files and scoresheet.
-
-For a synthetic check, run `sh demo/preflight/run-demo.sh` after running `./compile.sh`. The script uses a throwaway working directory and does not modify your own `config.json`.
-
-## Assets Credit
-
-The [big title ASCII art](./assets/title.txt) is generated from [www.asciiart.eu](https://www.asciiart.eu/text-to-ascii-art) With "ANSI Shadow" font and "Box drawing light" border. Everything else ([Welcome message](./assets/welcome.md) and the cat in the title) are self made.
+The checked-in `DemoRunner` class expects a `demo/fixtures` tree and is not the interactive launcher; use the interactive flow above unless those fixture files have been supplied separately.
