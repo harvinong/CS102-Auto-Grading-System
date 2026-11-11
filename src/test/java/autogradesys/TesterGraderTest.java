@@ -147,17 +147,67 @@ class TesterGraderTest {
     }
 
     @Test
-    void missingExpectedFileOnlyAffectsThatTester() throws IOException {
-        // A second tester with no expected file: the first tester must still be graded.
-        write(testers, "Q1/OtherTester.java",
-                "public class OtherTester { public static void main(String[] a) { System.out.println(1); } }");
+    void testerWithoutExpectedFileGivesTheScoreItPrintsLast() throws IOException {
+        // A course-style tester: no expected file, it prints its checks and then the score ("2.0") last.
+        write(testers, "Q1/CubeTester.java",
+                "public class CubeTester { public static void main(String[] a) { double score = 0;"
+                        + " System.out.println(\"Test 1\"); if (Square.of(2) == 4) { score += 1; }"
+                        + " if (Square.of(3) == 9) { score += 1; } System.out.println(score); } }");
+        // A tester that prints no score at all.
+        write(testers, "Q1/QuietTester.java",
+                "public class QuietTester { public static void main(String[] a) { System.out.println(\"done\"); } }");
         write(submissions, "alice/Q1/Square.java",
                 "public class Square { static int of(int n) { return n * n; } }");
 
         GradeResult result = grade();
 
+        // 2 from CubeTester + 1 from SquareTester (expected file) + 0 from QuietTester.
+        assertEquals(3, result.scores().get("alice").get("Q1"));
+        assertEquals(List.of("no-score"), categories());
+        // Full marks: CubeTester has two "score += 1", SquareTester 1, QuietTester counts as 1.
+        assertEquals(4, result.marksFor("Q1"));
+    }
+
+    @Test
+    void flatTestersFolderIsGroupedByQuestion() throws IOException {
+        // All testers in one folder, as the course hands them out: Q1aTester belongs to Q1.
+        Path flat = root.resolve("flat-testers");
+        write(flat, "Q1aTester.java",
+                "public class Q1aTester { public static void main(String[] a) { double score = 0;"
+                        + " if (Square.of(4) == 16) { score += 1; } System.out.println(score); } }");
+        write(submissions, "alice/Q1/Square.java",
+                "public class Square { static int of(int n) { return n * n; } }");
+
+        GradeResult result = JavaGrader.grade(submissions, flat, scores, Duration.ofSeconds(5), reporter);
+
         assertEquals(1, result.scores().get("alice").get("Q1"));
-        assertEquals(List.of("missing-expected"), categories());
+        assertEquals(List.of(), categories());
+    }
+
+    @Test
+    void templateClassFilesAreUsedButOldStudentClassFilesAreNot() throws IOException {
+        // Compile a helper class once, and keep only its .class file, like DataException.class in the template.
+        Path helperSource = root.resolve("helper/Helper.java");
+        write(root, "helper/Helper.java", "public class Helper { static int base() { return 10; } }");
+        Process javac = new ProcessBuilder("javac", "-d", root.resolve("helper").toString(), helperSource.toString())
+                .inheritIO().start();
+        try {
+            assertEquals(0, javac.waitFor());
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        }
+        Files.createDirectories(submissions.resolve("alice/Q1"));
+        Files.copy(root.resolve("helper/Helper.class"), submissions.resolve("alice/Q1/Helper.class"));
+        // Square.java uses Helper, which only exists as a .class file. A stray Square.class (an old
+        // compiled copy) sits next to the source and must not be used instead of the source.
+        write(submissions, "alice/Q1/Square.java",
+                "public class Square { static int of(int n) { return n * n + Helper.base() - 10; } }");
+        write(submissions, "alice/Q1/Square.class", "not a real class file");
+
+        GradeResult result = grade();
+
+        assertEquals(1, result.scores().get("alice").get("Q1"));
+        assertEquals(List.of(), categories());
     }
 
     @Test

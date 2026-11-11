@@ -1,24 +1,23 @@
 Welcome to the Auto-Grading System! Streamline grading by batch-
-validate and test students' submissions, and then write their 
-performances in the scoresheet.
+validating and testing students' submissions, and then writing their 
+marks into a copy of the scoresheet.
 
-This program requires three configuration parameters:
+This program asks for five settings:
 1. Starting Folder
-   - Your students modify this folder during lab test/exam.
-   - The java files to be graded should be named "Qx.java", matching 
-     your tester files (QxTester.java). For example, if there is 
-     "AppleStore.java", there should be "AppleStoreTester.java".
+   - The starter folder your students modify during the lab test/exam
+     (e.g. RenameToYourUsername, with Q1, Q2 and Q3 inside).
 
-2. Tester File
-   - It is a java source extending autogradesys.tester.QuestionTests.
-   - It is compiled in runtime and run along the program.
+2. Tester Files Folder
+   - The folder with the course testers (e.g. Q1aTester.java).
+   - The testers can sit in one folder, or in one folder per question
+     (Q1, Q2, ...). Q1aTester and Q1bTester are graded as Q1.
+   - Each tester prints the student's score on its last line.
 
 3. Scoresheet File
-   - A csv file containing a list of your students along with 
-     their grades.
-   - Your file should contain the [TODO: headers] headers.
-   - Grading writes the marks into this file in place, so keep a
-     backup copy if you need the blank sheet.
+   - The course csv file listing your students (e.g. 
+     IS442-ScoreSheet.csv), with a "Username" column.
+   - The marks are saved in a new copy next to it, named with the
+     date and time. The original file is never changed.
 
 4. Grading Timeout (seconds)
    - The maximum duration for each compile or execution process 

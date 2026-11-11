@@ -92,7 +92,7 @@ public class Input {
      */
     public static long promptPositiveLong(String label, long defaultValue, long maxValue, Scanner sc) {
         // One message for every kind of bad line, naming the accepted range so the user knows what to type.
-        String invalid = TextColor.ERROR.getActionTag() + "Invalid input: " + label + " must be a whole number from 1 to " + maxValue + ".\n";
+        String invalid = TextColor.ERROR.getActionTag() + " Invalid input: " + label + " must be a whole number from 1 to " + maxValue + ".\n";
         // Loops until a valid value is returned from inside the body.
         while (true) {
             // Show the current value in brackets so Enter visibly means "keep this".
@@ -194,6 +194,17 @@ public class Input {
                 // Only one kind of quote is ever removed.
                 break;
             }
+        }
+
+        // On a Mac (or Linux), dragging a file into Terminal types its path with a backslash before
+        // spaces and some symbols, e.g. /Users/jon/My\ Drive/sheet.csv. Remove those backslashes.
+        // (Windows paths use backslashes as separators, so they are left alone there.)
+        if (File.separatorChar == '/') {
+            pathString = pathString.replaceAll("\\\\(.)", "$1");
+        }
+        // "~" means the home folder, e.g. ~/Documents becomes /Users/jon/Documents.
+        if (pathString.equals("~") || pathString.startsWith("~/")) {
+            pathString = System.getProperty("user.home") + pathString.substring(1);
         }
 
         if (pathString.length() == 0) {
