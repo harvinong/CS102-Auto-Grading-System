@@ -84,6 +84,7 @@ public class TemplateResourceSynchronizer {
 
             Files.walkFileTree(templateDir, new SimpleFileVisitor<Path>() {
 
+                @Override
                 /**
                  * Records each template folder, except junk folders, which are skipped together with everything inside them.
                  *
@@ -91,7 +92,6 @@ public class TemplateResourceSynchronizer {
                  * @param attrs the folder's attributes, unused
                  * @return SKIP_SUBTREE for a junk folder, otherwise CONTINUE
                  */
-                @Override
                 public FileVisitResult preVisitDirectory(
                         Path dir,
                         BasicFileAttributes attrs) {
@@ -109,6 +109,7 @@ public class TemplateResourceSynchronizer {
                     return FileVisitResult.CONTINUE;
                 }
 
+                @Override
                 /**
                  * Records each template file that is a resource: a regular, non-junk file that is not Java source.
                  *
@@ -116,7 +117,6 @@ public class TemplateResourceSynchronizer {
                  * @param attrs the file's attributes, used to ignore anything that is not a regular file
                  * @return CONTINUE, so the scan of the template goes on whether or not this file counted as a resource
                  */
-                @Override
                 public FileVisitResult visitFile(
                         Path file,
                         BasicFileAttributes attrs) {
@@ -247,6 +247,7 @@ public class TemplateResourceSynchronizer {
 
             Files.walkFileTree(workingRoot, new SimpleFileVisitor<Path>() {
 
+                @Override
                 /**
                  * Deletes a non-Java file from the student's folder unless the template supplies it. Java files are always kept.
                  *
@@ -255,7 +256,6 @@ public class TemplateResourceSynchronizer {
                  * @return CONTINUE, so the walk goes on to the next student file whether or not this one was deleted
                  * @throws IOException if the file cannot be deleted, which stops the walk
                  */
-                @Override
                 public FileVisitResult visitFile(
                         Path file,
                         BasicFileAttributes attrs) throws IOException {
@@ -280,6 +280,7 @@ public class TemplateResourceSynchronizer {
                     return FileVisitResult.CONTINUE;
                 }
 
+                @Override
                 /**
                  * Deletes a student's folder that is empty and not in the template. The submission root and expected template folders always stay.
                  *
@@ -288,7 +289,6 @@ public class TemplateResourceSynchronizer {
                  * @return CONTINUE, so the walk goes on to the next folder, which is deleted only if it was empty and unexpected
                  * @throws IOException if {@code exc} is not null (it is rethrown), or the folder cannot be listed or deleted
                  */
-                @Override
                 public FileVisitResult postVisitDirectory(
                         Path dir,
                         IOException exc) throws IOException {
@@ -357,6 +357,7 @@ public class TemplateResourceSynchronizer {
 
         Files.walkFileTree(folder, new SimpleFileVisitor<Path>() {
 
+            @Override
             /**
              * Stops the search as soon as a regular Java file is found.
              *
@@ -364,7 +365,6 @@ public class TemplateResourceSynchronizer {
              * @param attrs the file's attributes, used to ignore anything that is not a regular file
              * @return TERMINATE when a Java file is found, otherwise CONTINUE
              */
-            @Override
             public FileVisitResult visitFile(
                     Path file,
                     BasicFileAttributes attrs) {
@@ -391,6 +391,7 @@ public class TemplateResourceSynchronizer {
 
         Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
 
+            @Override
             /**
              * Deletes one file during the walk.
              *
@@ -399,7 +400,6 @@ public class TemplateResourceSynchronizer {
              * @return CONTINUE, so every file below the folder is deleted in turn
              * @throws IOException if the file cannot be deleted
              */
-            @Override
             public FileVisitResult visitFile(
                     Path file,
                     BasicFileAttributes attrs) throws IOException {
@@ -408,6 +408,7 @@ public class TemplateResourceSynchronizer {
                 return FileVisitResult.CONTINUE;
             }
 
+            @Override
             /**
              * Deletes a folder once everything inside it has been deleted.
              *
@@ -416,7 +417,6 @@ public class TemplateResourceSynchronizer {
              * @return CONTINUE, so the walk climbs on to the parent folder after this one is deleted
              * @throws IOException if {@code exc} is not null (it is rethrown), or the folder cannot be deleted
              */
-            @Override
             public FileVisitResult postVisitDirectory(
                     Path dir,
                     IOException exc) throws IOException {

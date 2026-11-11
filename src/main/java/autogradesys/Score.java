@@ -2,6 +2,9 @@ package autogradesys;
 
 /**
  * Stores the marks awarded and the total marks available for a result.
+ *
+ * @param scored the marks earned
+ * @param total the marks available
  */
 public record Score(int scored, int total) {
     @Override
