@@ -7,8 +7,8 @@ public class FileManager {
     /**
      * Validate the file object if it is a directory.
      *
-     * @param file the file object to be the directory.
-     * @throws IllegalArgumentException if the file object is not a directory.
+     * @param file the value used by this method.
+     * @throws IllegalArgumentException when the operation cannot complete.
      */
     public static void validateDirectory(File file) throws IllegalArgumentException {
         if (!file.isDirectory()) {
@@ -19,10 +19,10 @@ public class FileManager {
     /**
      * Validate the file object if it is a file with correct extensions.
      *
-     * @param file           the file object to be the file.
-     * @param fileExtensions the supported file extensions, strictly lowercase.
-     * @throws IllegalArgumentException if the file object is not a file, or has
      *                                  invalid extensions.
+     * @param file the value used by this method.
+     * @param fileExtensions the value used by this method.
+     * @throws IllegalArgumentException when the operation cannot complete.
      */
     public static void validateFile(File file, String... fileExtensions) throws IllegalArgumentException {
         if (!file.isFile()) {

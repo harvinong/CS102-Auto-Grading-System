@@ -24,6 +24,9 @@ public class SubmissionValidation {
 
     /**
      * Initializes validation with the cache, registered students, and optional restoration template.
+     * @param students the value used by this method.
+     * @param confirm the value used by this method.
+     * @param cache the value used by this method.
      */
     public SubmissionValidation(
             List<Student> students,
@@ -34,6 +37,10 @@ public class SubmissionValidation {
 
     /**
      * Initializes validation with the cache, registered students, and optional restoration template.
+     * @param students the value used by this method.
+     * @param confirm the value used by this method.
+     * @param cache the value used by this method.
+     * @param templateDir the value used by this method.
      */
     public SubmissionValidation(
             List<Student> students,
@@ -50,6 +57,9 @@ public class SubmissionValidation {
 
     /**
      * Validates the working submissions and returns their events grouped with resolved student paths.
+     * @param submissions the value used by this method.
+     * @param preflight the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public ValidationReport run(Path submissions, PreflightReport preflight) {
 

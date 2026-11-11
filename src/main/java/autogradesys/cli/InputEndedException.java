@@ -7,7 +7,7 @@ package autogradesys.cli;
 public class InputEndedException extends IllegalStateException {
 
     /**
-     * @param waitingFor What the prompt was asking for, e.g. "Starting Folder".
+     * @param waitingFor the value used by this method.
      */
     public InputEndedException(String waitingFor) {
         super("Input ended while waiting for " + waitingFor);

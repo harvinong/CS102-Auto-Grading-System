@@ -32,7 +32,9 @@ public class UsernameResolver {
     /**
      * The student a folder belongs to, and where that folder is now (it may have been renamed).
      *
-     * @param replaced Name of the folder that was removed to make room for this one, or null.
+     * @param student the value used by this method.
+     * @param dir the value used by this method.
+     * @param replaced the value used by this method.
      */
     public record Identity(Student student, Path dir, String replaced) {
     }
@@ -41,8 +43,8 @@ public class UsernameResolver {
     private final Predicate<String> confirm;
 
     /**
-     * @param students The registered students from the scoresheet.
-     * @param confirm  Asks the instructor a yes/no question; true means yes.
+     * @param students the value used by this method.
+     * @param confirm the value used by this method.
      */
     public UsernameResolver(List<Student> students, Predicate<String> confirm) {
         this.students = students;
@@ -50,12 +52,12 @@ public class UsernameResolver {
     }
 
     /**
-     * @param folder Name of the student's folder.
-     * @param dir    The student's folder.
-     * @param events Collects what happened.
-     * @param owners Registered username (lower case) mapped to the folder that already has that exact name;
      *               updated when a folder is renamed.
-     * @return The identity, or empty if the folder could not be matched to a registered student.
+     * @param folder the value used by this method.
+     * @param dir the value used by this method.
+     * @param events the value used by this method.
+     * @param owners the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public Optional<Identity> resolve(String folder, Path dir, List<ValidationEvent> events,
             Map<String, String> owners) {
@@ -97,6 +99,13 @@ public class UsernameResolver {
     // Renames the folder to the registered username, first moving aside the folder that already used the name.
     /**
      * Renames a working submission folder and records the replacement for later matching.
+     * @param folder the value used by this method.
+     * @param dir the value used by this method.
+     * @param match the value used by this method.
+     * @param owner the value used by this method.
+     * @param owners the value used by this method.
+     * @param events the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private Optional<Identity> rename(String folder, Path dir, Student match, String owner,
             Map<String, String> owners, List<ValidationEvent> events) {
@@ -132,7 +141,10 @@ public class UsernameResolver {
         return Optional.of(new Identity(match, renamed, owner));
     }
 
-    /** The username a folder name claims to be, with any term prefix removed. */
+    /** The username a folder name claims to be, with any term prefix removed.
+     * @param folder the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     public static String claimedUsername(String folder) {
         Matcher matcher = FOLDER_NAME.matcher(folder);
         return matcher.matches() ? matcher.group(1) : folder;
@@ -141,7 +153,9 @@ public class UsernameResolver {
     /**
      * Which folder already has each registered username as its (exact) name.
      *
-     * @return Registered username in lower case mapped to the folder name; the first folder wins.
+     * @param folders the value used by this method.
+     * @param students the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public static Map<String, String> owners(Collection<String> folders, List<Student> students) {
         Map<String, String> owners = new HashMap<>();

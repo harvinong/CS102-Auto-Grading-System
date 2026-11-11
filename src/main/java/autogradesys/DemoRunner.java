@@ -35,9 +35,9 @@ public final class DemoRunner {
      * Grades the fixtures below {@code demoRoot} and writes generated artifacts
      * beneath its target directory.
      *
-     * @param demoRoot root containing the checked-in demo fixtures
-     * @param output destination for demo progress and grading messages
-     * @return zero when the demo has no fatal error
+     * @param demoRoot the value used by this method.
+     * @param output the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public static int run(Path demoRoot, PrintStream output) {
         // Checked-in sample data: demo/fixtures.

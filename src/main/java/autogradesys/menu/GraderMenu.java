@@ -47,6 +47,8 @@ public class GraderMenu {
 
     /**
      * Initializes the grading menu with its input scanner and grading controller.
+     * @param sc the value used by this method.
+     * @param ctrl the value used by this method.
      */
     public GraderMenu(Scanner sc, GraderCtrl ctrl) {
         this.sc = sc;
@@ -54,6 +56,7 @@ public class GraderMenu {
     }
     /**
      * Returns the working directory currently selected for grading.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public Path getGradingPath() {
         return this.gradingPath;
@@ -67,7 +70,6 @@ public class GraderMenu {
         * <li>ask for the submissions folder and build the working copy (copy folders, extract zips);</li>
         * <li>run the read-only preflight check on the copy, recording ignored junk quietly and stopping if the setup is fatal;</li>
      * </ol>
-     * @throws IllegalStateException if this method is called twice or more.
      */
     public void setup() {
         if (this.submissions != null) {

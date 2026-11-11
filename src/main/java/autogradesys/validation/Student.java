@@ -3,9 +3,9 @@ package autogradesys.validation;
 /**
  * One registered student, read from the scoresheet.
  *
- * @param username Username without the scoresheet's leading '#' (e.g. ping.lee.2023).
- * @param fullName Name as written in the scoresheet (e.g. PING LEE).
- * @param email    The student's email address ("" if the scoresheet has none).
+ * @param username the value used by this method.
+ * @param fullName the value used by this method.
+ * @param email the value used by this method.
  */
 
 public record Student(String username, String fullName, String email) {

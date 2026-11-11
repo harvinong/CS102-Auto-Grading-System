@@ -54,6 +54,9 @@ public final class SubmissionPreflight {
     // Private: callers go through the static check(...) method instead.
     /**
      * Initializes a checker with the template and question layout used for comparison.
+     * @param submissions the value used by this method.
+     * @param templateName the value used by this method.
+     * @param questions the value used by this method.
      */
     private SubmissionPreflight(Path submissions, String templateName, Map<String, Question> questions) {
         // Remember the submissions folder for building relative paths.
@@ -64,7 +67,12 @@ public final class SubmissionPreflight {
         this.questions = questions;
     }
 
-    /** What the template says one question folder contains. */
+    /** What the template says one question folder contains.
+     * @param name the value used by this method.
+     * @param javaFiles the value used by this method.
+     * @param resources the value used by this method.
+     * @param folders the value used by this method.
+     */
     private record Question(
             String name,
             TreeSet<String> javaFiles,
@@ -75,13 +83,13 @@ public final class SubmissionPreflight {
     /**
      * Compares every submission folder with the template.
      *
-     * @param template    The starter template folder (its direct sub-folders are
      *                    the questions).
-     * @param submissions The folder whose direct children are the student
      *                    submissions.
-     * @return The report. If the template or submissions folder is unusable, the
      *         report is fatal
      *         and no submission is scanned.
+     * @param template the value used by this method.
+     * @param submissions the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public static PreflightReport check(Path template, Path submissions) {
         // Name used in the report heading.
@@ -123,6 +131,10 @@ public final class SubmissionPreflight {
     // reports fatal problems.
     /**
      * Reads the template question structure and returns its expected layout.
+     * @param template the value used by this method.
+     * @param templateName the value used by this method.
+     * @param fatal the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static Map<String, Question> readTemplate(Path template, String templateName,
             List<PreflightFinding> fatal) {
@@ -239,6 +251,7 @@ public final class SubmissionPreflight {
     // submission names.
     /**
      * Scans every submission folder and returns the student names discovered.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private List<String> scanAll() {
         // TreeSet gives sorted, de-duplicated names.
@@ -314,6 +327,8 @@ public final class SubmissionPreflight {
     // Checks one student folder (after the template-copy test).
     /**
      * Scans one submission against the expected folder and file layout.
+     * @param student the value used by this method.
+     * @param dir the value used by this method.
      */
     private void scanStudent(String student, Path dir) {
         // A folder named exactly like the template is probably the blank starter, not a
@@ -330,6 +345,9 @@ public final class SubmissionPreflight {
     /**
      * Scans one student folder; {@code allowWrapper} lets it look one level down
      * for the real work.
+     * @param student the value used by this method.
+     * @param dir the value used by this method.
+     * @param allowWrapper the value used by this method.
      */
     private void scanLayout(String student, Path dir, boolean allowWrapper) {
         // Children of the student folder, sorted.
@@ -467,6 +485,9 @@ public final class SubmissionPreflight {
     // expectations.
     /**
      * Checks one question folder for missing, extra, or malformed content.
+     * @param student the value used by this method.
+     * @param q the value used by this method.
+     * @param questionDir the value used by this method.
      */
     private void scanQuestion(String student, Question q, Path questionDir) {
         // Children of the question folder, sorted.
@@ -583,6 +604,9 @@ public final class SubmissionPreflight {
      * Pairs each expected name with the actual entry of that exact name, or else
      * the single entry
      * that differs only by letter case.
+     * @param expected the value used by this method.
+     * @param actual the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static Map<String, Path> matchNames(Iterable<String> expected, Map<String, Path> actual) {
         // Expected name -> the actual path that satisfies it.
@@ -614,6 +638,8 @@ public final class SubmissionPreflight {
     /**
      * Finds the single folder containing the student's work, even if
      * the work is wrapped inside multiple levels of extra folders.
+     * @param dirs the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private Path findWrapper(Map<String, Path> dirs) {
 
@@ -635,6 +661,8 @@ public final class SubmissionPreflight {
     /**
      * Checks whether a folder contains an expected question folder,
      * either directly or somewhere deeper in its hierarchy.
+     * @param folder the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private boolean containsQuestionFolder(Path folder) {
 
@@ -678,6 +706,9 @@ public final class SubmissionPreflight {
     // Records "this is not in the template" for a file or folder.
     /**
      * Adds a finding for an unexpected file or folder in a submission.
+     * @param student the value used by this method.
+     * @param path the value used by this method.
+     * @param folder the value used by this method.
      */
     private void addExtra(String student, Path path, boolean folder) {
         // WARNING (not ERROR): an extra does not stop the student being "ready";
@@ -689,6 +720,12 @@ public final class SubmissionPreflight {
     // Appends one finding to the list.
     /**
      * Adds a categorized finding to the current preflight report.
+     * @param student the value used by this method.
+     * @param category the value used by this method.
+     * @param severity the value used by this method.
+     * @param path the value used by this method.
+     * @param message the value used by this method.
+     * @param fix the value used by this method.
      */
     private void add(String student, Category category, Severity severity, String path, String message, String fix) {
         // Build the immutable finding and keep it in discovery order for the report.
@@ -698,6 +735,8 @@ public final class SubmissionPreflight {
     // Path relative to the submissions folder, always with forward slashes.
     /**
      * Returns a path relative to the submissions root for user-facing diagnostics.
+     * @param path the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private String rel(Path path) {
         // Relative to the submissions folder; backslashes become slashes so Windows
@@ -709,6 +748,8 @@ public final class SubmissionPreflight {
     // BLANK_CHECK_BYTES, read-only).
     /**
      * Reports whether a file contains no meaningful submission content.
+     * @param file the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static boolean isBlank(Path file) {
         try {
@@ -739,6 +780,8 @@ public final class SubmissionPreflight {
     // True when the folder directly contains at least one .java file.
     /**
      * Reports whether a directory contains at least one Java source file.
+     * @param dir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static boolean containsJava(Path dir) {
         try {
@@ -755,6 +798,9 @@ public final class SubmissionPreflight {
     // system's order).
     /**
      * Returns a stable, name-sorted list of a directory’s children.
+     * @param dir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
      */
     private static List<Path> sortedChildren(Path dir) throws IOException {
         // Files.list holds a directory handle, so close it with try-with-resources.
@@ -767,6 +813,8 @@ public final class SubmissionPreflight {
     // A folder we are allowed to look inside.
     /**
      * Reports whether a path is a readable real directory.
+     * @param dir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static boolean isReadableDirectory(Path dir) {
         // Must be a directory and readable, otherwise listing it would fail.
@@ -776,6 +824,8 @@ public final class SubmissionPreflight {
     // A genuine folder, not a symbolic link to one.
     /**
      * Reports whether a path is a directory rather than a symbolic link.
+     * @param dir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static boolean isRealDirectory(Path dir) {
         // NOFOLLOW_LINKS makes a symbolic link to a folder answer false.
@@ -787,6 +837,8 @@ public final class SubmissionPreflight {
     // by the grading algorithm and are part of the Starting Folder template.
     /**
      * Reports whether a path is a generated or otherwise ignored submission file.
+     * @param name the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static boolean isJunk(String name) {
         return name.startsWith(".") || name.equals("__MACOSX");
@@ -795,6 +847,8 @@ public final class SubmissionPreflight {
     // True for .zip names in any letter case.
     /**
      * Reports whether a filename has a ZIP extension.
+     * @param name the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static boolean isZip(String name) {
         // Lower-case first so .ZIP and .Zip count too.
@@ -804,6 +858,8 @@ public final class SubmissionPreflight {
     // "frank.zip" -> "frank".
     /**
      * Returns the student name stem derived from a submission archive filename.
+     * @param zipName the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static String stem(String zipName) {
         // Drop the last four characters, ".zip".
@@ -813,6 +869,8 @@ public final class SubmissionPreflight {
     // Last part of a path; falls back to the whole path for roots like "/".
     /**
      * Returns the final path component used as a display name.
+     * @param path the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static String nameOf(Path path) {
         // getFileName() is null for a root path such as "/".

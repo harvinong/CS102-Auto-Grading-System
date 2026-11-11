@@ -26,6 +26,9 @@ public final class ScoresheetReader {
 
     /**
      * Reads the scoresheet CSV and returns its registered student records.
+     * @param scoresheet the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
      */
     public static List<Student> read(File scoresheet) throws IOException {
         List<List<String>> rows = parse(Files.readString(scoresheet.toPath(), StandardCharsets.UTF_8));
@@ -53,6 +56,9 @@ public final class ScoresheetReader {
 
     /**
      * Returns the index of a named CSV column, or the absent-column sentinel.
+     * @param header the value used by this method.
+     * @param title the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static int columnOf(List<String> header, String title) {
         for (int i = 0; i < header.size(); i++) if (header.get(i).trim().equalsIgnoreCase(title)) return i;
@@ -60,11 +66,22 @@ public final class ScoresheetReader {
     }
     /**
      * Returns the requested row cell, handling a missing trailing value safely.
+     * @param row the value used by this method.
+     * @param column the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static String cell(List<String> row, int column) {
         return column < 0 || column >= row.size() ? "" : row.get(column).trim();
     }
+<<<<<<< HEAD
     /** Small RFC-4180-compatible CSV parser. */
+=======
+    /** Small RFC-4180-compatible parser, shared in spirit with grading.CsvScoresheet.
+     * @param text the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
+     */
+>>>>>>> 4d262fc (Add parameter return and exception documentation)
     private static List<List<String>> parse(String text) throws IOException {
         List<List<String>> rows = new ArrayList<>();
         List<String> row = new ArrayList<>();

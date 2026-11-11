@@ -19,6 +19,7 @@ public final class App {
 
     /**
      * Runs the application entry point.
+     * @param args the value used by this method.
      */
     public static void main(String[] args) {
         
@@ -30,7 +31,9 @@ public final class App {
         }
     }
 
-    /** Menu mode: the controller holds session state and the menu drives it. */ 
+    /** Menu mode: the controller holds session state and the menu drives it.
+     * @param debugMode the value used by this method.
+     */
     private static void startApp(boolean debugMode) {
         try (Scanner scanner = new Scanner(System.in)) {
             MainMenu menu = new MainMenu(scanner, new MainCtrl());

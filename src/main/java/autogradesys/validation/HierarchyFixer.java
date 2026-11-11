@@ -25,6 +25,9 @@ public final class HierarchyFixer {
     /**
      * Moves the contents of every wrapper folder up into its student folder.
      * Nested wrappers are processed from the innermost folder outward.
+     * @param submissions the value used by this method.
+     * @param preflight the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public static List<ValidationEvent> flattenWrappers(
             Path submissions,
@@ -60,6 +63,8 @@ public final class HierarchyFixer {
 
     /**
      * Returns the number of path components in a wrapper path.
+     * @param path the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static int pathDepth(String path) {
         return Path.of(path).getNameCount();
@@ -68,6 +73,9 @@ public final class HierarchyFixer {
     /**
      * Moves the wrapper's children into its parent, then attempts to remove
      * the now-empty wrapper.
+     * @param wrapper the value used by this method.
+     * @param finding the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static ValidationEvent flatten(
             Path wrapper,

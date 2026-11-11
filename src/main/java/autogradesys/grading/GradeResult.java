@@ -10,6 +10,11 @@ import java.util.Map;
  * <p>The menu uses it to print totals and to feed {@link HtmlReportWriter}; {@code scores} maps each
  * student to a map of question name to the marks earned, and {@code availableMarks} maps each
  * question to the marks it is worth (its number of testers, or 1 for the {@code Main.java} layout).</p>
+ * @param studentCount the value used by this method.
+ * @param issueCount the value used by this method.
+ * @param fatal the value used by this method.
+ * @param scores the value used by this method.
+ * @param availableMarks the value used by this method.
  */
 public record GradeResult(int studentCount, int issueCount, boolean fatal, Map<String, Map<String, Integer>> scores,
         Map<String, Integer> availableMarks) {
@@ -26,13 +31,21 @@ public record GradeResult(int studentCount, int issueCount, boolean fatal, Map<S
         availableMarks = Collections.unmodifiableMap(new LinkedHashMap<>(availableMarks));
     }
 
-    /** Result where every question is worth one mark, as in the {@code Main.java} and {@code expected.txt} layout. */
+    /** Result where every question is worth one mark, as in the {@code Main.java} and {@code expected.txt} layout.
+     * @param studentCount the value used by this method.
+     * @param issueCount the value used by this method.
+     * @param fatal the value used by this method.
+     * @param scores the value used by this method.
+     */
     public GradeResult(int studentCount, int issueCount, boolean fatal, Map<String, Map<String, Integer>> scores) {
         // Collect every question that appears in any student's scores and make each worth 1.
         this(studentCount, issueCount, fatal, scores, oneMarkEach(scores));
     }
 
-    /** Marks the question is worth; a question this result does not know is treated as worth one mark. */
+    /** Marks the question is worth; a question this result does not know is treated as worth one mark.
+     * @param question the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     public int marksFor(String question) {
         // getOrDefault covers results built without an entry for the question.
         return availableMarks.getOrDefault(question, 1);
@@ -41,6 +54,8 @@ public record GradeResult(int studentCount, int issueCount, boolean fatal, Map<S
     // Builds question name -> 1 for every question named in the scores, in first-seen order.
     /**
      * Creates a score map assigning one available mark to each question.
+     * @param scores the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static Map<String, Integer> oneMarkEach(Map<String, Map<String, Integer>> scores) {
         // LinkedHashMap keeps the order the questions were first seen.

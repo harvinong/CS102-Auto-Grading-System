@@ -46,6 +46,8 @@ public class StudentFileExec {
     record CompileResult(Map<String, List<String>> errorsByFile) {
     /**
      * Compiles the supplied source file and returns any compiler errors.
+     * @param javaFile the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     String errorsForFile(Path javaFile) {
         String fileName = javaFile.getFileName().toString();
@@ -61,6 +63,8 @@ public class StudentFileExec {
     @TestFactory
     /**
      * Builds dynamic tests for every discovered student submission.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws Exception when the operation cannot complete.
      */
     Stream<DynamicNode> testAllSubmissions() throws Exception {
         Path submissionsRoot = Paths.get(mc.getStartingFolder().getPath());
@@ -79,6 +83,10 @@ public class StudentFileExec {
         // Recursively turns ObjSpec / List into real objects using the student's classloader
     /**
      * Resolves a serialized argument into the runtime type expected by the student method.
+     * @param arg the value used by this method.
+     * @param loader the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws Exception when the operation cannot complete.
      */
     private Object resolveArg(Object arg, ClassLoader loader) throws Exception {
         if (arg instanceof ObjSpec spec) {
@@ -99,6 +107,10 @@ public class StudentFileExec {
 
     /**
      * Resolves every serialized test argument using the supplied class loader.
+     * @param args the value used by this method.
+     * @param loader the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws Exception when the operation cannot complete.
      */
     private Object[] resolveArgs(Object[] args, ClassLoader loader) throws Exception {
         Object[] out = new Object[args.length];
@@ -109,6 +121,10 @@ public class StudentFileExec {
     // Finds a constructor whose parameters can accept the args (allows int -> double widening)
     /**
      * Constructs an object using the matching student constructor and resolved arguments.
+     * @param cls the value used by this method.
+     * @param args the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws Exception when the operation cannot complete.
      */
     private Object construct(Class<?> cls, Object[] args) throws Exception {
         for (java.lang.reflect.Constructor<?> c : cls.getConstructors()) {
@@ -130,6 +146,9 @@ public class StudentFileExec {
 
     /**
      * Converts an argument to the target primitive or reference type when possible.
+     * @param arg the value used by this method.
+     * @param target the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private Object coerce(Object arg, Class<?> target) {
         if (arg instanceof Number n) {
@@ -145,6 +164,8 @@ public class StudentFileExec {
     // this is the MAIN question container
     /**
      * Builds dynamic test containers for each question in a student directory.
+     * @param studentDir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private Stream<DynamicNode> buildQuestionContainers(Path studentDir) {
         try {
@@ -169,6 +190,8 @@ public class StudentFileExec {
     // this is the SUB QUESTION (1a, 1b, 1c etc) container 
     /**
      * Builds dynamic test containers for each Java sub-question in a question directory.
+     * @param questionDir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private Stream<DynamicNode> buildSubQuestionContainers(Path questionDir) {
     try {
@@ -201,6 +224,11 @@ public class StudentFileExec {
 //actual like dir where question is. so can test
 /**
  * Builds the dynamic container and tests associated with one sub-question source file.
+ * @param javaFile the value used by this method.
+ * @param questionDir the value used by this method.
+ * @param compileResult the value used by this method.
+ * @param loader the value used by this method.
+ * @return the value produced by this operation, including any empty or absent result defined by its contract.
  */
 private DynamicNode buildOneSubQuestionContainer(Path javaFile, Path questionDir,
                                                    CompileResult compileResult, URLClassLoader loader) {
@@ -243,6 +271,10 @@ private DynamicNode buildOneSubQuestionContainer(Path javaFile, Path questionDir
     //dynamicnode cos its what junit thing is for test generated at runtime like instead of @test function {} or whatever
 /**
  * Creates dynamic tests from the configured cases for one sub-question class.
+ * @param className the value used by this method.
+ * @param loader the value used by this method.
+ * @param questionDir the value used by this method.
+ * @return the value produced by this operation, including any empty or absent result defined by its contract.
  */
 private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLClassLoader loader, Path questionDir) {
         MethodSpec spec = SPECS_BY_CLASS.get(className);
@@ -276,6 +308,9 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
     // compiling student .java to .class if they didnt do so
     /**
      * Compiles all Java sources in the supplied directory and reports the compilation result.
+     * @param dir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws Exception when the operation cannot complete.
      */
     private CompileResult compileAll(Path dir) throws Exception {
     javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
@@ -312,6 +347,14 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
 //the fun begins
 /**
  * Invokes one student method and records whether its result matches the test case.
+ * @param className the value used by this method.
+ * @param spec the value used by this method.
+ * @param tc the value used by this method.
+ * @param studentClass the value used by this method.
+ * @param method the value used by this method.
+ * @param loader the value used by this method.
+ * @param questionDir the value used by this method.
+ * @throws Throwable when the operation cannot complete.
  */
 private void runTestCase(String className, MethodSpec spec, TestCase tc,
                          Class<?> studentClass, Method method,
@@ -397,6 +440,11 @@ private void runTestCase(String className, MethodSpec spec, TestCase tc,
 //try compile, if cant compile all java, compile all again without said fail java 
 /**
  * Attempts compilation with the available compiler settings and captures diagnostics.
+ * @param compiler the value used by this method.
+ * @param sourceFiles the value used by this method.
+ * @param questionDir the value used by this method.
+ * @return the value produced by this operation, including any empty or absent result defined by its contract.
+ * @throws Exception when the operation cannot complete.
  */
 private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles, Path questionDir) throws Exception {
     DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
@@ -427,6 +475,9 @@ private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles,
 
     /**
      * Copies non-Java resources needed by the submission into its working directory.
+     * @param questionDir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws Exception when the operation cannot complete.
      */
     private List<Path> copyResourceFilesToWorkingDir(Path questionDir) throws Exception {
         Path workingDir = Paths.get("").toAbsolutePath();
@@ -461,6 +512,7 @@ private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles,
     //cleanup after each test case run to prevent contaminatioon
     /**
      * Removes the temporary resource copies created for compilation.
+     * @param copiedFiles the value used by this method.
      */
     private void cleanupCopiedFiles(List<Path> copiedFiles) {
         for (Path p : copiedFiles) {

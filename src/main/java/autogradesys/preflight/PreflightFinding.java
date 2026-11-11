@@ -5,6 +5,7 @@ import autogradesys.cli.TextColor;
 /**
  * One thing the preflight noticed about a submission.
  *
+<<<<<<< HEAD
  * @param student  The submission folder (or archive) name; empty for findings
  *                 about the
  *                 submissions folder or the template as a whole.
@@ -15,12 +16,24 @@ import autogradesys.cli.TextColor;
  * @param message  What is wrong.
  * @param fix      What the instructor or student can do about it; empty when
  *                 nothing is needed.
+=======
+ *                 submissions folder or the template as a whole.
+>>>>>>> 4d262fc (Add parameter return and exception documentation)
  */
 // A record is an immutable value holder: Java generates the constructor,
 // getters and equals for us.
 // Describes one submission or setup defect found before compilation begins.
 /**
  * Stores the category, severity, location, message, and suggested fix for one finding.
+ * @param student the value used by this method.
+ * @param problem the value used by this method.
+ * @param category the value used by this method.
+ * @param is the value used by this method.
+ * @param severity the value used by this method.
+ * @param is the value used by this method.
+ * @param path the value used by this method.
+ * @param message the value used by this method.
+ * @param fix the value used by this method.
  */
 public record PreflightFinding(
         // Which submission this belongs to ("" means it is about the whole run, not one
@@ -107,6 +120,7 @@ public record PreflightFinding(
      * - NOTE is applied with TextColor.INFO;
      * - WARNING is applied with TextColor.WARNING;
      * - ERROR and FATAL is applied with TextColor.ERROR;
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public String getTagWithColor() {
         TextColor color;

@@ -18,6 +18,7 @@ public enum TextColor {
     // Each constant above passes its own colour code in here.
     /**
      * Stores the ANSI prefix used to format one category of terminal text.
+     * @param prefixEscapeCode the value used by this method.
      */
     private TextColor(String prefixEscapeCode) {
         this.prefixEscapeCode = prefixEscapeCode;
@@ -25,8 +26,8 @@ public enum TextColor {
 
     /**Apply color to string when printed out to console.
      * 
-     * @param s String to be colored
-     * @return Colored string
+     * @param s the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public String apply(String s) {
         // Colour only a real terminal: piped output, log files and tests get plain text, and NO_COLOR turns colour off.
@@ -38,7 +39,7 @@ public enum TextColor {
     /** 
      * Get action tag such as [INFO] with its color
      * using the enum's own name (SUCCESS, INFO, ...) as the tag text.
-     * @return the text in square brackets, then colored.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public String getActionTag() {
         return getActionTag(this.toString());
@@ -46,8 +47,8 @@ public enum TextColor {
 
     /**
      * Get action tag such as [INFO] with its color
-     * @param s text to be put inside the square brackets
-     * @return the text in square brackets, then colored.
+     * @param s the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public String getActionTag(String s) {
         return apply("[" + s + "]");

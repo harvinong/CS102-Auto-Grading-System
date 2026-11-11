@@ -10,6 +10,7 @@ public class QuestionTests {
 
     /**
      * Returns the configured test specifications indexed by student class name.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public static Map<String, MethodSpec> getSPECS_BY_CLASS() {
         return SPECS_BY_CLASS;

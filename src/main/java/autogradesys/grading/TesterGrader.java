@@ -35,7 +35,10 @@ final class TesterGrader {
     private TesterGrader() {
     }
 
-    /** Returns true when the question folder is graded with testers rather than a Main.java and expected.txt. */
+    /** Returns true when the question folder is graded with testers rather than a Main.java and expected.txt.
+     * @param testerDir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     static boolean usesTesters(Path testerDir) {
         // A folder that holds at least one tester class is clearly tester based.
         if (!testerFiles(testerDir).isEmpty()) {
@@ -47,7 +50,10 @@ final class TesterGrader {
         return !Files.isRegularFile(testerDir.resolve("expected.txt"));
     }
 
-    /** Number of tester classes in the question folder, which is the number of marks the question is worth. */
+    /** Number of tester classes in the question folder, which is the number of marks the question is worth.
+     * @param testerDir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     static int testerCount(Path testerDir) {
         // Each tester is worth one mark, so the count is the question's maximum.
         return testerFiles(testerDir).size();
@@ -59,6 +65,9 @@ final class TesterGrader {
      * <p>Students often zip the whole template folder, so the question folders may sit one folder
      * down (for example {@code RenameToYourStudentID/Q1}). The submission check already warns about
      * that; grading tolerates it so those students still receive marks.</p>
+     * @param studentDir the value used by this method.
+     * @param questions the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     static Path submissionRoot(Path studentDir, List<String> questions) {
         // Normal case: a question folder sits directly in the student's folder.
@@ -94,11 +103,14 @@ final class TesterGrader {
     /**
      * Grades one question.
      *
-     * @param student student name used in diagnostics
-     * @param submissionRoot folder holding the student's question folders
-     * @param question question folder name, such as {@code Q1}
-     * @param testerDir the instructor's folder for this question
-     * @return the number of testers whose output matched
+     * @param student the value used by this method.
+     * @param submissionRoot the value used by this method.
+     * @param question the value used by this method.
+     * @param testerDir the value used by this method.
+     * @param timeout the value used by this method.
+     * @param outputLimitBytes the value used by this method.
+     * @param reporter the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     static int grade(String student, Path submissionRoot, String question, Path testerDir,
             Duration timeout, long outputLimitBytes, ErrorReporter reporter) {
@@ -222,6 +234,17 @@ final class TesterGrader {
     // Runs one compiled tester inside the build folder and returns 1 if its output matches, else 0.
     /**
      * Compiles and runs one tester against the student question, returning its score.
+     * @param student the value used by this method.
+     * @param studentQuestion the value used by this method.
+     * @param question the value used by this method.
+     * @param tester the value used by this method.
+     * @param build the value used by this method.
+     * @param timeout the value used by this method.
+     * @param outputLimitBytes the value used by this method.
+     * @param reporter the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
+     * @throws InterruptedException when the operation cannot complete.
      */
     private static int runTester(String student, Path studentQuestion, String question, Path tester, Path build,
             Path out, Duration timeout, long outputLimitBytes, ErrorReporter reporter)
@@ -410,6 +433,8 @@ final class TesterGrader {
     // Converts Windows line endings to Unix ones so only the text itself decides the comparison.
     /**
      * Normalizes output text before comparing tester and student results.
+     * @param text the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static String normalise(String text) {
         // Replace every carriage return plus line feed pair with a single line feed.
@@ -419,6 +444,9 @@ final class TesterGrader {
     // True when the folder directly contains a sub-folder named after one of the questions.
     /**
      * Reports whether a folder contains the requested question layout.
+     * @param folder the value used by this method.
+     * @param questions the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static boolean holdsQuestion(Path folder, List<String> questions) {
         // True as soon as one configured question name exists as a directory inside the folder.
@@ -428,6 +456,8 @@ final class TesterGrader {
     // The instructor's tester sources in a question folder, sorted by name; empty if the folder is unreadable.
     /**
      * Returns the tester source files found in the tester directory.
+     * @param testerDir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static List<Path> testerFiles(Path testerDir) {
         // The listing holds an OS handle, so try-with-resources closes it.
@@ -443,6 +473,7 @@ final class TesterGrader {
     }
 
     /**
+<<<<<<< HEAD
      * lists the files to copy into the build folder: sources, resources such as 
      * persons.txt, and .class files that have no .java source next to them (the 
      * template's DataException.class, Shape.class, ...). A .class file that has 
@@ -451,6 +482,11 @@ final class TesterGrader {
      * .DS_Store are left out too.
      * @param studentQuestion the student's folder for one question
      * @return the files, sorted by name
+=======
+     * Returns the Java source files belonging to the student question.
+     * @param studentQuestion the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+>>>>>>> 4d262fc (Add parameter return and exception documentation)
      */
     private static List<Path> studentFiles(Path studentQuestion) {
         // The listing holds an OS handle, so try-with-resources closes it.

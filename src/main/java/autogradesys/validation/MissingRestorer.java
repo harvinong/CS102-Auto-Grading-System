@@ -32,6 +32,8 @@ public class MissingRestorer {
 
     /**
      * Initializes restoration with the submission cache and optional template fallback.
+     * @param cache the value used by this method.
+     * @param templateDir the value used by this method.
      */
     public MissingRestorer(SubmissionCache cache, Path templateDir) {
         this.cache = cache;
@@ -42,6 +44,7 @@ public class MissingRestorer {
 
     /**
      * Backwards-compatible constructor.
+     * @param cache the value used by this method.
      */
     public MissingRestorer(SubmissionCache cache) {
         this(cache, null);
@@ -49,6 +52,9 @@ public class MissingRestorer {
 
     /**
      * Restores missing submission items from the original archive or template and returns the resulting validation events.
+     * @param workingDir the value used by this method.
+     * @param preflight the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public List<ValidationEvent> restore(
             Path workingDir,
@@ -83,6 +89,10 @@ public class MissingRestorer {
 
     /**
      * Restores one missing question folder or file.
+     * @param workingDir the value used by this method.
+     * @param finding the value used by this method.
+     * @param parts the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private ValidationEvent restoreOne(
             Path workingDir,
@@ -246,6 +256,11 @@ public class MissingRestorer {
 
     /**
      * Creates an event describing a missing item that was restored successfully.
+     * @param finding the value used by this method.
+     * @param item the value used by this method.
+     * @param restored the value used by this method.
+     * @param source the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static ValidationEvent restoredEvent(
             PreflightFinding finding,
@@ -265,6 +280,9 @@ public class MissingRestorer {
 
     /**
      * Creates an event describing a missing item that could not be restored.
+     * @param finding the value used by this method.
+     * @param message the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static ValidationEvent missing(
             PreflightFinding finding,
@@ -281,6 +299,11 @@ public class MissingRestorer {
     /**
      * Copies the missing item from the original submission,
      * even if the original submission contains multiple wrappers.
+     * @param originalFolder the value used by this method.
+     * @param projectDir the value used by this method.
+     * @param item the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
      */
     private static int restoreFromFolder(
             Path originalFolder,
@@ -310,6 +333,10 @@ public class MissingRestorer {
 
     /**
      * Searches recursively for the requested item inside the original submission.
+     * @param folder the value used by this method.
+     * @param item the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
      */
     private static Path findOriginalItem(
             Path folder,

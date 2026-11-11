@@ -74,12 +74,14 @@ public class ScoresheetDAO {
     // Output: a new ScoresheetDAO.
     /**
      * Opens the configured CSV scoresheet for loading, lookup, and updates.
+     * @param scoresheetFile the value used by this method.
      */
     public ScoresheetDAO(File scoresheetFile) {
         this.scoresheetFile = scoresheetFile;
     }
 
     /**
+<<<<<<< HEAD
      * reads the whole CSV. Every student row becomes a ScoresheetRecord (its marks in the
      * question columns) stored under its username, and the row's other cells are kept so they
      * can be written back unchanged. An empty mark cell means "not graded" and is left out.
@@ -87,6 +89,10 @@ public class ScoresheetDAO {
      * @return true if the file was read; false if it is missing, unreadable, badly quoted, has no
      *         Username (or student) column, repeats a column, has a row longer than the header, lists a student
      *         twice, or has a mark that is not a whole number. On false, whatever was loaded before is kept.
+=======
+     * Loads the persisted configuration or scoresheet data into this object.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+>>>>>>> 4d262fc (Add parameter return and exception documentation)
      */
     public boolean load() {
         if (scoresheetFile == null) {
@@ -198,11 +204,16 @@ public class ScoresheetDAO {
     }
 
     /**
+<<<<<<< HEAD
      * writes every record back to the scoresheet file it was loaded from. The file is first
      * written to a temporary file and then swapped in, so a failed save never leaves a broken file.
      * 
      * @return true if the file was written; false if nothing has been loaded or the write failed
      *         (the original file is left as it was).
+=======
+     * Persists the current configuration or scoresheet data to its configured file.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+>>>>>>> 4d262fc (Add parameter return and exception documentation)
      */
     public boolean save() {
         if (!loaded || scoresheetFile == null) {
@@ -254,6 +265,8 @@ public class ScoresheetDAO {
     // Output: that student's record, or null if the username is not in the scoresheet.
     /**
      * Returns the scoresheet record for the requested username, or null when absent.
+     * @param username the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public ScoresheetRecord get(String username) {
         if (username == null) {
@@ -269,6 +282,9 @@ public class ScoresheetDAO {
     // Output: true if the record was replaced; false if the username is not in the scoresheet or the record is null.
     /**
      * Stores or replaces the scoresheet record for the supplied username.
+     * @param username the value used by this method.
+     * @param record the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public boolean set(String username, ScoresheetRecord record) {
         if (username == null || record == null) {
@@ -288,6 +304,7 @@ public class ScoresheetDAO {
     // Output: the usernames in scoresheet order (empty before load()).
     /**
      * Returns the usernames currently represented in the loaded scoresheet.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public ArrayList<String> getUsernames() {
         return new ArrayList<>(records.keySet());
@@ -298,6 +315,7 @@ public class ScoresheetDAO {
     // Output: the scoresheet file.
     /**
      * Returns the CSV file used by this scoresheet data access object.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public File getScoresheetFile() {
         return scoresheetFile;
@@ -358,6 +376,9 @@ public class ScoresheetDAO {
     // Output: the column's position, or -1 if it is not there.
     /**
      * Returns the index of a named CSV column, or the absent-column sentinel.
+     * @param columns the value used by this method.
+     * @param name the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static int columnOf(List<String> columns, String name) {
         for (int i = 0; i < columns.size(); i++) {
@@ -367,6 +388,7 @@ public class ScoresheetDAO {
         }
         return -1;
     }
+<<<<<<< HEAD
 
     // Input: the cells of one row
     // Function: joins them with commas, quoting a cell only when it holds a comma, a quote or a line
@@ -385,6 +407,20 @@ public class ScoresheetDAO {
             line += value;
         }
         return line;
+=======
+ 
+    // Input: A text value to put in the CSV, e.g. a username or sub-question name.
+    // Function: Wraps the value in double quotes and doubles any quotes inside it, so commas cannot
+    //           break the CSV. Same as ScoreRecorder.quote().
+    // Output: The quoted value, e.g. chee"teo becomes "chee""teo".
+    /**
+     * Escapes a value for safe inclusion in a CSV field.
+     * @param value the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
+    private static String quote(String value) {
+        return "\"" + value.replace("\"", "\"\"") + "\"";
+>>>>>>> 4d262fc (Add parameter return and exception documentation)
     }
 
     // Input: the full text of a CSV file.
@@ -395,6 +431,9 @@ public class ScoresheetDAO {
     // Throws IOException if a quoted cell is never closed.
     /**
      * Parses CSV text into rows while preserving quoted fields and line structure.
+     * @param text the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
      */
     private static ArrayList<ArrayList<String>> parse(String text) throws IOException {
         // All finished rows.
@@ -463,6 +502,8 @@ public class ScoresheetDAO {
     // Output: nothing; "result" is changed directly.
     /**
      * Adds a parsed row when it contains at least one non-blank value.
+     * @param result the value used by this method.
+     * @param row the value used by this method.
      */
     private static void addRowIfNotBlank(ArrayList<ArrayList<String>> result, ArrayList<String> row) {
         boolean blank = row.size() == 1 && row.get(0).trim().isEmpty();

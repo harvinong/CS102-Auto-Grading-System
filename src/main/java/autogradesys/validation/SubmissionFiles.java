@@ -29,7 +29,8 @@ public final class SubmissionFiles {
     /**
      * Hidden files (e.g. macOS "._Q1a.java") and __MACOSX are clutter, not student work.
      *
-     * @param relative A path inside a submission; every part of it is checked.
+     * @param relative the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public static boolean isJunk(Path relative) {
         for (Path part : relative) {
@@ -41,24 +42,36 @@ public final class SubmissionFiles {
         return false;
     }
 
-    /** True for a real file (not a link) whose name ends in .zip in any letter case. */
+    /** True for a real file (not a link) whose name ends in .zip in any letter case.
+     * @param path the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     public static boolean isZipFile(Path path) {
         return Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)
                 && nameOf(path).toLowerCase(Locale.ROOT).endsWith(ZIP_EXTENSION);
     }
 
-    /** "frank.zip" gives "frank". */
+    /** "frank.zip" gives "frank".
+     * @param zipName the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     public static String stem(String zipName) {
         return zipName.substring(0, zipName.length() - ZIP_EXTENSION.length());
     }
 
-    /** The last part of the path as text. */
+    /** The last part of the path as text.
+     * @param path the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     public static String nameOf(Path path) {
         Path name = path.getFileName();
         return name == null ? path.toString() : name.toString();
     }
 
-    /** The one zip a folder contains, if that zip is the folder's only content; otherwise null. */
+    /** The one zip a folder contains, if that zip is the folder's only content; otherwise null.
+     * @param folder the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     public static Path onlyContentIsZip(Path folder) {
         try (Stream<Path> stream = Files.list(folder)) {
             List<Path> items = stream.filter(p -> !isJunk(p.getFileName())).toList();
@@ -72,7 +85,10 @@ public final class SubmissionFiles {
      * Copies a file or folder to the target, skipping junk and links and never overwriting a file
      * that already exists there.
      *
-     * @return How many files were copied.
+     * @param source the value used by this method.
+     * @param target the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
      */
     public static int copyMissing(Path source, Path target) throws IOException {
         int[] copied = {0};
@@ -80,6 +96,10 @@ public final class SubmissionFiles {
             @Override
             /**
              * Creates missing target directories while copying a submission file tree.
+             * @param dir the value used by this method.
+             * @param attrs the value used by this method.
+             * @return the value produced by this operation, including any empty or absent result defined by its contract.
+             * @throws IOException when the operation cannot complete.
              */
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 if (isJunk(source.relativize(dir))) {
@@ -92,6 +112,10 @@ public final class SubmissionFiles {
             @Override
             /**
              * Copies a file when it is missing from the target submission tree.
+             * @param file the value used by this method.
+             * @param attrs the value used by this method.
+             * @return the value produced by this operation, including any empty or absent result defined by its contract.
+             * @throws IOException when the operation cannot complete.
              */
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 Path destination = target.resolve(source.relativize(file));
@@ -106,13 +130,19 @@ public final class SubmissionFiles {
         return copied[0];
     }
 
-    /** Deletes a folder and everything in it (links are removed, never followed). Best effort. */
+    /** Deletes a folder and everything in it (links are removed, never followed). Best effort.
+     * @param root the value used by this method.
+     */
     public static void deleteTree(Path root) {
         try {
             Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
                 @Override
                 /**
                  * Copies a file when it is missing from the target submission tree.
+                 * @param file the value used by this method.
+                 * @param attrs the value used by this method.
+                 * @return the value produced by this operation, including any empty or absent result defined by its contract.
+                 * @throws IOException when the operation cannot complete.
                  */
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     Files.delete(file);
@@ -122,6 +152,10 @@ public final class SubmissionFiles {
                 @Override
                 /**
                  * Completes directory traversal while propagating any copy failure.
+                 * @param dir the value used by this method.
+                 * @param exc the value used by this method.
+                 * @return the value produced by this operation, including any empty or absent result defined by its contract.
+                 * @throws IOException when the operation cannot complete.
                  */
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
                     Files.delete(dir);

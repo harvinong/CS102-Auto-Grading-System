@@ -33,6 +33,7 @@ public class GraderCtrl {
 
     /**
      * Initializes grading and validation services from the supplied configuration.
+     * @param config the value used by this method.
      */
     public GraderCtrl(Config config) {
         this.config = config;
@@ -40,16 +41,27 @@ public class GraderCtrl {
 
     /**
      * Prepares or reuses a cache working copy for the supplied submissions folder.
+     * @param submissions the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public CacheReport prepareWorkingCopy(File submissions) {
         return cache.prepare(submissions.toPath());
     }
 
     /**
+<<<<<<< HEAD
      * Synchronises non-Java resources in the working copy with the Starting
      * Folder template, then runs the preflight check on the updated copy.
      *
      * Original submissions and the Starting Folder are never modified.
+=======
+     * Runs the preflight check on the working copy and adds a USERNAME_TYPO finding
+     * for every folder whose
+     * name looks like a mistyped username, so the instructor is alerted before any
+     * fix is run.
+     * @param workingDir the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+>>>>>>> 4d262fc (Add parameter return and exception documentation)
      */
     public PreflightReport checkSubmissions(Path workingDir) {
 
@@ -167,6 +179,11 @@ public class GraderCtrl {
 
     /**
      * Validates the working submissions and returns events describing repairs or remaining issues.
+     * @param workingDir the value used by this method.
+     * @param preflight the value used by this method.
+     * @param confirm the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
      */
     public ValidationReport validateSubmissions(Path workingDir, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {
@@ -182,6 +199,11 @@ public class GraderCtrl {
 
     /**
      * Validates the working submissions and returns events describing repairs or remaining issues.
+     * @param submissions the value used by this method.
+     * @param preflight the value used by this method.
+     * @param confirm the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
      */
     public ValidationReport validateSubmissions(File submissions, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {

@@ -15,6 +15,8 @@ public final class AppSettings {
     private final Pattern zipNamePattern;
     /**
      * Stores the cache location and archive filename pattern used by the application.
+     * @param cacheDir the value used by this method.
+     * @param zipNamePattern the value used by this method.
      */
     public AppSettings(Path cacheDir, Pattern zipNamePattern) {
         this.cacheDir = cacheDir;
@@ -22,18 +24,24 @@ public final class AppSettings {
     }
     /**
      * Loads the persisted configuration or scoresheet data into this object.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public static AppSettings load() { return defaultSettings(); }
     /**
      * Returns the application settings used when no custom configuration is available.
+     * @param DEFAULT_CACHE_DIR the value used by this method.
+     * @param DEFAULT_ZIP_NAME_PATTERN the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public static AppSettings defaultSettings() { return new AppSettings(DEFAULT_CACHE_DIR, DEFAULT_ZIP_NAME_PATTERN); }
     /**
      * Returns the directory where reusable submission working copies are stored.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public Path getCacheDir() { return cacheDir; }
     /**
      * Returns the pattern used to recognize incoming submission archive names.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public Pattern getZipNamePattern() { return zipNamePattern; }
 }

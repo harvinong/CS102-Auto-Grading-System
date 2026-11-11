@@ -47,6 +47,10 @@ public final class HeaderPreflightCheck {
 
     /**
      * Adds missing/incomplete header findings to an existing preflight report.
+     * @param report the value used by this method.
+     * @param submissionsDir the value used by this method.
+     * @param students the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     public static PreflightReport addFindings(
             PreflightReport report,
@@ -111,6 +115,10 @@ public final class HeaderPreflightCheck {
 
     /**
      * Scans one submission against the expected folder and file layout.
+     * @param folder the value used by this method.
+     * @param studentDir the value used by this method.
+     * @param student the value used by this method.
+     * @param findings the value used by this method.
      */
     private static void scanStudent(
             String folder,
@@ -133,6 +141,11 @@ public final class HeaderPreflightCheck {
 
     /**
      * Checks one source file header against the registered student identity.
+     * @param folder the value used by this method.
+     * @param studentDir the value used by this method.
+     * @param file the value used by this method.
+     * @param student the value used by this method.
+     * @param findings the value used by this method.
      */
     private static void checkFile(
             String folder,
@@ -192,6 +205,9 @@ public final class HeaderPreflightCheck {
 
     /**
      * Returns the first requested lines of a source file for diagnostic messages.
+     * @param content the value used by this method.
+     * @param maxLines the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static String firstLines(String content, int maxLines) {
         int end = 0;
@@ -209,6 +225,9 @@ public final class HeaderPreflightCheck {
 
     /**
      * Reports whether a header name identifies the expected student.
+     * @param headerName the value used by this method.
+     * @param fullName the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static boolean nameMatches(String headerName, String fullName) {
         String[] expectedParts = fullName.toLowerCase(Locale.ROOT).trim().split("\\s+");
@@ -225,6 +244,8 @@ public final class HeaderPreflightCheck {
 
     /**
      * Reports whether a path is a generated or otherwise ignored submission file.
+     * @param relativePath the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
     private static boolean isJunk(Path relativePath) {
         for (Path part : relativePath) {

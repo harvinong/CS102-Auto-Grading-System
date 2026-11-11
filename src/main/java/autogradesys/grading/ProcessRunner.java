@@ -29,7 +29,14 @@ final class ProcessRunner {
     private ProcessRunner() {
     }
 
-    /** Runs a command with no working-directory override. */
+    /** Runs a command with no working-directory override.
+     * @param command the value used by this method.
+     * @param input the value used by this method.
+     * @param timeout the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
+     * @throws InterruptedException when the operation cannot complete.
+     */
     static Result run(List<String> command, String input, Duration timeout)
             throws IOException, InterruptedException {
         // Delegate to the full overload with the inherited directory (null) and the default 1 MiB output cap.
@@ -41,6 +48,13 @@ final class ProcessRunner {
      *
      * <p>Output is drained concurrently so a noisy child cannot block waiting
      * for a pipe that the parent has not yet read.</p>
+     * @param command the value used by this method.
+     * @param input the value used by this method.
+     * @param timeout the value used by this method.
+     * @param workingDirectory the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
+     * @throws InterruptedException when the operation cannot complete.
      */
     static Result run(List<String> command, String input, Duration timeout, java.nio.file.Path workingDirectory)
             throws IOException, InterruptedException {
@@ -51,6 +65,14 @@ final class ProcessRunner {
     /**
      * Full implementation: start the process, feed it stdin, collect stdout and stderr, and kill it
      * if it exceeds the timeout or the output cap. Returns a {@link Result} describing how it ended.
+     * @param command the value used by this method.
+     * @param input the value used by this method.
+     * @param timeout the value used by this method.
+     * @param workingDirectory the value used by this method.
+     * @param outputLimitBytes the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @throws IOException when the operation cannot complete.
+     * @throws InterruptedException when the operation cannot complete.
      */
     static Result run(List<String> command, String input, Duration timeout,
             java.nio.file.Path workingDirectory, long outputLimitBytes)
@@ -148,7 +170,13 @@ final class ProcessRunner {
                 capture.stdout.toString(StandardCharsets.UTF_8), capture.stderr.toString(StandardCharsets.UTF_8));
     }
 
-    /** Starts a daemon thread that copies one of the child's output streams into a shared capture buffer. */
+    /** Starts a daemon thread that copies one of the child's output streams into a shared capture buffer.
+     * @param input the value used by this method.
+     * @param output the value used by this method.
+     * @param capture the value used by this method.
+     * @param name the value used by this method.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     private static Thread copyAsync(InputStream input, ByteArrayOutputStream output,
             Capture capture, String name) {
         // Wrap the copy loop in a named thread so it shows up clearly in thread dumps.
@@ -176,7 +204,10 @@ final class ProcessRunner {
         return reader;
     }
 
-    /** Stops a process and everything it spawned, escalating from a polite request to a forced kill. */
+    /** Stops a process and everything it spawned, escalating from a polite request to a forced kill.
+     * @param process the value used by this method.
+     * @throws InterruptedException when the operation cannot complete.
+     */
     private static void terminate(Process process) throws InterruptedException {
         // First kill grandchildren (e.g. processes the student's code launched) so they cannot be orphaned.
         process.toHandle().descendants().forEach(handle -> handle.destroyForcibly());
@@ -208,6 +239,7 @@ final class ProcessRunner {
 
         /**
          * Initializes an output capture with the configured byte limit.
+         * @param limit the value used by this method.
          */
         Capture(long limit) {
             // Remember the cap chosen by the caller of run().
@@ -217,6 +249,9 @@ final class ProcessRunner {
         // synchronized: stdout and stderr threads share the byte budget, so the check and update must be atomic.
         /**
          * Appends one diagnostic record to the JSON Lines error history.
+         * @param output the value used by this method.
+         * @param bytes the value used by this method.
+         * @param count the value used by this method.
          */
         synchronized void append(ByteArrayOutputStream output, byte[] bytes, int count) {
             // How many bytes we may still keep before hitting the cap.
@@ -240,6 +275,7 @@ final class ProcessRunner {
         // True once any output has been discarded because of the size cap.
         /**
          * Reports whether captured process output has reached its configured limit.
+         * @return the value produced by this operation, including any empty or absent result defined by its contract.
          */
         boolean limitExceeded() {
             // Read the flag that append() sets; the run() wait loop and both reader threads poll it to stop early.

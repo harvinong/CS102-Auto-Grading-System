@@ -33,13 +33,17 @@ public final class ErrorHistory {
         this.path = DEFAULT_PATH;
     }
 
-    /** Creates history storage at the supplied JSONL path. */
+    /** Creates history storage at the supplied JSONL path.
+     * @param path the value used by this method.
+     */
     public ErrorHistory(Path path) {
         // Remember the file location; the file itself is only touched by append().
         this.path = path;
     }
 
-    /** Returns the configured history path for diagnostics and callers. */
+    /** Returns the configured history path for diagnostics and callers.
+     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     */
     public Path path() {
         // Lets ErrorReporter name the file in a message when writing to it fails.
         return path;
@@ -48,12 +52,12 @@ public final class ErrorHistory {
     /**
      * Appends one complete JSON object followed by a newline.
      *
-     * @param record diagnostic to persist
-     * @throws IOException when the history cannot be created or written
      */
     // Called by ErrorReporter after each error; failures propagate so the reporter can mark the history as failed.
     /**
      * Appends one diagnostic record to the JSON Lines error history.
+     * @param record the value used by this method.
+     * @throws IOException when the operation cannot complete.
      */
     public void append(ErrorRecord record) throws IOException {
         // Resolve to a clean absolute path so relative inputs like "logs/../history.jsonl" behave predictably.

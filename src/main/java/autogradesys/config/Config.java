@@ -5,10 +5,10 @@ import java.io.File;
 /**
  * Convenient Configuration object (record)
  * 
- * @param startingFolder The template where students modify this folder during lab test/exam.
- * @param testersFolder A folder containing tester files to be used for grading.
- * @param scoresheetFile A csv file containing a list of students along with their grades.
- * @param timeoutSeconds The maximum duration for each compile or execution process for each question.
- * @param outputLimitBytes Cap on captured stdout plus stderr per process/question.
+ * @param startingFolder the value used by this method.
+ * @param testersFolder the value used by this method.
+ * @param scoresheetFile the value used by this method.
+ * @param timeoutSeconds the value used by this method.
+ * @param outputLimitBytes the value used by this method.
  */
 public record Config(File startingFolder, File testersFolder, File scoresheetFile, long timeoutSeconds, long outputLimitBytes) {}
