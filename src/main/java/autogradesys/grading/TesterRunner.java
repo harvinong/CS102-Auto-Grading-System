@@ -23,22 +23,44 @@ public class TesterRunner {
     private JavaCompiler compiler;
     private Config config;
     private Path gradingPath;
+    private ErrorReporter reporter;
     private Map<String, TesterFile> testerFileMap = new LinkedHashMap<>();
 
-    public TesterRunner(JavaCompiler compiler, Config config, Path gradingPath) {
+    public TesterRunner(JavaCompiler compiler, Config config, Path gradingPath, ErrorReporter reporter) {
         this.compiler = compiler;
         this.config = config;
         this.gradingPath = gradingPath;
+        this.reporter = reporter;
     }
 
     public void run() throws IOException {
         // Get a map of tester files.
+        reporter.info(TextColor.INFO.getActionTag() + " Searching tester files.");
         for (TesterFile t: getTesters()) {
-            System.out.println(t);
             testerFileMap.put(t.forQuestion(), t);
         }
+        if (testerFileMap.size() == 0) {
+            reporter.error("test", "filesys", "ERROR", "can't identify any test files", "check if you configured the correct directory", "", "", "", false);
+        } else {
+            System.out.printf(
+                "%s Identified %d question%s: %s%n",
+                TextColor.SUCCESS.getActionTag(),
+                testerFileMap.size(),
+                testerFileMap.size() == 1? "": "s",
+                String.join(", ", testerFileMap.keySet())
+            );
+        }
+        
+        // Copy tester files to submissions.
+        int copyCount = copyToSubs();
+        // Log
+        System.out.printf(
+            "%s Copied %d tester file%s%n",
+            TextColor.SUCCESS.getActionTag(),
+            copyCount,
+            copyCount == 1? "": "s"
+        );
 
-        copyToSubs();
 
     }
 
@@ -60,8 +82,8 @@ public class TesterRunner {
         return testerFileList;
     }
 
-    private void copyToSubs() throws IOException {
-        System.out.println(TextColor.INFO.apply("COPY TO SUBS"));
+    private int copyToSubs() throws IOException {
+        int copyCount = 0;
         try (Stream<Path> pathStream = Files.walk(gradingPath)) {
             Iterator<Path> pathStreamIterator = pathStream.iterator();
             while (pathStreamIterator.hasNext()) {
@@ -76,15 +98,15 @@ public class TesterRunner {
 
                 // if the name is part of the tester file (therefore is a question)
                 if (testerFileMap.containsKey(question)) {
-                    System.out.println(TextColor.INFO.getActionTag() + " found " + question);
                     TesterFile testerFile = testerFileMap.get(question);
 
                     Path dest = p.getParent().resolve(testerFile.origin().toPath().getFileName());
                     Files.copy(testerFile.origin().toPath(), dest);
+                    copyCount++;
                 }
-
             }
         }
+        return copyCount;
     }
 
 }
