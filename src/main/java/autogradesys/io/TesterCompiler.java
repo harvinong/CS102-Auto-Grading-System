@@ -44,7 +44,6 @@ public class TesterCompiler {
         if (sysJavaCompiler == null) {
             throw new CompilerNotFoundException();
         }
-        System.out.println(TextColor.SUCCESS.getActionTag() + " compiler ready 👍");
     }
 
     public CompileAttempt compile() {
@@ -80,9 +79,8 @@ public class TesterCompiler {
     public QuestionTests getQuestionTests() {
         try {
             URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { (new File(DEST_PATH)).toURI().toURL() });
-            Class<?> cls = Class.forName(testerFile.getName().substring(0, ".java".length()), true, classLoader);
+            Class<?> cls = Class.forName(testerFile.getName().substring(0, testerFile.getName().length() - ".java".length()), true, classLoader);
             Object instance = cls.getDeclaredConstructor().newInstance();
-            System.out.println(TextColor.INFO.getActionTag() + " instancing done");
             return (QuestionTests) instance;
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
             | InvocationTargetException | NoSuchMethodException e) {
@@ -120,7 +118,14 @@ public class TesterCompiler {
                     System.out.print(TextColor.ERROR.getActionTag());
                 }
                 System.out.println(" Number of failed compile: " + status.errorsByFile().size());
-
+                
+            }
+            QuestionTests qt = tc.getQuestionTests();
+            if (qt == null) {
+                System.out.print(TextColor.ERROR.getActionTag());
+            } else {
+                System.out.print(TextColor.SUCCESS.getActionTag());
+                System.out.println(qt.getSpecs().toString());
             }
             
         } catch (CompilerNotFoundException | CompileException e) {
