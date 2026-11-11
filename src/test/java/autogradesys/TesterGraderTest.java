@@ -76,10 +76,11 @@ class TesterGraderTest {
 
         GradeResult result = grade();
 
-        // One tester, one mark, no diagnostics, and the mark is written to the scoresheet.
+        // One tester, one mark, no diagnostics, and the scoresheet itself is left unchanged
+        // (ScoreRecorder.exportResults writes the marks into a dated copy instead).
         assertEquals(1, result.scores().get("alice").get("Q1"));
         assertEquals(List.of(), categories());
-        assertTrue(Files.readString(scores).contains("alice,1"));
+        assertEquals("student,Q1\nalice,\nbob,\ncarol,\n", Files.readString(scores));
     }
 
     @Test

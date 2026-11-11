@@ -26,8 +26,8 @@ import autogradesys.validation.CacheReport;
      * <li>run the read-only preflight check on the copy, recording ignored junk quietly and stopping
      *     if the setup is fatal;</li>
      * <li>let the instructor fix the copy, re-check it, or start grading;</li>
-     * <li>grade every student with JavaGrader (compile, run the testers, compare output, update
-     *     the CSV through ScoreRecorder);</li>
+     * <li>grade every student with JavaGrader (compile, run the testers, compare output), then save
+     *     the marks in a dated copy of the scoresheet through ScoreRecorder;</li>
      * <li>write the HTML report from the result and the recorded errors, and print a summary.</li>
      * </ol>
      * Everything that goes wrong is recorded through one ErrorReporter, so the console, the
@@ -189,7 +189,7 @@ public class GraderMenu {
      * The next logical step of the whole program, which is to batch-grade students' submissions.
      * </p>
      * <ol>
-        * <li>grade every student with JavaGrader (compile, run the testers, compare output, update the CSV through ScoreRecorder);</li>
+        * <li>grade every student with JavaGrader (compile, run the testers, compare output), then save the marks in a dated copy of the scoresheet through ScoreRecorder;</li>
         * <li>write the HTML report from the result and the recorded errors, and print a summary.</li>
      * </ol>
      */
@@ -224,12 +224,13 @@ public class GraderMenu {
             // Explain why no report was produced instead of crashing the menu.
             System.out.println("Could not write HTML report: " + exception.getMessage());
         }
-        // Also export the results in ScoreRecorder's format (username, questions, final_score, % full marks).
+        // Save the marks into a copy of the scoresheet, named with the date and time; the original is not changed.
         try {
-            java.nio.file.Path exported = autogradesys.ScoreRecorder.exportResults(result);
+            java.nio.file.Path exported = autogradesys.ScoreRecorder.exportResults(result,
+                    ctrl.config.scoresheetFile().toPath());
             System.out.println("Score export: " + exported.toAbsolutePath());
         } catch (java.io.IOException exception) {
-            // The scoresheet was already updated by the grader, so only show a message.
+            // The copy could not be written; the original scoresheet is untouched, so only show a message.
             System.out.println("Could not export scores: " + exception.getMessage());
         }
         // Final one-line summary: students graded and total issues recorded (fatal or not).

@@ -52,7 +52,7 @@ public final class ScoresheetReader {
     private static String cell(List<String> row, int column) {
         return column < 0 || column >= row.size() ? "" : row.get(column).trim();
     }
-    /** Small RFC-4180-compatible parser, shared in spirit with grading.CsvScoresheet. */
+    /** Small RFC-4180-compatible CSV parser. */
     private static List<List<String>> parse(String text) throws IOException {
         List<List<String>> rows = new ArrayList<>();
         List<String> row = new ArrayList<>();

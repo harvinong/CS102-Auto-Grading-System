@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  * {@link TesterGrader} (one mark per passing instructor tester) or, for the older layout, compiles
  * {@code Main.java} with javac, runs it through {@link ProcessRunner} with the question's input and
  * compares stdout with {@code expected.txt} (one mark). Every problem is recorded in the
- * {@link ErrorReporter}, and the marks are finally handed to {@link CsvScoresheet}. The HTML report
+ * {@link ErrorReporter}, and the marks are returned in a {@link GradeResult}. The HTML report
  * is written afterwards from the result and the reporter's records.</p>
  *
  * <p>Submission and question defects are recorded as recoverable so grading
@@ -155,15 +155,8 @@ public final class JavaGrader {
             }
         }
 
-        // Step 5: write results to the CSV. The null check is a safety net; validSetup normally already rejected a missing scoresheet.
-        if (scoresheet != null) {
-            // Merge the new scores into the existing CSV, keeping other columns and reporting any write problem.
-            autogradesys.ScoreRecorder.recordScores(scoresheet, scores, reporter);
-        } else {
-            // No destination file was given, so the scores cannot be saved; flag this as fatal for the whole session.
-            reporter.fatal("scoresheet", "scoresheet-read", "No scoresheet was provided.",
-                    "Pass a CSV scoresheet path before running a non-interactive grading session.");
-        }
+        // Step 5: the marks are saved by the caller: GraderMenu passes this result to ScoreRecorder.exportResults,
+        // which writes a dated copy of the scoresheet with the marks. The original scoresheet is never changed here.
         // Summarise the session for the caller: students graded, total errors recorded, whether any was fatal, and all scores.
         return new GradeResult(students.size(), reporter.records().size(), reporter.hasFatalError(), scores,
                 availableMarks);
@@ -199,15 +192,6 @@ public final class JavaGrader {
                     "Could not read scoresheet " + display(scoresheet),
                     "Check that the CSV exists and is readable before grading.");
             // Mark failed and fall through to the return.
-            valid = false;
-        }
-        // Only parse the CSV when everything above passed, so we never read a file we already know is missing or unreadable.
-        if (valid && !CsvScoresheet.isValid(scoresheet)) {
-            // Parse problem such as a bad header or a malformed row; fatal so grading cannot half-update a broken file.
-            reporter.fatal("scoresheet", "scoresheet-read",
-                    "Could not read scoresheet " + display(scoresheet),
-                    "Check that the CSV has a valid header and no malformed rows.");
-            // Mark failed.
             valid = false;
         }
         // True only when all three inputs passed their checks.

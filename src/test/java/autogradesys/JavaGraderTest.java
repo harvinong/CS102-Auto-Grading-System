@@ -73,14 +73,15 @@ class JavaGraderTest {
         Set<String> categories = new HashSet<>();
         reporter.records().forEach(record -> categories.add(record.category()));
         assertTrue(categories.containsAll(Set.of("compile", "runtime", "timeout", "output-mismatch",
-                "missing-question", "malformed-structure", "scoresheet-row")));
+                "missing-question", "malformed-structure")));
         assertEquals(7, result.studentCount());
         assertEquals(1, result.scores().get("alice").get("q1"));
         assertEquals(1, result.scores().get("compile").get("q2"));
         assertEquals(0, result.scores().get("missing").get("q1"));
         assertTrue(reporter.records().stream().allMatch(record -> record.canContinue()));
-        assertTrue(Files.readString(scoresheet).contains("legacy,9,8"));
-        assertTrue(Files.readString(scoresheet).contains("compile,0,1"));
+        // Grading no longer writes into the scoresheet; ScoreRecorder.exportResults saves a dated copy instead.
+        assertEquals("student,q1,q2\nlegacy,9,8\nalice,,\ncompile,,\nruntime,,\nmismatch,,\ntimeout,,\nmissing,,\nmalformed,,\n,,\n",
+                Files.readString(scoresheet));
 
         List<String> historyLines = Files.readAllLines(temporary.resolve("errors.jsonl"));
         assertEquals(reporter.records().size(), historyLines.size());
@@ -117,7 +118,8 @@ class JavaGraderTest {
         assertTrue(limit.message().contains("stdout=128 bytes, stderr=0 bytes"));
         assertEquals(1, result.scores().get("flood").get("q2"));
         assertEquals(1, result.scores().get("healthy").get("q1"));
-        assertTrue(Files.readString(scoresheet).contains("healthy,1,1"));
+        // Grading leaves the scoresheet unchanged.
+        assertEquals("student,q1,q2\nflood,,\nhealthy,,\n", Files.readString(scoresheet));
     }
 
     @Test
@@ -178,29 +180,6 @@ class JavaGraderTest {
         IOException failure = assertThrows(IOException.class, () -> HtmlReportWriter.write(
                 parentFile.resolve("report.html"), new GradeResult(0, 0, false, Map.of()), List.of()));
         assertTrue(failure.getMessage() != null && !failure.getMessage().isBlank());
-    }
-
-    @Test
-    void scoresheetUpdateIsAtomicInShapeAndKeepsPriorRows() throws Exception {
-        Path scoresheet = temporary.resolve("scores.csv");
-        Files.writeString(scoresheet, "student,q1\nlegacy,9\nalice,old\n", StandardCharsets.UTF_8);
-        ErrorReporter reporter = reporter("scoresheet-errors.jsonl");
-
-        assertTrue(autogradesys.grading.CsvScoresheet.update(scoresheet,
-                Map.of("alice", Map.of("q1", 1, "q2", 0)), reporter));
-        String updated = Files.readString(scoresheet);
-        assertTrue(updated.contains("legacy,9"));
-        assertTrue(updated.contains("alice,1"));
-        assertTrue(reporter.records().stream().anyMatch(record -> record.category().equals("scoresheet-update")));
-
-        String beforeBadHeader = updated;
-        Path bad = temporary.resolve("bad.csv");
-        Files.writeString(bad, "name,q1\nalice,\n", StandardCharsets.UTF_8);
-        ErrorReporter badReporter = reporter("bad-errors.jsonl");
-        assertFalse(autogradesys.grading.CsvScoresheet.update(bad,
-                Map.of("alice", Map.of("q1", 1)), badReporter));
-        assertEquals("name,q1\nalice,\n", Files.readString(bad));
-        assertEquals(beforeBadHeader, updated);
     }
 
     private ErrorReporter reporter(String fileName) {
