@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  * {@link TesterGrader} (one mark per passing instructor tester) or, for the older layout, compiles
  * {@code Main.java} with javac, runs it through {@link ProcessRunner} with the question's input and
  * compares stdout with {@code expected.txt} (one mark). Every problem is recorded in the
- * {@link ErrorReporter}, and the marks are finally handed to {@link CsvScoresheet}. The HTML report
+ * {@link ErrorReporter}, and the marks are returned in a {@link GradeResult}. The HTML report
  * is written afterwards from the result and the reporter's records.</p>
  *
  * <p>Submission and question defects are recorded as recoverable so grading
@@ -82,6 +82,20 @@ public final class JavaGrader {
             // Setup is broken, so stop here with the same fatal result instead of grading against missing inputs.
             return new GradeResult(0, reporter.records().size(), true, Map.of());
         }
+        // The course gives all testers in one folder (Q1aTester.java, Q2aTester.java, ...); group them into
+        // one temporary folder per question (Q1/, Q2/, ...) so they can be graded like the folder layout.
+        Path groupedTesters = null;
+        try {
+            groupedTesters = TesterGrader.groupFlatTesters(questionsRoot);
+        } catch (IOException exception) {
+            reporter.fatal("submission", "filesystem",
+                    "Could not group the tester files by question: " + exception.getMessage(),
+                    "Put the testers in one folder per question (Q1, Q2, ...) and try again.");
+            return new GradeResult(0, reporter.records().size(), true, Map.of());
+        }
+        if (groupedTesters != null) {
+            questionsRoot = groupedTesters;
+        }
         // Step 3: list the question folder names (q1, q2, ...) from the questions directory, sorted so scoring order is stable.
         List<String> questions = questionNames(questionsRoot, reporter);
         // List one entry per student folder, also sorted, so the CSV rows and report follow a predictable order.
@@ -102,7 +116,7 @@ public final class JavaGrader {
         for (String question : questions) {
             Path questionDir = questionsRoot.resolve(question);
             availableMarks.put(question, TesterGrader.usesTesters(questionDir)
-                    ? TesterGrader.testerCount(questionDir) : 1);
+                    ? TesterGrader.fullMarks(questionDir) : 1);
         }
 
         // Step 4: grade students one at a time; any problem inside is recorded and the loop carries on with the next student.
@@ -155,14 +169,11 @@ public final class JavaGrader {
             }
         }
 
-        // Step 5: write results to the CSV. The null check is a safety net; validSetup normally already rejected a missing scoresheet.
-        if (scoresheet != null) {
-            // Merge the new scores into the existing CSV, keeping other columns and reporting any write problem.
-            autogradesys.ScoreRecorder.recordScores(scoresheet, scores, reporter);
-        } else {
-            // No destination file was given, so the scores cannot be saved; flag this as fatal for the whole session.
-            reporter.fatal("scoresheet", "scoresheet-read", "No scoresheet was provided.",
-                    "Pass a CSV scoresheet path before running a non-interactive grading session.");
+        // Step 5: the marks are saved by the caller: GraderMenu passes this result to ScoreRecorder.exportResults,
+        // which writes a dated copy of the scoresheet with the marks. The original scoresheet is never changed here.
+        // Remove the temporary per-question tester folders, if they were made.
+        if (groupedTesters != null) {
+            deleteTree(groupedTesters);
         }
         // Summarise the session for the caller: students graded, total errors recorded, whether any was fatal, and all scores.
         return new GradeResult(students.size(), reporter.records().size(), reporter.hasFatalError(), scores,
@@ -201,13 +212,12 @@ public final class JavaGrader {
             // Mark failed and fall through to the return.
             valid = false;
         }
-        // Only parse the CSV when everything above passed, so we never read a file we already know is missing or unreadable.
-        if (valid && !CsvScoresheet.isValid(scoresheet)) {
-            // Parse problem such as a bad header or a malformed row; fatal so grading cannot half-update a broken file.
+        // Read the scoresheet with ScoresheetDAO now, so a sheet the marks cannot be saved into (for example
+        // one without a Username column) stops grading before any student is graded, not after.
+        if (valid && !new autogradesys.io.ScoresheetDAO(scoresheet.toFile()).load()) {
             reporter.fatal("scoresheet", "scoresheet-read",
                     "Could not read scoresheet " + display(scoresheet),
-                    "Check that the CSV has a valid header and no malformed rows.");
-            // Mark failed.
+                    "Use the course scoresheet: a CSV with a Username column and no broken rows.");
             valid = false;
         }
         // True only when all three inputs passed their checks.
@@ -234,7 +244,7 @@ public final class JavaGrader {
             if (names.isEmpty()) {
                 // Fatal: the caller will end up with no questions to score, so tell the operator how to fix the fixtures.
                 reporter.fatal("submission", "structure", "No question directories were found.",
-                        "Create question directories containing expected.txt fixtures.");
+                        "Put the tester files in the testers folder, either all together or in one folder per question (Q1, Q2, ...).");
             }
             // Return the sorted names (possibly empty, in which case the fatal error above is already recorded).
             return names;

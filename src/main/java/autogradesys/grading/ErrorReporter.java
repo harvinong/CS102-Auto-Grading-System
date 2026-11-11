@@ -11,7 +11,7 @@ import autogradesys.cli.TextColor;
 /**
  * Central place where every grading problem is reported.
  *
- * <p>JavaGrader, CsvScoresheet and the menu call {@link #recoverable} or {@link #fatal}; each call
+ * <p>JavaGrader and the menu call {@link #recoverable} or {@link #fatal}; each call
  * builds one {@link ErrorRecord}, keeps it in memory for the HTML report, prints it to the console,
  * and appends it to the {@link ErrorHistory} file.</p>
  *
