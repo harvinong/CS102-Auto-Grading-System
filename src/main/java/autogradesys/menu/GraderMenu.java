@@ -26,8 +26,8 @@ import autogradesys.validation.CacheReport;
      * <li>run the read-only preflight check on the copy, recording ignored junk quietly and stopping
      *     if the setup is fatal;</li>
      * <li>let the instructor fix the copy, re-check it, or start grading;</li>
-     * <li>grade every student with JavaGrader (compile, run the testers, compare output, update
-     *     the CSV through ScoreRecorder);</li>
+     * <li>grade every student with JavaGrader (compile, run the testers, compare output), then save
+     *     the marks in a dated copy of the scoresheet through ScoreRecorder;</li>
      * <li>write the HTML report from the result and the recorded errors, and print a summary.</li>
      * </ol>
      * Everything that goes wrong is recorded through one ErrorReporter, so the console, the
@@ -45,10 +45,16 @@ public class GraderMenu {
     private PreflightReport preflight;
     private Path gradingPath;
 
+    /**
+     * Initializes the grading menu with its input scanner and grading controller.
+     */
     public GraderMenu(Scanner sc, GraderCtrl ctrl) {
         this.sc = sc;
         this.ctrl = ctrl;
     }
+    /**
+     * Returns the working directory currently selected for grading.
+     */
     public Path getGradingPath() {
         return this.gradingPath;
     }
@@ -144,6 +150,9 @@ public class GraderMenu {
     }
 
     // -- Displays --
+    /**
+     * Prints the title and context for the current menu.
+     */
     private void displayMenuTitle() {
         System.out.println("--- Grader Options ---");
     }
@@ -189,7 +198,7 @@ public class GraderMenu {
      * The next logical step of the whole program, which is to batch-grade students' submissions.
      * </p>
      * <ol>
-        * <li>grade every student with JavaGrader (compile, run the testers, compare output, update the CSV through ScoreRecorder);</li>
+        * <li>grade every student with JavaGrader (compile, run the testers, compare output), then save the marks in a dated copy of the scoresheet through ScoreRecorder;</li>
         * <li>write the HTML report from the result and the recorded errors, and print a summary.</li>
      * </ol>
      */
@@ -224,12 +233,20 @@ public class GraderMenu {
             // Explain why no report was produced instead of crashing the menu.
             System.out.println("Could not write HTML report: " + exception.getMessage());
         }
-        // Also export the results in ScoreRecorder's format (username, questions, final_score, % full marks).
+        // A fatal error (for example an unreadable scoresheet or no testers) means nothing was really graded,
+        // so say so plainly and save no marks, instead of a scoresheet full of zeros.
+        if (result.fatal()) {
+            System.out.printf("%s Grading stopped because of the error above, so no marks were saved.%n%n",
+                    TextColor.ERROR.getActionTag());
+            return;
+        }
+        // Save the marks into a copy of the scoresheet, named with the date and time; the original is not changed.
         try {
-            java.nio.file.Path exported = autogradesys.ScoreRecorder.exportResults(result);
+            java.nio.file.Path exported = autogradesys.ScoreRecorder.exportResults(result,
+                    ctrl.config.scoresheetFile().toPath());
             System.out.println("Score export: " + exported.toAbsolutePath());
         } catch (java.io.IOException exception) {
-            // The scoresheet was already updated by the grader, so only show a message.
+            // The copy could not be written; the original scoresheet is untouched, so only show a message.
             System.out.println("Could not export scores: " + exception.getMessage());
         }
         // Final one-line summary: students graded and total issues recorded (fatal or not).

@@ -39,6 +39,9 @@ public record GradeResult(int studentCount, int issueCount, boolean fatal, Map<S
     }
 
     // Builds question name -> 1 for every question named in the scores, in first-seen order.
+    /**
+     * Creates a score map assigning one available mark to each question.
+     */
     private static Map<String, Integer> oneMarkEach(Map<String, Map<String, Integer>> scores) {
         // LinkedHashMap keeps the order the questions were first seen.
         Map<String, Integer> marks = new LinkedHashMap<>();
