@@ -215,7 +215,11 @@ public class GraderMenu {
         // Grade with the configured testers folder (questions) and scoresheet; the configured timeout (default 2 seconds) stops infinite loops and the output limit (default 1 MiB) stops flooding.
         // A copy of the starter template in the submissions folder is not a student, so it is skipped.
         TesterRunner testerRunner = new TesterRunner(compiler, ctrl.config, gradingPath);
-        testerRunner.run();
+        try {
+            testerRunner.run();
+        } catch (IOException e) {
+            reporter.fatal("test", "filesystem", e.getMessage(), "");
+        }
 
         GradeResult result = JavaGrader.grade(gradingPath,
                 ctrl.config.testersFolder().toPath(), ctrl.config.scoresheetFile().toPath(),
