@@ -28,6 +28,9 @@ public final class HtmlReportWriter {
 
     /**
      * Writes the supplied grading report and diagnostics to the requested output path.
+     * @param result the completed grading result to export.
+     * @param errors the argument supplied to this operation.
+     * @throws IOException when the operation cannot complete.
      */
     public static void write(GradeResult result, List<ErrorRecord> errors) throws IOException {
         write(HTML_REPORT_PATH, result, errors);
@@ -37,6 +40,10 @@ public final class HtmlReportWriter {
     // Entry point called by the menu after grading; IOException lets the menu report a write failure.
     /**
      * Writes the supplied grading report and diagnostics to the requested output path.
+     * @param path the file or directory path being inspected or written.
+     * @param result the completed grading result to export.
+     * @param errors the argument supplied to this operation.
+     * @throws IOException when the operation cannot complete.
      */
     public static void write(Path path, GradeResult result, List<ErrorRecord> errors) throws IOException {
         // A missing destination is a caller bug, so fail loudly.
@@ -144,6 +151,7 @@ public final class HtmlReportWriter {
 
         /**
          * Stores the display cell used for one report outcome.
+         * @param cell the argument supplied to this operation.
          */
         Outcome(String cell) {
             // Keep the class-plus-label text for this outcome so the table row can append it directly.
@@ -153,6 +161,9 @@ public final class HtmlReportWriter {
         // Classifies marks earned against marks available; a question worth 0 can never be full marks.
         /**
          * Maps a question score and available marks to the corresponding report outcome.
+         * @param score the argument supplied to this operation.
+         * @param available the argument supplied to this operation.
+         * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
          */
         static Outcome of(int score, int available) {
             // Full marks need a question that is worth something and a score that reaches it.
@@ -167,6 +178,9 @@ public final class HtmlReportWriter {
     // Number of student-question results in the run that fall in the given outcome.
     /**
      * Counts how many questions have the requested outcome in the grading result.
+     * @param result the completed grading result to export.
+     * @param outcome the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static int countOutcomes(GradeResult result, Outcome outcome) {
         // Walk each student's question marks and keep those whose outcome matches.
@@ -178,6 +192,8 @@ public final class HtmlReportWriter {
     // Builds the escaped "student=... submission=... question=..." text for one error.
     /**
      * Returns the concise context shown for a diagnostic in the HTML report.
+     * @param error the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String context(ErrorRecord error) {
         // Collects the parts that are present.
@@ -195,6 +211,8 @@ public final class HtmlReportWriter {
     // Converts text to HTML-safe text, protecting the report from markup or script in student names or output.
     /**
      * Escapes text so it can be inserted safely into HTML.
+     * @param value the value to quote or convert.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String escape(String value) {
         // Accumulates the safe version.

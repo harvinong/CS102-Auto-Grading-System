@@ -30,7 +30,10 @@ public final class ErrorReporter {
     // Set when saving to disk fails, so the run is later treated as untrustworthy even though no grading error caused it.
     private boolean historyFailure;
 
-    /** Creates a reporter backed by durable history and user-facing output. */
+    /** Creates a reporter backed by durable history and user-facing output.
+     * @param history the argument supplied to this operation.
+     * @param output the destination stream or output buffer.
+     */
     public ErrorReporter(ErrorHistory history, PrintStream output) {
         // Store the dependencies handed in by the caller; passing them in lets tests use a temp file and a fake stream.
         this.history = history;
@@ -41,7 +44,16 @@ public final class ErrorReporter {
     /**
      * Records, prints, and persists one diagnostic.
      *
-     * @return the structured record retained for the session summary
+     * @param stage the argument supplied to this operation.
+     * @param category the argument supplied to this operation.
+     * @param severity the argument supplied to this operation.
+     * @param message the argument supplied to this operation.
+     * @param guidance the argument supplied to this operation.
+     * @param student the registered student identity.
+     * @param submission the argument supplied to this operation.
+     * @param question the question name being graded or looked up.
+     * @param canContinue the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public ErrorRecord error(String stage, String category, String severity, String message,
             String guidance, String student, String submission, String question,
@@ -74,6 +86,14 @@ public final class ErrorReporter {
     // Convenience wrapper for student or question problems.
     /**
      * Creates and records a diagnostic for an error from which grading can continue.
+     * @param stage the argument supplied to this operation.
+     * @param category the argument supplied to this operation.
+     * @param message the argument supplied to this operation.
+     * @param guidance the argument supplied to this operation.
+     * @param student the registered student identity.
+     * @param submission the argument supplied to this operation.
+     * @param question the question name being graded or looked up.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public ErrorRecord recoverable(String stage, String category, String message, String guidance,
             String student, String submission, String question) {
@@ -85,6 +105,11 @@ public final class ErrorReporter {
     // Convenience wrapper for broken setup, e.g. a missing folder or unreadable CSV.
     /**
      * Reports whether the findings contain a fatal condition.
+     * @param stage the argument supplied to this operation.
+     * @param category the argument supplied to this operation.
+     * @param message the argument supplied to this operation.
+     * @param guidance the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public ErrorRecord fatal(String stage, String category, String message, String guidance) {
         // No student, submission or question applies, and canContinue=false marks the whole run as untrustworthy.
@@ -99,6 +124,12 @@ public final class ErrorReporter {
      * {@code .DS_Store}, the {@code __MACOSX} folder, or (preflight only) a compiled {@code .class} file. The record is kept for the HTML report and
      * the history file, but it is a "note": it never stops grading and it is not printed on the
      * console, which keeps the output readable when a class has many such files.</p>
+     * @param stage the argument supplied to this operation.
+     * @param category the argument supplied to this operation.
+     * @param message the argument supplied to this operation.
+     * @param guidance the argument supplied to this operation.
+     * @param submission the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public ErrorRecord ignored(String stage, String category, String message, String guidance,
             String submission) {
@@ -126,6 +157,7 @@ public final class ErrorReporter {
     // Used for PASS lines and other progress text that is not a problem.
     /**
      * Records an informational diagnostic without marking the grading run as failed.
+     * @param message the argument supplied to this operation.
      */
     public void info(String message) {
         // Console only: info lines are deliberately not saved to history or counted as issues.
@@ -136,6 +168,7 @@ public final class ErrorReporter {
     // Accessor used by JavaGrader for counts and by the menu for the HTML report.
     /**
      * Returns the diagnostics recorded by this reporter in encounter order.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public List<ErrorRecord> records() {
         // Read-only view so outside code cannot add to or remove from the session's record.
@@ -146,6 +179,7 @@ public final class ErrorReporter {
     // Asked at the end of grading to decide whether the result can be trusted.
     /**
      * Reports whether any recorded diagnostic is fatal.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public boolean hasFatalError() {
         // Fatal if any record said it could not continue, or if saving history failed.
@@ -155,6 +189,7 @@ public final class ErrorReporter {
     // Formats one record as a few readable console lines.
     /**
      * Writes the current report or diagnostic information to the supplied output stream.
+     * @param record the diagnostic or scoresheet record to store.
      */
     private void print(ErrorRecord record) {
         // Headline such as "[ERROR] scoresheet/scoresheet-read: message", with severity in capitals.
@@ -195,7 +230,7 @@ public final class ErrorReporter {
 
     /**
      * Tell the operator directly, because this failure cannot be written to the very history that just failed.
-     * @param exception
+     * @param exception the exception describing the failed operation.
      */
     private void printAppendErrorHistoryError(IOException exception) {
         output.printf("%s history/write: Could not append error history at %s: %s%n",

@@ -32,6 +32,8 @@ public class MissingRestorer {
 
     /**
      * Initializes restoration with the submission cache and optional template fallback.
+     * @param cache the argument supplied to this operation.
+     * @param templateDir the template directory used as a fallback.
      */
     public MissingRestorer(SubmissionCache cache, Path templateDir) {
         this.cache = cache;
@@ -42,6 +44,7 @@ public class MissingRestorer {
 
     /**
      * Backwards-compatible constructor.
+     * @param cache the argument supplied to this operation.
      */
     public MissingRestorer(SubmissionCache cache) {
         this(cache, null);
@@ -49,6 +52,9 @@ public class MissingRestorer {
 
     /**
      * Restores missing submission items from the original archive or template and returns the resulting validation events.
+     * @param workingDir the cached working directory containing submissions.
+     * @param preflight the preflight findings used to guide validation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public List<ValidationEvent> restore(
             Path workingDir,
@@ -83,6 +89,10 @@ public class MissingRestorer {
 
     /**
      * Restores one missing question folder or file.
+     * @param workingDir the cached working directory containing submissions.
+     * @param finding the argument supplied to this operation.
+     * @param parts the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private ValidationEvent restoreOne(
             Path workingDir,
@@ -246,6 +256,11 @@ public class MissingRestorer {
 
     /**
      * Creates an event describing a missing item that was restored successfully.
+     * @param finding the argument supplied to this operation.
+     * @param item the argument supplied to this operation.
+     * @param restored the argument supplied to this operation.
+     * @param source the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static ValidationEvent restoredEvent(
             PreflightFinding finding,
@@ -265,6 +280,9 @@ public class MissingRestorer {
 
     /**
      * Creates an event describing a missing item that could not be restored.
+     * @param finding the argument supplied to this operation.
+     * @param message the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static ValidationEvent missing(
             PreflightFinding finding,
@@ -281,6 +299,11 @@ public class MissingRestorer {
     /**
      * Copies the missing item from the original submission,
      * even if the original submission contains multiple wrappers.
+     * @param originalFolder the argument supplied to this operation.
+     * @param projectDir the argument supplied to this operation.
+     * @param item the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @throws IOException when the operation cannot complete.
      */
     private static int restoreFromFolder(
             Path originalFolder,
@@ -310,6 +333,10 @@ public class MissingRestorer {
 
     /**
      * Searches recursively for the requested item inside the original submission.
+     * @param folder the directory whose contents are processed.
+     * @param item the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @throws IOException when the operation cannot complete.
      */
     private static Path findOriginalItem(
             Path folder,

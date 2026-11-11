@@ -44,7 +44,7 @@ class ScoreRecorderTest {
         // david.2024 was not graded, so his mark cells stay empty.
 
         GradeResult result = new GradeResult(scores.size(), 0, false, scores);
-        Path copy = ScoreRecorder.exportResults(result, scoresheet);
+        Path copy = ScoreRecorder.exportResults(result);
 
         // The copy sits next to the original and is named with the date and time.
         assertEquals(dir.toAbsolutePath(), copy.getParent());
@@ -68,7 +68,7 @@ class ScoreRecorderTest {
     void scoresheetWithoutUsernameColumnIsRefused() throws IOException {
         Path scoresheet = Files.writeString(dir.resolve("bad.csv"), "name,total\nalice,\n");
         GradeResult result = new GradeResult(1, 0, false, Map.of("alice", Map.of("Q1", 1)));
-        assertThrows(IOException.class, () -> ScoreRecorder.exportResults(result, scoresheet));
+        assertThrows(IOException.class, () -> ScoreRecorder.exportResults(result));
     }
 
     // Input: one student's marks for Q3, Q1 and Q2

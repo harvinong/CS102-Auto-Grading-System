@@ -48,11 +48,11 @@ public final class HeaderFixer {
     }
 
     /**
-     * @param label       The name the events are listed under (the folder's name before any rename).
-     * @param studentDir  The student's folder.
-     * @param student     The student the folder belongs to.
-     * @param allStudents Every registered student, used to spot a header naming someone else.
-     * @return One event per file that was fixed or needs attention; nothing for files that are fine.
+     * @param label the prompt or display label.
+     * @param studentDir the directory containing one student submission.
+     * @param student the registered student identity.
+     * @param allStudents the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static List<ValidationEvent> fixAll(String label, Path studentDir, Student student,
             List<Student> allStudents) {
@@ -80,6 +80,12 @@ public final class HeaderFixer {
     // Checks one file and adds the header if it is missing.
     /**
      * Repairs the header of one source file and records the changes made.
+     * @param label the prompt or display label.
+     * @param studentDir the directory containing one student submission.
+     * @param file the file being validated or processed.
+     * @param student the registered student identity.
+     * @param allStudents the argument supplied to this operation.
+     * @param events the argument supplied to this operation.
      */
     private static void fixFile(String label, Path studentDir, Path file, Student student,
             List<Student> allStudents, List<ValidationEvent> events) {
@@ -124,6 +130,10 @@ public final class HeaderFixer {
     // The username of a different registered student that appears in the header, or null.
     /**
      * Finds another registered student whose identity appears in the header.
+     * @param header the argument supplied to this operation.
+     * @param student the registered student identity.
+     * @param allStudents the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String findOtherStudent(String header, Student student, List<Student> allStudents) {
         for (Student other : allStudents) {
@@ -138,6 +148,9 @@ public final class HeaderFixer {
     // True if the header holds the username, the email, or every part of the full name.
     /**
      * Reports whether a header contains identifying text for the student.
+     * @param header the argument supplied to this operation.
+     * @param student the registered student identity.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static boolean mentions(String header, Student student) {
         if (header.contains(student.username().toLowerCase())) {
@@ -153,6 +166,8 @@ public final class HeaderFixer {
     // Where the header region (the first HEADER_LINES lines) ends in the content.
     /**
      * Returns the character position immediately after the source header.
+     * @param content the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static int headerEnd(String content) {
         int end = 0;
@@ -166,13 +181,20 @@ public final class HeaderFixer {
         return end;
     }
 
-    /** The header after correction, what was changed, and whether anything the student typed was replaced. */
+    /** The header after correction, what was changed, and whether anything the student typed was replaced.
+     * @param head the argument supplied to this operation.
+     * @param changes the argument supplied to this operation.
+     * @param overwrote the argument supplied to this operation.
+     */
     private record FieldFix(String head, List<String> changes, boolean overwrote) {
     }
 
     // Sets Name and Email ID from the scoresheet wherever they are empty or do not match the student.
     /**
      * Corrects the recognized name, username, and email fields in a source header.
+     * @param head the argument supplied to this operation.
+     * @param student the registered student identity.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static FieldFix correctFields(String head, Student student) {
         List<String> changes = new ArrayList<>();
@@ -187,6 +209,13 @@ public final class HeaderFixer {
     // Rewrites every line of this field whose value is empty or not accepted, keeping the line's own start.
     /**
      * Replaces one header field with the student’s registered value when needed.
+     * @param head the argument supplied to this operation.
+     * @param line the argument supplied to this operation.
+     * @param field the argument supplied to this operation.
+     * @param correct the argument supplied to this operation.
+     * @param accepts the argument supplied to this operation.
+     * @param changes the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String correctField(String head, Pattern line, String field, String correct,
             Predicate<String> accepts, List<String> changes) {
@@ -211,6 +240,9 @@ public final class HeaderFixer {
     // A name is accepted if it is not empty and holds every part of the registered name, in any order.
     /**
      * Reports whether a header name is an accepted form of the student name.
+     * @param value the value to quote or convert.
+     * @param student the registered student identity.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static boolean nameAccepts(String value, Student student) {
         return !value.isEmpty() && containsAll(value.toLowerCase(), nameParts(student));
@@ -219,6 +251,8 @@ public final class HeaderFixer {
     // The words of the registered name in lower case ("TEO CHEE" gives teo, chee).
     /**
      * Returns normalized name components used for header matching.
+     * @param student the registered student identity.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static List<String> nameParts(Student student) {
         List<String> parts = new ArrayList<>();
@@ -232,6 +266,9 @@ public final class HeaderFixer {
 
     /**
      * Reports whether text contains every requested name component.
+     * @param text the text to parse, render, or escape.
+     * @param parts the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static boolean containsAll(String text, List<String> parts) {
         for (String part : parts) {
@@ -245,6 +282,9 @@ public final class HeaderFixer {
     // The file content with a header block at the top (same format as the exam's), using the file's own line endings.
     /**
      * Returns source content with a corrected student header prepended.
+     * @param content the argument supplied to this operation.
+     * @param student the registered student identity.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String withHeader(String content, Student student) {
         String newline = content.contains("\r\n") ? "\r\n" : "\n";
@@ -259,6 +299,8 @@ public final class HeaderFixer {
     // The scoresheet writes names in capitals (TEO CHEE); the exam header looks like "Teo Chee".
     /**
      * Returns the preferred human-readable name for a student.
+     * @param student the registered student identity.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String displayName(Student student) {
         if (student.fullName().isEmpty()) {
@@ -278,6 +320,8 @@ public final class HeaderFixer {
 
     /**
      * Returns the final path component used as a display name.
+     * @param path the file or directory path being inspected or written.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String nameOf(Path path) {
         Path name = path.getFileName();

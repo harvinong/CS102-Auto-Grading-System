@@ -47,6 +47,10 @@ public final class HeaderPreflightCheck {
 
     /**
      * Adds missing/incomplete header findings to an existing preflight report.
+     * @param report the argument supplied to this operation.
+     * @param submissionsDir the argument supplied to this operation.
+     * @param students the registered student identities used for matching.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static PreflightReport addFindings(
             PreflightReport report,
@@ -111,6 +115,10 @@ public final class HeaderPreflightCheck {
 
     /**
      * Scans one submission against the expected folder and file layout.
+     * @param folder the directory whose contents are processed.
+     * @param studentDir the directory containing one student submission.
+     * @param student the registered student identity.
+     * @param findings the argument supplied to this operation.
      */
     private static void scanStudent(
             String folder,
@@ -133,6 +141,11 @@ public final class HeaderPreflightCheck {
 
     /**
      * Checks one source file header against the registered student identity.
+     * @param folder the directory whose contents are processed.
+     * @param studentDir the directory containing one student submission.
+     * @param file the file being validated or processed.
+     * @param student the registered student identity.
+     * @param findings the argument supplied to this operation.
      */
     private static void checkFile(
             String folder,
@@ -192,6 +205,9 @@ public final class HeaderPreflightCheck {
 
     /**
      * Returns the first requested lines of a source file for diagnostic messages.
+     * @param content the argument supplied to this operation.
+     * @param maxLines the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String firstLines(String content, int maxLines) {
         int end = 0;
@@ -209,6 +225,9 @@ public final class HeaderPreflightCheck {
 
     /**
      * Reports whether a header name identifies the expected student.
+     * @param headerName the argument supplied to this operation.
+     * @param fullName the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static boolean nameMatches(String headerName, String fullName) {
         String[] expectedParts = fullName.toLowerCase(Locale.ROOT).trim().split("\\s+");
@@ -225,6 +244,8 @@ public final class HeaderPreflightCheck {
 
     /**
      * Reports whether a path is a generated or otherwise ignored submission file.
+     * @param relativePath the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static boolean isJunk(Path relativePath) {
         for (Path part : relativePath) {

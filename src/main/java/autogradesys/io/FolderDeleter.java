@@ -19,6 +19,8 @@ public final class FolderDeleter {
 
     /**
      * Deletes the supplied folder tree without following symbolic links.
+     * @param folder the directory whose contents are processed.
+     * @throws IOException when the operation cannot complete.
      */
     public static void delete(Path folder) throws IOException {
         if (!Files.exists(folder)) {

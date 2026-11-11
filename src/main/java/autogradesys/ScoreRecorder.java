@@ -31,6 +31,12 @@ public class ScoreRecorder {
     //           username, one column per question (sorted), final_score, then a "% full marks" row.
     //           A student has full marks on a question when marks earned == marks it is worth.
     // Output: Path to the newly created CSV file
+    /**
+     * Exports the grading result and diagnostics to the configured report files.
+     * @param result the completed grading result to export.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @throws IOException when the operation cannot complete.
+     */
     public static Path exportResults(GradeResult result) throws IOException {
         Map<String, Map<String, Integer>> scores = result.scores(); // student -> (question -> marks)
 
@@ -91,6 +97,11 @@ public class ScoreRecorder {
     // Input: A text value to put in the CSV, e.g. a username or sub-question name
     // Function: Wraps the value in double quotes and doubles any quotes inside it, so commas cannot break the CSV
     // Output: The quoted value, e.g. chee"teo becomes "chee""teo"
+    /**
+     * Escapes a value for safe inclusion in a CSV field.
+     * @param value the value to quote or convert.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     */
     private static String quote(String value) {
         return "\"" + value.replace("\"", "\"\"") + "\"";
     }

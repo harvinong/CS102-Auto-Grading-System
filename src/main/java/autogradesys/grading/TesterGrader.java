@@ -35,7 +35,10 @@ final class TesterGrader {
     private TesterGrader() {
     }
 
-    /** Returns true when the question folder is graded with testers rather than a Main.java and expected.txt. */
+    /** Returns true when the question folder is graded with testers rather than a Main.java and expected.txt.
+     * @param testerDir the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     */
     static boolean usesTesters(Path testerDir) {
         // A folder that holds at least one tester class is clearly tester based.
         if (!testerFiles(testerDir).isEmpty()) {
@@ -47,7 +50,10 @@ final class TesterGrader {
         return !Files.isRegularFile(testerDir.resolve("expected.txt"));
     }
 
-    /** Number of tester classes in the question folder, which is the number of marks the question is worth. */
+    /** Number of tester classes in the question folder, which is the number of marks the question is worth.
+     * @param testerDir the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     */
     static int testerCount(Path testerDir) {
         // Each tester is worth one mark, so the count is the question's maximum.
         return testerFiles(testerDir).size();
@@ -59,6 +65,9 @@ final class TesterGrader {
      * <p>Students often zip the whole template folder, so the question folders may sit one folder
      * down (for example {@code RenameToYourStudentID/Q1}). The submission check already warns about
      * that; grading tolerates it so those students still receive marks.</p>
+     * @param studentDir the directory containing one student submission.
+     * @param questions the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static Path submissionRoot(Path studentDir, List<String> questions) {
         // Normal case: a question folder sits directly in the student's folder.
@@ -94,11 +103,14 @@ final class TesterGrader {
     /**
      * Grades one question.
      *
-     * @param student student name used in diagnostics
-     * @param submissionRoot folder holding the student's question folders
-     * @param question question folder name, such as {@code Q1}
-     * @param testerDir the instructor's folder for this question
-     * @return the number of testers whose output matched
+     * @param student the registered student identity.
+     * @param submissionRoot the argument supplied to this operation.
+     * @param question the question name being graded or looked up.
+     * @param testerDir the argument supplied to this operation.
+     * @param timeout the maximum process duration.
+     * @param outputLimitBytes the argument supplied to this operation.
+     * @param reporter the diagnostic reporter used for grading errors.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static int grade(String student, Path submissionRoot, String question, Path testerDir,
             Duration timeout, long outputLimitBytes, ErrorReporter reporter) {
@@ -222,6 +234,18 @@ final class TesterGrader {
     // Runs one compiled tester inside the build folder and returns 1 if its output matches, else 0.
     /**
      * Compiles and runs one tester against the student question, returning its score.
+     * @param student the registered student identity.
+     * @param studentQuestion the argument supplied to this operation.
+     * @param question the question name being graded or looked up.
+     * @param tester the argument supplied to this operation.
+     * @param build the argument supplied to this operation.
+     * @param out the argument supplied to this operation.
+     * @param timeout the maximum process duration.
+     * @param outputLimitBytes the argument supplied to this operation.
+     * @param reporter the diagnostic reporter used for grading errors.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @throws IOException when the operation cannot complete.
+     * @throws InterruptedException when the operation cannot complete.
      */
     private static int runTester(String student, Path studentQuestion, String question, Path tester, Path build,
             Path out, Duration timeout, long outputLimitBytes, ErrorReporter reporter)
@@ -319,6 +343,11 @@ final class TesterGrader {
     // Input: everything a program printed
     // Function: finds the last line that is not blank
     // Output: that line without spaces around it, or "" if nothing was printed
+    /**
+     * Last line.
+     * @param output the destination stream or output buffer.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     */
     private static String lastLine(String output) {
         String[] lines = output.split("\r?\n");
         for (int i = lines.length - 1; i >= 0; i--) {
@@ -332,6 +361,12 @@ final class TesterGrader {
     // Input: a long message (e.g. compiler errors) and how many lines to keep
     // Function: keeps only the first lines, so one broken submission does not flood the screen and report
     // Output: the shortened message, ending with "... (N more lines)" when lines were cut
+    /**
+     * First lines.
+     * @param text the text to parse, render, or escape.
+     * @param count the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     */
     static String firstLines(String text, int count) {
         String[] lines = text.split("\r?\n");
         if (lines.length <= count) {
@@ -349,6 +384,11 @@ final class TesterGrader {
     //           A course tester is worth the sum of the numbers in its "score += N;" lines
     //           (Q1aTester has three "score += 1;", so it is worth 3).
     // Output: the question's full marks (at least 1 per tester)
+    /**
+     * Full marks.
+     * @param testerDir the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     */
     static int fullMarks(Path testerDir) {
         int total = 0;
         for (Path tester : testerFiles(testerDir)) {
@@ -379,6 +419,12 @@ final class TesterGrader {
     //           the first number, e.g. "Q1"). Any <Name>Tester.expected.txt files are copied along.
     // Output: the temporary folder (delete it after grading), or null when the folder already has
     //         question sub-folders or has no tester files at the top level.
+    /**
+     * Group flat testers.
+     * @param testersRoot the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @throws IOException when the operation cannot complete.
+     */
     static Path groupFlatTesters(Path testersRoot) throws IOException {
         List<Path> testers = testerFiles(testersRoot);
         if (testers.isEmpty()) {
@@ -410,6 +456,8 @@ final class TesterGrader {
     // Converts Windows line endings to Unix ones so only the text itself decides the comparison.
     /**
      * Normalizes output text before comparing tester and student results.
+     * @param text the text to parse, render, or escape.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String normalise(String text) {
         // Replace every carriage return plus line feed pair with a single line feed.
@@ -419,6 +467,9 @@ final class TesterGrader {
     // True when the folder directly contains a sub-folder named after one of the questions.
     /**
      * Reports whether a folder contains the requested question layout.
+     * @param folder the directory whose contents are processed.
+     * @param questions the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static boolean holdsQuestion(Path folder, List<String> questions) {
         // True as soon as one configured question name exists as a directory inside the folder.
@@ -428,6 +479,8 @@ final class TesterGrader {
     // The instructor's tester sources in a question folder, sorted by name; empty if the folder is unreadable.
     /**
      * Returns the tester source files found in the tester directory.
+     * @param testerDir the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static List<Path> testerFiles(Path testerDir) {
         // The listing holds an OS handle, so try-with-resources closes it.
@@ -449,8 +502,9 @@ final class TesterGrader {
      * its .java next to it is an old compiled copy of the student's code and is 
      * left out, so the source is always what gets graded. Hidden files such as 
      * .DS_Store are left out too.
-     * @param studentQuestion the student's folder for one question
-     * @return the files, sorted by name
+     * Returns the Java source files belonging to the student question.
+     * @param studentQuestion the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static List<Path> studentFiles(Path studentQuestion) {
         // The listing holds an OS handle, so try-with-resources closes it.

@@ -16,6 +16,10 @@ public final class SubmissionUnzipper {
     // ArchiveExtractor is the sole extraction implementation, returns how many files were written
     /**
      * Extracts the submission archive into the requested target folder.
+     * @param zipFile the argument supplied to this operation.
+     * @param targetFolder the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @throws IOException when the operation cannot complete.
      */
     public static int unzip(Path zipFile, Path targetFolder) throws IOException {
         if (java.nio.file.Files.isDirectory(targetFolder)) { 

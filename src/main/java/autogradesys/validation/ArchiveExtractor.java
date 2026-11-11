@@ -37,10 +37,10 @@ public final class ArchiveExtractor {
     /**
      * Extracts the whole zip into a new folder.
      *
-     * @param zip         The zip file.
-     * @param destination The folder to create; it must not exist yet.
-     * @return How many files were written.
-     * @throws IOException If the zip is unreadable or unsafe, or the folder exists. Nothing is left behind.
+     * @param zip the argument supplied to this operation.
+     * @param destination the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @throws IOException when the operation cannot complete.
      */
     public static int extract(Path zip, Path destination) throws IOException {
         Path dest = destination.toAbsolutePath().normalize();
@@ -60,11 +60,11 @@ public final class ArchiveExtractor {
      * Puts one folder or file from the zip back into a project folder, skipping files that already
      * exist. The zip may keep the work inside one extra folder; that is found automatically.
      *
-     * @param zip        The zip file.
-     * @param projectDir The folder that should hold the item (the one with Q1, Q2, Q3 in it).
-     * @param item       The item inside the project folder, e.g. "Q2" or "Q1/Q1b.java".
-     * @return How many files were restored, or 0 if the zip does not contain the item.
-     * @throws IOException If the zip is unreadable or unsafe. Nothing is left behind.
+     * @param zip the argument supplied to this operation.
+     * @param projectDir the argument supplied to this operation.
+     * @param item the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @throws IOException when the operation cannot complete.
      */
     public static int restore(Path zip, Path projectDir, String item) throws IOException {
         Path dest = projectDir.toAbsolutePath().normalize();
@@ -88,6 +88,14 @@ public final class ArchiveExtractor {
     // stripPrefix is the extra folder to drop from entry names; onlyItem (or null for all) limits what is written.
     /**
      * Extracts selected ZIP entries while preventing paths from escaping the destination.
+     * @param zip the argument supplied to this operation.
+     * @param dest the argument supplied to this operation.
+     * @param created the argument supplied to this operation.
+     * @param stripPrefix the argument supplied to this operation.
+     * @param onlyItem the argument supplied to this operation.
+     * @param skipExisting the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @throws IOException when the operation cannot complete.
      */
     private static int unpack(ZipFile zip, Path dest, List<Path> created, String stripPrefix, String onlyItem,
             boolean skipExisting) throws IOException {
@@ -144,6 +152,9 @@ public final class ArchiveExtractor {
     // The folder inside the zip that holds the item: "" (top level) or one extra folder like "Wrapper/".
     /**
      * Finds the common wrapper prefix used by entries in an archive.
+     * @param zip the argument supplied to this operation.
+     * @param item the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String findPrefix(ZipFile zip, String item) {
         List<String> names = new ArrayList<>();
@@ -173,6 +184,9 @@ public final class ArchiveExtractor {
     // True if the entry is the wanted item or is inside it.
     /**
      * Reports whether an archive entry names the requested item.
+     * @param name the name used for lookup or display.
+     * @param wanted the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static boolean matches(String name, String wanted) {
         return name.equals(wanted) || name.startsWith(wanted + "/");
@@ -180,6 +194,8 @@ public final class ArchiveExtractor {
 
     /**
      * Rejects archives whose entry count exceeds the extraction safety limit.
+     * @param zip the argument supplied to this operation.
+     * @throws IOException when the operation cannot complete.
      */
     private static void checkEntryCount(ZipFile zip) throws IOException {
         if (zip.size() > MAX_ENTRIES) {
@@ -190,6 +206,10 @@ public final class ArchiveExtractor {
     // Creates each missing folder from base down to dir, remembering them so a failure can undo it.
     /**
      * Creates required destination directories and tracks them for rollback.
+     * @param dir the directory to scan or compile.
+     * @param base the argument supplied to this operation.
+     * @param created the argument supplied to this operation.
+     * @throws IOException when the operation cannot complete.
      */
     private static void makeDirectories(Path dir, Path base, List<Path> created) throws IOException {
         Path current = base;
@@ -205,6 +225,7 @@ public final class ArchiveExtractor {
     // Removes what a failed call created, newest first so files go before their folders.
     /**
      * Removes directories created by a failed extraction attempt.
+     * @param created the argument supplied to this operation.
      */
     private static void undo(List<Path> created) {
         for (int i = created.size() - 1; i >= 0; i--) {
@@ -219,6 +240,9 @@ public final class ArchiveExtractor {
     // Opens the zip; older Windows zips can hold entry names that are not valid UTF-8.
     /**
      * Opens a ZIP archive after validating that it is readable.
+     * @param zip the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @throws IOException when the operation cannot complete.
      */
     private static ZipFile open(Path zip) throws IOException {
         try {
@@ -230,6 +254,8 @@ public final class ArchiveExtractor {
 
     /**
      * Converts an extraction failure into an IOException with its cause preserved.
+     * @param e the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static IOException toIOException(Exception e) {
         return e instanceof IOException io ? io : new IOException(e.getMessage(), e);

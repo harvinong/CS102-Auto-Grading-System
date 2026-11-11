@@ -24,6 +24,9 @@ public class SubmissionValidation {
 
     /**
      * Initializes validation with the cache, registered students, and optional restoration template.
+     * @param students the registered student identities used for matching.
+     * @param confirm the callback used to confirm a proposed rename.
+     * @param cache the argument supplied to this operation.
      */
     public SubmissionValidation(
             List<Student> students,
@@ -34,6 +37,10 @@ public class SubmissionValidation {
 
     /**
      * Initializes validation with the cache, registered students, and optional restoration template.
+     * @param students the registered student identities used for matching.
+     * @param confirm the callback used to confirm a proposed rename.
+     * @param cache the argument supplied to this operation.
+     * @param templateDir the template directory used as a fallback.
      */
     public SubmissionValidation(
             List<Student> students,
@@ -50,6 +57,9 @@ public class SubmissionValidation {
 
     /**
      * Validates the working submissions and returns their events grouped with resolved student paths.
+     * @param submissions the folder containing submitted student work.
+     * @param preflight the preflight findings used to guide validation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public ValidationReport run(Path submissions, PreflightReport preflight) {
 

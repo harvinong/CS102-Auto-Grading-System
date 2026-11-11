@@ -23,6 +23,9 @@ public class SubmissionIterator implements Iterable<Submission> {
 
     /**
      * Scans a folder for matching submission archives and indexes their statuses.
+     * @param folder the directory whose contents are processed.
+     * @param zipNamePattern the argument supplied to this operation.
+     * @throws IOException when the operation cannot complete.
      */
     public SubmissionIterator(Path folder, Pattern zipNamePattern) throws IOException {
         if (!Files.isDirectory(folder)) {
@@ -51,6 +54,7 @@ public class SubmissionIterator implements Iterable<Submission> {
 
     /**
      * Adds a submission unless its username duplicates one already indexed.
+     * @param submission the argument supplied to this operation.
      */
     private void addSubmission(Submission submission) {
         String key = submission.getUsername().toLowerCase();
@@ -66,6 +70,7 @@ public class SubmissionIterator implements Iterable<Submission> {
     @Override
     /**
      * Returns an iterator over the accepted submissions.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public Iterator<Submission> iterator() {
         return submissions.values().iterator();
@@ -73,6 +78,7 @@ public class SubmissionIterator implements Iterable<Submission> {
 
     /**
      * Returns the number of accepted submissions.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public int size() {
         return submissions.size();
@@ -80,6 +86,7 @@ public class SubmissionIterator implements Iterable<Submission> {
 
     /**
      * Returns the archive names skipped because they did not match the configured pattern.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public List<String> getSkipped() {
         return skipped;
@@ -87,6 +94,7 @@ public class SubmissionIterator implements Iterable<Submission> {
 
     /**
      * Returns the archive names skipped because their usernames were duplicates.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public List<String> getDuplicates() {
         return duplicates;

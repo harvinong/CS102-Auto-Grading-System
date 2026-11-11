@@ -33,6 +33,10 @@ public class TemplateResourceSynchronizer {
 
     private final Path templateDir;
 
+    /**
+     * Creates a template resource synchronizer instance.
+     * @param templateDir the template directory used as a fallback.
+     */
     public TemplateResourceSynchronizer(Path templateDir) {
         this.templateDir = templateDir == null
                 ? null
@@ -41,6 +45,9 @@ public class TemplateResourceSynchronizer {
 
     /**
      * Synchronises one student's working submission with the template.
+     * @param student the registered student identity.
+     * @param studentDir the directory containing one student submission.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public List<ValidationEvent> synchronize(
             String student,
@@ -74,6 +81,12 @@ public class TemplateResourceSynchronizer {
             Files.walkFileTree(templateDir, new SimpleFileVisitor<Path>() {
 
                 @Override
+                /**
+                 * Pre visit directory.
+                 * @param dir the directory to scan or compile.
+                 * @param attrs the argument supplied to this operation.
+                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+                 */
                 public FileVisitResult preVisitDirectory(
                         Path dir,
                         BasicFileAttributes attrs) {
@@ -92,6 +105,12 @@ public class TemplateResourceSynchronizer {
                 }
 
                 @Override
+                /**
+                 * Visit file.
+                 * @param file the file being validated or processed.
+                 * @param attrs the argument supplied to this operation.
+                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+                 */
                 public FileVisitResult visitFile(
                         Path file,
                         BasicFileAttributes attrs) {
@@ -223,6 +242,13 @@ public class TemplateResourceSynchronizer {
             Files.walkFileTree(workingRoot, new SimpleFileVisitor<Path>() {
 
                 @Override
+                /**
+                 * Visit file.
+                 * @param file the file being validated or processed.
+                 * @param attrs the argument supplied to this operation.
+                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+                 * @throws IOException when the operation cannot complete.
+                 */
                 public FileVisitResult visitFile(
                         Path file,
                         BasicFileAttributes attrs) throws IOException {
@@ -248,6 +274,13 @@ public class TemplateResourceSynchronizer {
                 }
 
                 @Override
+                /**
+                 * Post visit directory.
+                 * @param dir the directory to scan or compile.
+                 * @param exc the argument supplied to this operation.
+                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+                 * @throws IOException when the operation cannot complete.
+                 */
                 public FileVisitResult postVisitDirectory(
                         Path dir,
                         IOException exc) throws IOException {
@@ -293,6 +326,8 @@ public class TemplateResourceSynchronizer {
     /**
      * Checks whether a path represents a Java source file.
      * Case-insensitive so files such as Example.JAVA are also preserved.
+     * @param path the file or directory path being inspected or written.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static boolean isJavaFile(Path path) {
 
@@ -303,6 +338,9 @@ public class TemplateResourceSynchronizer {
 
     /**
      * Checks recursively for Java files without following symbolic links.
+     * @param folder the directory whose contents are processed.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @throws IOException when the operation cannot complete.
      */
     private static boolean containsJavaFile(Path folder) throws IOException {
 
@@ -311,6 +349,12 @@ public class TemplateResourceSynchronizer {
         Files.walkFileTree(folder, new SimpleFileVisitor<Path>() {
 
             @Override
+            /**
+             * Visit file.
+             * @param file the file being validated or processed.
+             * @param attrs the argument supplied to this operation.
+             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+             */
             public FileVisitResult visitFile(
                     Path file,
                     BasicFileAttributes attrs) {
@@ -330,12 +374,21 @@ public class TemplateResourceSynchronizer {
     /**
      * Deletes a folder recursively without following symbolic links.
      * Unlike SubmissionFiles.deleteTree(), this method reports failures.
+     * @param root the argument supplied to this operation.
+     * @throws IOException when the operation cannot complete.
      */
     private static void deleteTreeStrict(Path root) throws IOException {
 
         Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
 
             @Override
+            /**
+             * Visit file.
+             * @param file the file being validated or processed.
+             * @param attrs the argument supplied to this operation.
+             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+             * @throws IOException when the operation cannot complete.
+             */
             public FileVisitResult visitFile(
                     Path file,
                     BasicFileAttributes attrs) throws IOException {
@@ -345,6 +398,13 @@ public class TemplateResourceSynchronizer {
             }
 
             @Override
+            /**
+             * Post visit directory.
+             * @param dir the directory to scan or compile.
+             * @param exc the argument supplied to this operation.
+             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+             * @throws IOException when the operation cannot complete.
+             */
             public FileVisitResult postVisitDirectory(
                     Path dir,
                     IOException exc) throws IOException {
@@ -359,6 +419,13 @@ public class TemplateResourceSynchronizer {
         });
     }
 
+    /**
+     * Removed.
+     * @param student the registered student identity.
+     * @param relative the argument supplied to this operation.
+     * @param message the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     */
     private static ValidationEvent removed(
             String student,
             Path relative,
@@ -371,6 +438,13 @@ public class TemplateResourceSynchronizer {
                 message);
     }
 
+    /**
+     * Failed.
+     * @param student the registered student identity.
+     * @param path the file or directory path being inspected or written.
+     * @param message the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     */
     private static ValidationEvent failed(
             String student,
             String path,
@@ -386,6 +460,9 @@ public class TemplateResourceSynchronizer {
     /**
      * Combines all successful resource changes into one summary event,
      * while keeping individual failures visible.
+     * @param student the registered student identity.
+     * @param events the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static List<ValidationEvent> summarise(
             String student,

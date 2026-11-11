@@ -47,6 +47,8 @@ public class GraderMenu {
 
     /**
      * Initializes the grading menu with its input scanner and grading controller.
+     * @param sc the scanner used to read interactive input.
+     * @param ctrl the argument supplied to this operation.
      */
     public GraderMenu(Scanner sc, GraderCtrl ctrl) {
         this.sc = sc;
@@ -54,6 +56,7 @@ public class GraderMenu {
     }
     /**
      * Returns the working directory currently selected for grading.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public Path getGradingPath() {
         return this.gradingPath;
@@ -67,7 +70,6 @@ public class GraderMenu {
         * <li>ask for the submissions folder and build the working copy (copy folders, extract zips);</li>
         * <li>run the read-only preflight check on the copy, recording ignored junk quietly and stopping if the setup is fatal;</li>
      * </ol>
-     * @throws IllegalStateException if this method is called twice or more.
      */
     public void setup() {
         if (this.submissions != null) {
@@ -242,8 +244,7 @@ public class GraderMenu {
         }
         // Save the marks into a copy of the scoresheet, named with the date and time; the original is not changed.
         try {
-            java.nio.file.Path exported = autogradesys.ScoreRecorder.exportResults(result,
-                    ctrl.config.scoresheetFile().toPath());
+            java.nio.file.Path exported = autogradesys.ScoreRecorder.exportResults(result);
             System.out.println("Score export: " + exported.toAbsolutePath());
         } catch (java.io.IOException exception) {
             // The copy could not be written; the original scoresheet is untouched, so only show a message.

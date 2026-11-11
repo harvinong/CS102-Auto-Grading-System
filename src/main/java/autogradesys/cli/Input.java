@@ -38,11 +38,11 @@ public class Input {
         * <li>the file extension is invalid.</li>
      * </ul>
      *
-     * @param fileField   The prompt to be printed out to the user.
-     * @param defaultFile The default file returned if user enters none.
-     * @param sc          The scanner object to read user input.
-     * @return The file/directory object. If user enters none, returns the
      *         defaultFile.
+     * @param fileField the argument supplied to this operation.
+     * @param defaultFile the argument supplied to this operation.
+     * @param sc the scanner used to read interactive input.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static File promptFile(Field fileField, File defaultFile, Scanner sc) {
         File file = null;
@@ -87,11 +87,11 @@ public class Input {
      * Re-prompts when the line is not a whole number, is zero or negative, or is above the maximum,
      * the same way {@link #promptFile} re-prompts on a bad path.
      * </p>
-     * @param label        Name shown in the prompt, e.g. "Grading timeout in seconds".
-     * @param defaultValue The current value, kept when the user just presses Enter.
-     * @param maxValue     The largest value accepted.
-     * @param sc           The scanner object to read user input.
-     * @return The number typed (from 1 to maxValue), or defaultValue if the line was blank.
+     * @param label the prompt or display label.
+     * @param defaultValue the value returned when input is blank or invalid.
+     * @param maxValue the largest permitted numeric value.
+     * @param sc the scanner used to read interactive input.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static long promptPositiveLong(String label, long defaultValue, long maxValue, Scanner sc) {
         // One message for every kind of bad line, naming the accepted range so the user knows what to type.
@@ -130,11 +130,10 @@ public class Input {
      * Prompt an option, which is a number from <code>min</code> to <code>max</code>
      * with 0 usually used to go to the previous menu or exit the program.
      * 
-     * @param min the lowest option
-     * @param max the highest option
-     * @param sc the Scanner instance to read user input
-     * @return option
-     * @throws InputEndedException
+     * @param min the argument supplied to this operation.
+     * @param max the argument supplied to this operation.
+     * @param sc the scanner used to read interactive input.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static int promptOption(int min, int max, Scanner sc) {
         while (true) {
@@ -151,9 +150,9 @@ public class Input {
 
     /** 
      * Ask a yes/no question, retrying until a valid answer is entered.
-     * @param question to be printed as the prompt
-     * @param sc the scanner used to read user input
-     * @return boolean value representing the user input ("Y" -> <code>true</code>; "N" -> <code>false</code>)
+     * @param question the question name being graded or looked up.
+     * @param sc the scanner used to read interactive input.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static boolean promptYesNo(String question, Scanner sc) {
         while (true) {
@@ -171,13 +170,13 @@ public class Input {
     /**
      * Ask user for the filepath.
      *
-     * @param prompt          The prompt that is printed in the terminal.
-     * @param label           What is being asked for, named if the input ends.
-     * @param defaultFilePath The default file path.
-     * @param sc              The reader to reads the user input.
-     * @return The path the user has input in absolute form. If user inputs nothing,
      *         it returns <code>defaultFilePath</code>.
-     * @throws IllegalArgumentException If the path is blank (with no default) or not absolute.
+     * @param prompt the argument supplied to this operation.
+     * @param label the prompt or display label.
+     * @param defaultFilePath the argument supplied to this operation.
+     * @param sc the scanner used to read interactive input.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @throws IllegalArgumentException when the operation cannot complete.
      */
     private static Path promptPath(String prompt, String label, Path defaultFilePath, Scanner sc)
             throws IllegalArgumentException {

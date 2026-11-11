@@ -32,7 +32,9 @@ public class UsernameResolver {
     /**
      * The student a folder belongs to, and where that folder is now (it may have been renamed).
      *
-     * @param replaced Name of the folder that was removed to make room for this one, or null.
+     * @param student the registered student identity.
+     * @param dir the directory to scan or compile.
+     * @param replaced the argument supplied to this operation.
      */
     public record Identity(Student student, Path dir, String replaced) {
     }
@@ -41,8 +43,8 @@ public class UsernameResolver {
     private final Predicate<String> confirm;
 
     /**
-     * @param students The registered students from the scoresheet.
-     * @param confirm  Asks the instructor a yes/no question; true means yes.
+     * @param students the registered student identities used for matching.
+     * @param confirm the callback used to confirm a proposed rename.
      */
     public UsernameResolver(List<Student> students, Predicate<String> confirm) {
         this.students = students;
@@ -50,12 +52,12 @@ public class UsernameResolver {
     }
 
     /**
-     * @param folder Name of the student's folder.
-     * @param dir    The student's folder.
-     * @param events Collects what happened.
-     * @param owners Registered username (lower case) mapped to the folder that already has that exact name;
      *               updated when a folder is renamed.
-     * @return The identity, or empty if the folder could not be matched to a registered student.
+     * @param folder the directory whose contents are processed.
+     * @param dir the directory to scan or compile.
+     * @param events the argument supplied to this operation.
+     * @param owners the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public Optional<Identity> resolve(String folder, Path dir, List<ValidationEvent> events,
             Map<String, String> owners) {
@@ -97,6 +99,13 @@ public class UsernameResolver {
     // Renames the folder to the registered username, first moving aside the folder that already used the name.
     /**
      * Renames a working submission folder and records the replacement for later matching.
+     * @param folder the directory whose contents are processed.
+     * @param dir the directory to scan or compile.
+     * @param match the argument supplied to this operation.
+     * @param owner the argument supplied to this operation.
+     * @param owners the argument supplied to this operation.
+     * @param events the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private Optional<Identity> rename(String folder, Path dir, Student match, String owner,
             Map<String, String> owners, List<ValidationEvent> events) {
@@ -132,7 +141,10 @@ public class UsernameResolver {
         return Optional.of(new Identity(match, renamed, owner));
     }
 
-    /** The username a folder name claims to be, with any term prefix removed. */
+    /** The username a folder name claims to be, with any term prefix removed.
+     * @param folder the directory whose contents are processed.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     */
     public static String claimedUsername(String folder) {
         Matcher matcher = FOLDER_NAME.matcher(folder);
         return matcher.matches() ? matcher.group(1) : folder;
@@ -141,7 +153,9 @@ public class UsernameResolver {
     /**
      * Which folder already has each registered username as its (exact) name.
      *
-     * @return Registered username in lower case mapped to the folder name; the first folder wins.
+     * @param folders the argument supplied to this operation.
+     * @param students the registered student identities used for matching.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static Map<String, String> owners(Collection<String> folders, List<Student> students) {
         Map<String, String> owners = new HashMap<>();
