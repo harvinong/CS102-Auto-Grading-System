@@ -194,7 +194,7 @@ Score export: .../2026-11-11_11-41-29-889778000.csv
 
 Generated files are local run state. Keep the configured scoresheet as the source input and retain the timestamped export as the result. Remove generated cache/report/export/history files when resetting a run.
 
-## Common errors and fixes
+## 8. Common errors and fixes
 
 | Message or symptom | Resolution |
 | --- | --- |
@@ -209,7 +209,7 @@ Generated files are local run state. Keep the configured scoresheet as the sourc
 | Report will not open | On a headless system open `.grader-report.html` manually. Run option 3 first if it does not exist. |
 | Stale or wrong working copy | Select main-menu option 5, then start option 3 again. |
 
-## Development checks
+## 9. Development checks
 
 ```sh
 mvn test
@@ -219,7 +219,7 @@ git diff --check
 
 The checked-in `DemoRunner` class expects a `demo/fixtures` tree and is not the interactive launcher; use the interactive flow above unless those fixture files have been supplied separately.
 
-## Assets Credit
+## 10. Assets Credit
 
 The [big title ASCII art](./assets/title.txt) is generated from [www.asciiart.eu](https://www.asciiart.eu/text-to-ascii-art) With "ANSI Shadow" font and "Box drawing light" border. Everything else ([Welcome message](./assets/welcome.md) and the cat in the title) are self made.
 
