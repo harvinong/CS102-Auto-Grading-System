@@ -29,6 +29,9 @@ final class TesterGrader {
     private static final String EXPECTED_SUFFIX = ".expected.txt";
 
     // Utility class with only static methods, so the constructor is private to block instantiation.
+    /**
+     * Initializes the grader for questions driven by tester classes.
+     */
     private TesterGrader() {
     }
 
@@ -216,14 +219,10 @@ final class TesterGrader {
         }
     }
 
-    // Input: the student and question (for messages), the tester source, the build folder (student files and
-    //        template .class files), the folder holding this tester's compiled classes, and the limits.
-    // Function: Runs one compiled tester. There are two kinds of tester:
-    //           - with a <Name>Tester.expected.txt next to it: the output must match that file exactly (1 mark);
-    //           - without one (the course testers, e.g. Q1aTester): the tester prints the student's score on
-    //             its last line (e.g. "3.0"), and that number is the mark.
-    //           Any failure (timeout, crash, too much output, no score) is recorded and scores 0.
-    // Output: the marks this tester gives.
+    // Runs one compiled tester inside the build folder and returns 1 if its output matches, else 0.
+    /**
+     * Compiles and runs one tester against the student question, returning its score.
+     */
     private static int runTester(String student, Path studentQuestion, String question, Path tester, Path build,
             Path out, Duration timeout, long outputLimitBytes, ErrorReporter reporter)
             throws IOException, InterruptedException {
@@ -409,18 +408,27 @@ final class TesterGrader {
     }
 
     // Converts Windows line endings to Unix ones so only the text itself decides the comparison.
+    /**
+     * Normalizes output text before comparing tester and student results.
+     */
     private static String normalise(String text) {
         // Replace every carriage return plus line feed pair with a single line feed.
         return text.replace("\r\n", "\n");
     }
 
     // True when the folder directly contains a sub-folder named after one of the questions.
+    /**
+     * Reports whether a folder contains the requested question layout.
+     */
     private static boolean holdsQuestion(Path folder, List<String> questions) {
         // True as soon as one configured question name exists as a directory inside the folder.
         return questions.stream().anyMatch(question -> Files.isDirectory(folder.resolve(question)));
     }
 
     // The instructor's tester sources in a question folder, sorted by name; empty if the folder is unreadable.
+    /**
+     * Returns the tester source files found in the tester directory.
+     */
     private static List<Path> testerFiles(Path testerDir) {
         // The listing holds an OS handle, so try-with-resources closes it.
         try (Stream<Path> paths = Files.list(testerDir)) {
@@ -434,13 +442,16 @@ final class TesterGrader {
         }
     }
 
-    // Input: the student's folder for one question
-    // Function: lists the files to copy into the build folder: sources, resources such as persons.txt, and
-    //           .class files that have no .java source next to them (the template's DataException.class,
-    //           Shape.class, ...). A .class file that has its .java next to it is an old compiled copy of the
-    //           student's code and is left out, so the source is always what gets graded. Hidden files
-    //           such as .DS_Store are left out too.
-    // Output: the files, sorted by name
+    /**
+     * lists the files to copy into the build folder: sources, resources such as 
+     * persons.txt, and .class files that have no .java source next to them (the 
+     * template's DataException.class, Shape.class, ...). A .class file that has 
+     * its .java next to it is an old compiled copy of the student's code and is 
+     * left out, so the source is always what gets graded. Hidden files such as 
+     * .DS_Store are left out too.
+     * @param studentQuestion the student's folder for one question
+     * @return the files, sorted by name
+     */
     private static List<Path> studentFiles(Path studentQuestion) {
         // The listing holds an OS handle, so try-with-resources closes it.
         try (Stream<Path> paths = Files.list(studentQuestion)) {

@@ -10,9 +10,9 @@ import java.util.LinkedHashMap;
  */
 public record ScoresheetRecord(String username, LinkedHashMap<String, Integer> marks) {
  
-    // Input: nothing (uses this record's marks).
-    // Function: adds up the marks of every sub-question.
-    // Output: the total, which is what goes in the "Calculated Final Grade Numerator" column.
+    /**
+     * Returns the sum of all marks recorded for the student.
+     */
     public int finalScore() {
         // Running total of the marks.
         int total = 0;

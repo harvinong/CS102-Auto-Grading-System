@@ -39,6 +39,9 @@ public final class HeaderPreflightCheck {
     private static final Pattern HEADER_LABEL = Pattern.compile(
             "(?im)^[ \\t]*(?:\\*+|//+)?[ \\t]*(?:name|email(?:[ \\t]*id)?)[ \\t]*:");
 
+    /**
+     * Initializes the read-only checker for student source-file headers.
+     */
     private HeaderPreflightCheck() {
     }
 
@@ -106,6 +109,9 @@ public final class HeaderPreflightCheck {
                 all);
     }
 
+    /**
+     * Scans one submission against the expected folder and file layout.
+     */
     private static void scanStudent(
             String folder,
             Path studentDir,
@@ -125,6 +131,9 @@ public final class HeaderPreflightCheck {
         }
     }
 
+    /**
+     * Checks one source file header against the registered student identity.
+     */
     private static void checkFile(
             String folder,
             Path studentDir,
@@ -181,6 +190,9 @@ public final class HeaderPreflightCheck {
         }
     }
 
+    /**
+     * Returns the first requested lines of a source file for diagnostic messages.
+     */
     private static String firstLines(String content, int maxLines) {
         int end = 0;
         int lines = 0;
@@ -195,6 +207,9 @@ public final class HeaderPreflightCheck {
         return content.substring(0, end);
     }
 
+    /**
+     * Reports whether a header name identifies the expected student.
+     */
     private static boolean nameMatches(String headerName, String fullName) {
         String[] expectedParts = fullName.toLowerCase(Locale.ROOT).trim().split("\\s+");
         String actual = headerName.toLowerCase(Locale.ROOT);
@@ -208,6 +223,9 @@ public final class HeaderPreflightCheck {
         return true;
     }
 
+    /**
+     * Reports whether a path is a generated or otherwise ignored submission file.
+     */
     private static boolean isJunk(Path relativePath) {
         for (Path part : relativePath) {
             String name = part.toString();

@@ -30,6 +30,9 @@ public class MissingRestorer {
     private final SubmissionCache cache;
     private final Path templateDir;
 
+    /**
+     * Initializes restoration with the submission cache and optional template fallback.
+     */
     public MissingRestorer(SubmissionCache cache, Path templateDir) {
         this.cache = cache;
         this.templateDir = templateDir == null
@@ -44,6 +47,9 @@ public class MissingRestorer {
         this(cache, null);
     }
 
+    /**
+     * Restores missing submission items from the original archive or template and returns the resulting validation events.
+     */
     public List<ValidationEvent> restore(
             Path workingDir,
             PreflightReport preflight) {
@@ -239,7 +245,7 @@ public class MissingRestorer {
     }
 
     /**
-     * Creates a successful restoration event.
+     * Creates an event describing a missing item that was restored successfully.
      */
     private static ValidationEvent restoredEvent(
             PreflightFinding finding,
@@ -258,7 +264,7 @@ public class MissingRestorer {
     }
 
     /**
-     * Creates a failed restoration event.
+     * Creates an event describing a missing item that could not be restored.
      */
     private static ValidationEvent missing(
             PreflightFinding finding,

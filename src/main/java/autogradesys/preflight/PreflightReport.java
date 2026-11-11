@@ -14,6 +14,9 @@ import autogradesys.preflight.PreflightFinding.Severity;
  * @param findings     All findings, in the order they were discovered.
  */
 // An immutable record: the report is just these three values plus helper methods.
+/**
+ * Stores all findings and student statuses produced by the submission preflight.
+ */
 public record PreflightReport(String templateName, List<String> students, List<PreflightFinding> findings) {
 
     // How wide the name column is, so "ready" / "needs attention" line up in the console.
@@ -21,12 +24,18 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // True when the check could not run at all (bad template or submissions folder).
     // Treat any fatal finding as a setup failure that must stop grading before compilation.
+    /**
+     * Reports whether the findings contain a fatal condition.
+     */
     public boolean fatal() {
         // Any single FATAL finding is enough.
         return findings.stream().anyMatch(f -> f.severity() == Severity.FATAL);
     }
 
     // True when this student has at least one ERROR finding.
+    /**
+     * Reports whether the specified student has a finding requiring intervention.
+     */
     public boolean needsAttention(String student) {
         // Look through every finding of the run for one that belongs to this student and has ERROR severity.
         return findings.stream()
@@ -35,6 +44,9 @@ public record PreflightReport(String templateName, List<String> students, List<P
     }
 
     // True when this folder carries the template's name; grading skips it, so it is neither ready nor needing attention.
+    /**
+     * Reports whether the student appears to have submitted a copy of the template.
+     */
     public boolean templateCopy(String student) {
         // A TEMPLATE_COPY finding for this folder marks it as an untouched copy of the starter template.
         return findings.stream()
@@ -42,24 +54,36 @@ public record PreflightReport(String templateName, List<String> students, List<P
     }
 
     // How many students have no ERROR finding (template copies are not graded, so they are not counted).
+    /**
+     * Counts students whose submissions are ready for grading.
+     */
     public long readyCount() {
         // Count the students who do not need attention.
         return students.stream().filter(s -> !templateCopy(s) && !needsAttention(s)).count();
     }
 
     // How many folders are template copies that grading skips.
+    /**
+     * Counts students whose submissions cannot be graded as submitted.
+     */
     public long notGradedCount() {
         // Count the folders carrying a TEMPLATE_COPY finding; JavaGrader is told to skip exactly these.
         return students.stream().filter(this::templateCopy).count();
     }
 
     // How many findings have the given severity (used for the summary line).
+    /**
+     * Counts findings having the requested severity.
+     */
     public long count(Severity severity) {
         // Count the findings whose severity matches.
         return findings.stream().filter(f -> f.severity() == severity).count();
     }
 
     // Writes the whole report to the given stream (the console in the real program).
+    /**
+     * Writes the current report or diagnostic information to the supplied output stream.
+     */
     public void print(PrintStream out) {
         // Blank line to separate the report from the menu text above it.
         out.println();
@@ -122,6 +146,9 @@ public record PreflightReport(String templateName, List<String> students, List<P
     }
 
     // Pads a name with dots so the status words line up: "alice ........ ready".
+    /**
+     * Pads a student name to the report column width.
+     */
     private static String pad(String name) {
         // Start with the name and one space.
         StringBuilder sb = new StringBuilder(name).append(' ');
@@ -134,6 +161,9 @@ public record PreflightReport(String templateName, List<String> students, List<P
     }
 
     // Prints one finding as "  [CATEGORY] path - message -> fix".
+    /**
+     * Prints one preflight finding with its severity and suggested action.
+     */
     private static void printFinding(PrintStream out, PreflightFinding f) {
         // Ignored clutter (IGNORED_JUNK) is never printed; AutoGradeMenu.runGrader records each one with ErrorReporter.ignored instead.
         if (f.category() == PreflightFinding.Category.IGNORED_JUNK) return;

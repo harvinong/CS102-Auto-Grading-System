@@ -45,10 +45,16 @@ public class GraderMenu {
     private PreflightReport preflight;
     private Path gradingPath;
 
+    /**
+     * Initializes the grading menu with its input scanner and grading controller.
+     */
     public GraderMenu(Scanner sc, GraderCtrl ctrl) {
         this.sc = sc;
         this.ctrl = ctrl;
     }
+    /**
+     * Returns the working directory currently selected for grading.
+     */
     public Path getGradingPath() {
         return this.gradingPath;
     }
@@ -144,6 +150,9 @@ public class GraderMenu {
     }
 
     // -- Displays --
+    /**
+     * Prints the title and context for the current menu.
+     */
     private void displayMenuTitle() {
         System.out.println("--- Grader Options ---");
     }

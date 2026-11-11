@@ -31,10 +31,16 @@ public class GraderCtrl {
     private final SubmissionCache cache = new SubmissionCache(SubmissionCache.DEFAULT_ROOT);
     public final Config config;
 
+    /**
+     * Initializes grading and validation services from the supplied configuration.
+     */
     public GraderCtrl(Config config) {
         this.config = config;
     }
 
+    /**
+     * Prepares or reuses a cache working copy for the supplied submissions folder.
+     */
     public CacheReport prepareWorkingCopy(File submissions) {
         return cache.prepare(submissions.toPath());
     }
@@ -159,9 +165,10 @@ public class GraderCtrl {
         }
     }
 
-    public ValidationReport validateSubmissions(
-            Path workingDir,
-            PreflightReport preflight,
+    /**
+     * Validates the working submissions and returns events describing repairs or remaining issues.
+     */
+    public ValidationReport validateSubmissions(Path workingDir, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {
 
         List<Student> students = ScoresheetReader.read(config.scoresheetFile());
@@ -173,9 +180,10 @@ public class GraderCtrl {
                 config.startingFolder().toPath()).run(workingDir, preflight);
     }
 
-    public ValidationReport validateSubmissions(
-            File submissions,
-            PreflightReport preflight,
+    /**
+     * Validates the working submissions and returns events describing repairs or remaining issues.
+     */
+    public ValidationReport validateSubmissions(File submissions, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {
 
         return validateSubmissions(submissions.toPath(), preflight, confirm);

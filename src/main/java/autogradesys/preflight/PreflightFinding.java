@@ -19,6 +19,9 @@ import autogradesys.cli.TextColor;
 // A record is an immutable value holder: Java generates the constructor,
 // getters and equals for us.
 // Describes one submission or setup defect found before compilation begins.
+/**
+ * Stores the category, severity, location, message, and suggested fix for one finding.
+ */
 public record PreflightFinding(
         // Which submission this belongs to ("" means it is about the whole run, not one
         // student).

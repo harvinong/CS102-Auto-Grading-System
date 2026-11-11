@@ -22,6 +22,9 @@ public class SubmissionValidation {
     private final SubmissionCache cache;
     private final TemplateResourceSynchronizer resourceSynchronizer;
 
+    /**
+     * Initializes validation with the cache, registered students, and optional restoration template.
+     */
     public SubmissionValidation(
             List<Student> students,
             Predicate<String> confirm,
@@ -29,6 +32,9 @@ public class SubmissionValidation {
         this(students, confirm, cache, null);
     }
 
+    /**
+     * Initializes validation with the cache, registered students, and optional restoration template.
+     */
     public SubmissionValidation(
             List<Student> students,
             Predicate<String> confirm,
@@ -42,6 +48,9 @@ public class SubmissionValidation {
         this.cache = cache;
     }
 
+    /**
+     * Validates the working submissions and returns their events grouped with resolved student paths.
+     */
     public ValidationReport run(Path submissions, PreflightReport preflight) {
 
         List<ValidationEvent> events = new ArrayList<>();

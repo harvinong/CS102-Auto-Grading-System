@@ -72,17 +72,22 @@ public class ScoresheetDAO {
 
     // Input: the scoresheet CSV file to read from and save to.
     // Output: a new ScoresheetDAO.
+    /**
+     * Opens the configured CSV scoresheet for loading, lookup, and updates.
+     */
     public ScoresheetDAO(File scoresheetFile) {
         this.scoresheetFile = scoresheetFile;
     }
 
-    // Input: nothing
-    // Function: reads the whole CSV. Every student row becomes a ScoresheetRecord (its marks in the
-    //           question columns) stored under its username, and the row's other cells are kept so they
-    //           can be written back unchanged. An empty mark cell means "not graded" and is left out.
-    // Output: true if the file was read; false if it is missing, unreadable, badly quoted, has no
-    //         Username (or student) column, repeats a column, has a row longer than the header, lists a student
-    //         twice, or has a mark that is not a whole number. On false, whatever was loaded before is kept.
+    /**
+     * reads the whole CSV. Every student row becomes a ScoresheetRecord (its marks in the
+     * question columns) stored under its username, and the row's other cells are kept so they
+     * can be written back unchanged. An empty mark cell means "not graded" and is left out.
+     * 
+     * @return true if the file was read; false if it is missing, unreadable, badly quoted, has no
+     *         Username (or student) column, repeats a column, has a row longer than the header, lists a student
+     *         twice, or has a mark that is not a whole number. On false, whatever was loaded before is kept.
+     */
     public boolean load() {
         if (scoresheetFile == null) {
             return false;
@@ -192,11 +197,13 @@ public class ScoresheetDAO {
         return true;
     }
 
-    // Input: nothing
-    // Function: writes every record back to the scoresheet file it was loaded from. The file is first
-    //           written to a temporary file and then swapped in, so a failed save never leaves a broken file.
-    // Output: true if the file was written; false if nothing has been loaded or the write failed
-    //         (the original file is left as it was).
+    /**
+     * writes every record back to the scoresheet file it was loaded from. The file is first
+     * written to a temporary file and then swapped in, so a failed save never leaves a broken file.
+     * 
+     * @return true if the file was written; false if nothing has been loaded or the write failed
+     *         (the original file is left as it was).
+     */
     public boolean save() {
         if (!loaded || scoresheetFile == null) {
             return false; // Don't overwrite a real file with an empty one
@@ -245,6 +252,9 @@ public class ScoresheetDAO {
     // Input: a student's username, e.g. "ping.lee.2023" (a leading "#" is ignored).
     // Function: looks the student up in the map (Read).
     // Output: that student's record, or null if the username is not in the scoresheet.
+    /**
+     * Returns the scoresheet record for the requested username, or null when absent.
+     */
     public ScoresheetRecord get(String username) {
         if (username == null) {
             return null;
@@ -257,6 +267,9 @@ public class ScoresheetDAO {
     //           or saveAs() to write it to a file. A username that is not in the scoresheet is not
     //           added, because the DAO only reads and updates (no create or delete).
     // Output: true if the record was replaced; false if the username is not in the scoresheet or the record is null.
+    /**
+     * Stores or replaces the scoresheet record for the supplied username.
+     */
     public boolean set(String username, ScoresheetRecord record) {
         if (username == null || record == null) {
             return false;
@@ -273,6 +286,9 @@ public class ScoresheetDAO {
     // Input: nothing.
     // Function: lists every student's username, so a caller can go through all the records with get().
     // Output: the usernames in scoresheet order (empty before load()).
+    /**
+     * Returns the usernames currently represented in the loaded scoresheet.
+     */
     public ArrayList<String> getUsernames() {
         return new ArrayList<>(records.keySet());
     }
@@ -280,6 +296,9 @@ public class ScoresheetDAO {
     // Input: nothing.
     // Function: gives back the file this DAO reads and saves to.
     // Output: the scoresheet file.
+    /**
+     * Returns the CSV file used by this scoresheet data access object.
+     */
     public File getScoresheetFile() {
         return scoresheetFile;
     }
@@ -337,6 +356,9 @@ public class ScoresheetDAO {
     // Input: the column names and the column to find.
     // Function: looks for the column, ignoring spaces and upper/lower case.
     // Output: the column's position, or -1 if it is not there.
+    /**
+     * Returns the index of a named CSV column, or the absent-column sentinel.
+     */
     private static int columnOf(List<String> columns, String name) {
         for (int i = 0; i < columns.size(); i++) {
             if (columns.get(i).trim().equalsIgnoreCase(name.trim())) {
@@ -371,6 +393,9 @@ public class ScoresheetDAO {
     //           Blank lines are skipped. Accepts both Windows (\r\n) and Unix (\n) line endings.
     // Output: a list of rows, each a list of cells.
     // Throws IOException if a quoted cell is never closed.
+    /**
+     * Parses CSV text into rows while preserving quoted fields and line structure.
+     */
     private static ArrayList<ArrayList<String>> parse(String text) throws IOException {
         // All finished rows.
         ArrayList<ArrayList<String>> result = new ArrayList<>();
@@ -436,6 +461,9 @@ public class ScoresheetDAO {
     // Input: the list of finished rows and one new row.
     // Function: adds the row unless it is a blank line (a single empty cell).
     // Output: nothing; "result" is changed directly.
+    /**
+     * Adds a parsed row when it contains at least one non-blank value.
+     */
     private static void addRowIfNotBlank(ArrayList<ArrayList<String>> result, ArrayList<String> row) {
         boolean blank = row.size() == 1 && row.get(0).trim().isEmpty();
         if (!blank) {

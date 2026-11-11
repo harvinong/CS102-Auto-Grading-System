@@ -21,6 +21,9 @@ public class MainMenu {
     private Scanner sc;
     private MainCtrl ctrl;
 
+    /**
+     * Initializes the main menu with its input scanner and configuration controller.
+     */
     public MainMenu(Scanner sc, MainCtrl ctrl) {
         this.sc = sc;
         this.ctrl = ctrl;
@@ -36,6 +39,9 @@ public class MainMenu {
         }
     }
 
+    /**
+     * Reads the instructor’s menu choice and dispatches the selected action.
+     */
     public void readOption() {
         int menuOption;
         do {
@@ -68,6 +74,9 @@ public class MainMenu {
     }
 
     // -- Displays --
+    /**
+     * Prints the title and context for the current menu.
+     */
     private void displayMenuTitle() {
         System.out.println("+== Auto-Grading System ==+");
     }
@@ -113,6 +122,9 @@ public class MainMenu {
 
     /**Menu option 3: the full grade-students flow. */
     // Set to public to be used non-interactively.
+    /**
+     * Runs grading after preparing, validating, and displaying the working submissions.
+     */
     public void runGrader() {
         // clear the cache folder before grading, so the working copy is always fresh.
         clearCache();
@@ -182,6 +194,9 @@ public class MainMenu {
     }
 
     // Helper functions
+    /**
+     * Prompts for configuration paths and persists the selected values.
+     */
     private void inputConfig(boolean askNewFiles) {
         File startingFolder = Input.promptFile(
                 Field.STARTING_FOLDER,
@@ -223,6 +238,9 @@ public class MainMenu {
         }
     }
 
+    /**
+     * Reads and returns the text resource used by the menu display.
+     */
     private static String getText(String textPathString) {
         // Read as UTF-8 so the box-drawing title survives a platform default such as windows-1252 (JDK 17 on Windows).
         try (Scanner sc = new Scanner(new File(textPathString), StandardCharsets.UTF_8)) {

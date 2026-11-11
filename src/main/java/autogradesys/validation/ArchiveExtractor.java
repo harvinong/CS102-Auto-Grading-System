@@ -28,6 +28,9 @@ public final class ArchiveExtractor {
     private static final int MAX_ENTRIES = 5_000;
     private static final int BUFFER_SIZE = 8192;
 
+    /**
+     * Initializes the safe ZIP extraction utility.
+     */
     private ArchiveExtractor() {
     }
 
@@ -83,6 +86,9 @@ public final class ArchiveExtractor {
 
     // Writes the wanted entries under dest and returns how many files were written.
     // stripPrefix is the extra folder to drop from entry names; onlyItem (or null for all) limits what is written.
+    /**
+     * Extracts selected ZIP entries while preventing paths from escaping the destination.
+     */
     private static int unpack(ZipFile zip, Path dest, List<Path> created, String stripPrefix, String onlyItem,
             boolean skipExisting) throws IOException {
         long totalBytes = 0;
@@ -136,6 +142,9 @@ public final class ArchiveExtractor {
     }
 
     // The folder inside the zip that holds the item: "" (top level) or one extra folder like "Wrapper/".
+    /**
+     * Finds the common wrapper prefix used by entries in an archive.
+     */
     private static String findPrefix(ZipFile zip, String item) {
         List<String> names = new ArrayList<>();
         TreeSet<String> topFolders = new TreeSet<>();
@@ -162,10 +171,16 @@ public final class ArchiveExtractor {
     }
 
     // True if the entry is the wanted item or is inside it.
+    /**
+     * Reports whether an archive entry names the requested item.
+     */
     private static boolean matches(String name, String wanted) {
         return name.equals(wanted) || name.startsWith(wanted + "/");
     }
 
+    /**
+     * Rejects archives whose entry count exceeds the extraction safety limit.
+     */
     private static void checkEntryCount(ZipFile zip) throws IOException {
         if (zip.size() > MAX_ENTRIES) {
             throw new IOException("it has more than " + MAX_ENTRIES + " entries");
@@ -173,6 +188,9 @@ public final class ArchiveExtractor {
     }
 
     // Creates each missing folder from base down to dir, remembering them so a failure can undo it.
+    /**
+     * Creates required destination directories and tracks them for rollback.
+     */
     private static void makeDirectories(Path dir, Path base, List<Path> created) throws IOException {
         Path current = base;
         for (Path part : base.relativize(dir)) {
@@ -185,6 +203,9 @@ public final class ArchiveExtractor {
     }
 
     // Removes what a failed call created, newest first so files go before their folders.
+    /**
+     * Removes directories created by a failed extraction attempt.
+     */
     private static void undo(List<Path> created) {
         for (int i = created.size() - 1; i >= 0; i--) {
             try {
@@ -196,6 +217,9 @@ public final class ArchiveExtractor {
     }
 
     // Opens the zip; older Windows zips can hold entry names that are not valid UTF-8.
+    /**
+     * Opens a ZIP archive after validating that it is readable.
+     */
     private static ZipFile open(Path zip) throws IOException {
         try {
             return new ZipFile(zip.toFile());
@@ -204,6 +228,9 @@ public final class ArchiveExtractor {
         }
     }
 
+    /**
+     * Converts an extraction failure into an IOException with its cause preserved.
+     */
     private static IOException toIOException(Exception e) {
         return e instanceof IOException io ? io : new IOException(e.getMessage(), e);
     }

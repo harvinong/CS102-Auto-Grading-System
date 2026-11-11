@@ -31,6 +31,9 @@ public final class JavaGrader {
     public static final long DEFAULT_OUTPUT_LIMIT_BYTES = 1024 * 1024L;
 
     // Utility class with only static methods, so the constructor is private to block instantiation.
+    /**
+     * Initializes the utility that grades submissions against Java question projects.
+     */
     private JavaGrader() {
     }
 
@@ -525,6 +528,9 @@ public final class JavaGrader {
     }
 
     // A student's folder name (shown in the CSV and report) plus the path to their submission folder.
+    /**
+     * Stores the student name and the directory containing that student submission.
+     */
     private record Student(String name, Path directory) {
     }
 }
