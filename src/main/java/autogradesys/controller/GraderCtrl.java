@@ -33,7 +33,7 @@ public class GraderCtrl {
 
     /**
      * Initializes grading and validation services from the supplied configuration.
-     * @param config the value used by this method.
+     * @param config the application configuration to use.
      */
     public GraderCtrl(Config config) {
         this.config = config;
@@ -41,8 +41,8 @@ public class GraderCtrl {
 
     /**
      * Prepares or reuses a cache working copy for the supplied submissions folder.
-     * @param submissions the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param submissions the folder containing submitted student work.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public CacheReport prepareWorkingCopy(File submissions) {
         return cache.prepare(submissions.toPath());
@@ -57,8 +57,8 @@ public class GraderCtrl {
      * for every folder whose
      * name looks like a mistyped username, so the instructor is alerted before any
      * fix is run.
-     * @param workingDir the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param workingDir the cached working directory containing submissions.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public PreflightReport checkSubmissions(Path workingDir) {
 
@@ -176,10 +176,10 @@ public class GraderCtrl {
 
     /**
      * Validates the working submissions and returns events describing repairs or remaining issues.
-     * @param workingDir the value used by this method.
-     * @param preflight the value used by this method.
-     * @param confirm the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param workingDir the cached working directory containing submissions.
+     * @param preflight the preflight findings used to guide validation.
+     * @param confirm the callback used to confirm a proposed rename.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      */
     public ValidationReport validateSubmissions(Path workingDir, PreflightReport preflight,
@@ -196,10 +196,10 @@ public class GraderCtrl {
 
     /**
      * Validates the working submissions and returns events describing repairs or remaining issues.
-     * @param submissions the value used by this method.
-     * @param preflight the value used by this method.
-     * @param confirm the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param submissions the folder containing submitted student work.
+     * @param preflight the preflight findings used to guide validation.
+     * @param confirm the callback used to confirm a proposed rename.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      */
     public ValidationReport validateSubmissions(File submissions, PreflightReport preflight,

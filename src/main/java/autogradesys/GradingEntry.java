@@ -26,7 +26,7 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
     @Override
     /**
      * Records the start of a JUnit test plan so score collection can begin.
-     * @param testPlan the value used by this method.
+     * @param testPlan the argument supplied to this operation.
      */
     public void testPlanExecutionStarted(TestPlan testPlan) {
         this.testPlan = testPlan; //this is just a callback that has the whole tree of what to run where what where why whatever
@@ -35,8 +35,8 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
     @Override
     /**
      * Records the completed test execution and updates the corresponding score totals.
-     * @param testIdentifier the value used by this method.
-     * @param result the value used by this method.
+     * @param testIdentifier the argument supplied to this operation.
+     * @param result the completed grading result to export.
      */
     public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult result) {
         if (!testIdentifier.isTest()) return; // only count leaf DynamicTests
@@ -67,8 +67,8 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
 
     /**
      * Groups each recorded sub-question score under its student and question identifiers.
-     * @param scores the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param scores student scores keyed by username and question.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static Map<String, Map<String, Score>> getSubQuestionScoresByStudent(Map<String, int[]> scores) {
     Map<String, Map<String, Score>> result = new LinkedHashMap<>();
@@ -88,8 +88,8 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
 
     /**
      * Collects the display names of the test identifier and its ancestors.
-     * @param leaf the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param leaf the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private List<String> collectAncestorDisplayNames(TestIdentifier leaf) {
         LinkedList<String> names = new LinkedList<>();
@@ -106,8 +106,8 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
 
     /**
      * Removes the grading prefix from a display name when one is present.
-     * @param displayName the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param displayName the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private String stripPrefix(String displayName) {
         return displayName.startsWith("2023-2024-")
@@ -125,7 +125,7 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
 
     /**
      * Returns the scores collected during the current grading run.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public Map<String, int[]> getScores() {
         return scores;
@@ -135,7 +135,7 @@ public class GradingEntry {
     
     /**
      * Runs the configured grading flow and returns scores grouped by student.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static Map<String, Map<String, Score>> runGrading() {
         LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
@@ -151,7 +151,7 @@ public class GradingEntry {
     }
     /**
      * Runs the application entry point.
-     * @param args the value used by this method.
+     * @param args the arguments supplied to the invoked method.
      */
     public static void main(String[] args) {
         Map<String, Map<String, Score>> results = runGrading();

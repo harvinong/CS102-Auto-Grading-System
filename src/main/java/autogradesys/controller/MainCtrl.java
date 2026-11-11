@@ -19,7 +19,7 @@ public class MainCtrl {
     // Getters
     /**
      * Returns the root folder selected for locating submissions and grading inputs.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public File getStartingFolder() {
         return configDAO.getStartingFolder();
@@ -27,7 +27,7 @@ public class MainCtrl {
 
     /**
      * Returns the folder holding the instructor tester files.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public File getTestersFolder() {
         return configDAO.getTestersFolder();
@@ -35,7 +35,7 @@ public class MainCtrl {
 
     /**
      * Returns the CSV file used by this scoresheet data access object.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public File getScoresheetFile() {
         return configDAO.getScoresheetFile();
@@ -43,7 +43,7 @@ public class MainCtrl {
 
     /**
      * Returns the maximum number of seconds allowed for one grading process.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public long getTimeoutSeconds() {
         return configDAO.getTimeoutSeconds();
@@ -51,7 +51,7 @@ public class MainCtrl {
 
     /**
      * Returns the maximum number of process-output bytes retained during grading.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public long getOutputLimitBytes() {
         return configDAO.getOutputLimitBytes();
@@ -59,7 +59,7 @@ public class MainCtrl {
 
     /**
      * Returns the largest timeout value accepted by configuration input.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public long getMaxTimeoutSeconds() {
         return ConfigDAO.MAX_TIMEOUT_SECONDS;
@@ -67,7 +67,7 @@ public class MainCtrl {
 
     /**
      * Returns the largest output limit accepted by configuration input.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public long getMaxOutputLimitBytes() {
         return ConfigDAO.MAX_OUTPUT_LIMIT_BYTES;
@@ -75,7 +75,7 @@ public class MainCtrl {
 
     /**
      * Returns the current application configuration object.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public Config getConfig() {
         return new Config(getStartingFolder(), getTestersFolder(), getScoresheetFile(), getTimeoutSeconds(), getOutputLimitBytes());
@@ -84,7 +84,7 @@ public class MainCtrl {
 
     /**
      * Loads configuration values from disk and reports whether the file was usable.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public boolean loadConfig() {
         return configDAO.load();
@@ -92,10 +92,10 @@ public class MainCtrl {
 
     /**
      * Saves the supplied folders and grading limits through the configuration controller.
-     * @param startingFolder the value used by this method.
-     * @param testers the value used by this method.
-     * @param scoresheet the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param startingFolder the argument supplied to this operation.
+     * @param testers the argument supplied to this operation.
+     * @param scoresheet the CSV scoresheet to read or update.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public boolean saveConfig(File startingFolder, File testers, File scoresheet) {
         configDAO.setStartingFolder(startingFolder);
@@ -106,12 +106,12 @@ public class MainCtrl {
     }
 
     /** Saves the paths and grading limits together.
-     * @param startingFolder the value used by this method.
-     * @param testers the value used by this method.
-     * @param scoresheet the value used by this method.
-     * @param timeoutSeconds the value used by this method.
-     * @param outputLimitBytes the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param startingFolder the argument supplied to this operation.
+     * @param testers the argument supplied to this operation.
+     * @param scoresheet the CSV scoresheet to read or update.
+     * @param timeoutSeconds the argument supplied to this operation.
+     * @param outputLimitBytes the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public boolean saveConfig(File startingFolder, File testers, File scoresheet,
             long timeoutSeconds, long outputLimitBytes) {

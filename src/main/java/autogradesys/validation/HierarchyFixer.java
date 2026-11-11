@@ -25,9 +25,9 @@ public final class HierarchyFixer {
     /**
      * Moves the contents of every wrapper folder up into its student folder.
      * Nested wrappers are processed from the innermost folder outward.
-     * @param submissions the value used by this method.
-     * @param preflight the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param submissions the folder containing submitted student work.
+     * @param preflight the preflight findings used to guide validation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static List<ValidationEvent> flattenWrappers(
             Path submissions,
@@ -63,8 +63,8 @@ public final class HierarchyFixer {
 
     /**
      * Returns the number of path components in a wrapper path.
-     * @param path the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param path the file or directory path being inspected or written.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static int pathDepth(String path) {
         return Path.of(path).getNameCount();
@@ -73,9 +73,9 @@ public final class HierarchyFixer {
     /**
      * Moves the wrapper's children into its parent, then attempts to remove
      * the now-empty wrapper.
-     * @param wrapper the value used by this method.
-     * @param finding the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param wrapper the argument supplied to this operation.
+     * @param finding the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static ValidationEvent flatten(
             Path wrapper,

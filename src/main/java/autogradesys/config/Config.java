@@ -5,10 +5,10 @@ import java.io.File;
 /**
  * Convenient Configuration object (record)
  * 
- * @param startingFolder the value used by this method.
- * @param testersFolder the value used by this method.
- * @param scoresheetFile the value used by this method.
- * @param timeoutSeconds the value used by this method.
- * @param outputLimitBytes the value used by this method.
+ * @param startingFolder the argument supplied to this operation.
+ * @param testersFolder the argument supplied to this operation.
+ * @param scoresheetFile the argument supplied to this operation.
+ * @param timeoutSeconds the argument supplied to this operation.
+ * @param outputLimitBytes the argument supplied to this operation.
  */
 public record Config(File startingFolder, File testersFolder, File scoresheetFile, long timeoutSeconds, long outputLimitBytes) {}

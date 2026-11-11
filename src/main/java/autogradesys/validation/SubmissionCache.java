@@ -54,14 +54,14 @@ public class SubmissionCache {
 
     /**
      * Initializes the persistent cache used to reuse and track working submission copies.
-     * @param cacheRoot the value used by this method.
+     * @param cacheRoot the argument supplied to this operation.
      */
     public SubmissionCache(Path cacheRoot) {
         this.cacheRoot = cacheRoot;
     }
 
     /** The working copy folder (valid after {@link #prepare}).
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public Path workingDir() {
         return workingDir;
@@ -70,8 +70,8 @@ public class SubmissionCache {
     /**
      * Makes sure every submission is in the working copy, adding the ones that are not there yet.
      *
-     * @param submissions the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param submissions the folder containing submitted student work.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public CacheReport prepare(Path submissions) {
         List<ValidationEvent> events = new ArrayList<>();
@@ -113,16 +113,16 @@ public class SubmissionCache {
     }
 
     /** The original folder or zip that a working folder came from, if it is known.
-     * @param workingFolder the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param workingFolder the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public Optional<Path> sourceOf(String workingFolder) {
         return Optional.ofNullable(sources.get(renamed.getOrDefault(workingFolder, workingFolder)));
     }
 
     /** Remembers that the validation renamed a working folder, so it is still matched to its original.
-     * @param from the value used by this method.
-     * @param to the value used by this method.
+     * @param from the argument supplied to this operation.
+     * @param to the argument supplied to this operation.
      */
     public void renamed(String from, String to) {
         String originalName = renamed.getOrDefault(from, from);
@@ -140,10 +140,10 @@ public class SubmissionCache {
     // Puts one submission into the working copy; returns an event, or null for a plain folder that copied fine.
     /**
      * Builds a cache event describing the source and working copy for one student.
-     * @param originals the value used by this method.
-     * @param student the value used by this method.
-     * @param source the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param originals the argument supplied to this operation.
+     * @param student the registered student identity.
+     * @param source the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private ValidationEvent build(Path originals, String student, Path source) {
         Path destination = workingDir.resolve(student);
@@ -167,8 +167,8 @@ public class SubmissionCache {
     // Finds what each student's original is: a folder, or a zip (beside or inside the folder).
     /**
      * Finds original submission folders and archives that can populate the cache.
-     * @param originals the value used by this method.
-     * @param events the value used by this method.
+     * @param originals the argument supplied to this operation.
+     * @param events the argument supplied to this operation.
      * @throws IOException when the operation cannot complete.
      */
     private void findSources(Path originals, List<ValidationEvent> events) throws IOException {
@@ -218,8 +218,8 @@ public class SubmissionCache {
     // True if the student is already in the working copy (under its own name or a name the validation gave it).
     /**
      * Reports whether the cache already contains a usable working folder for the student.
-     * @param student the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param student the registered student identity.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private boolean hasWorkingFolder(String student) {
         if (Files.exists(workingDir.resolve(student), LinkOption.NOFOLLOW_LINKS)) {
@@ -278,8 +278,8 @@ public class SubmissionCache {
 
     /**
      * Reports whether a directory contains usable submission content.
-     * @param dir the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param dir the directory to scan or compile.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      */
     private static boolean hasContent(Path dir) throws IOException {

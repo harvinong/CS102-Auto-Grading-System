@@ -38,12 +38,12 @@ public final class JavaGrader {
     }
 
     /** Backward-compatible entry point using a 1 MiB combined stdout/stderr limit.
-     * @param submissionsRoot the value used by this method.
-     * @param questionsRoot the value used by this method.
-     * @param scoresheet the value used by this method.
-     * @param timeout the value used by this method.
-     * @param reporter the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param submissionsRoot the argument supplied to this operation.
+     * @param questionsRoot the directory containing question definitions.
+     * @param scoresheet the CSV scoresheet to read or update.
+     * @param timeout the maximum process duration.
+     * @param reporter the diagnostic reporter used for grading errors.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             Duration timeout, ErrorReporter reporter) {
@@ -55,13 +55,13 @@ public final class JavaGrader {
     /**
      * Grades each discovered student against each discovered question.
      *
-     * @param submissionsRoot the value used by this method.
-     * @param questionsRoot the value used by this method.
-     * @param scoresheet the value used by this method.
-     * @param timeout the value used by this method.
-     * @param outputLimitBytes the value used by this method.
-     * @param reporter the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param submissionsRoot the argument supplied to this operation.
+     * @param questionsRoot the directory containing question definitions.
+     * @param scoresheet the CSV scoresheet to read or update.
+     * @param timeout the maximum process duration.
+     * @param outputLimitBytes the argument supplied to this operation.
+     * @param reporter the diagnostic reporter used for grading errors.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             Duration timeout, long outputLimitBytes, ErrorReporter reporter) {
@@ -74,14 +74,14 @@ public final class JavaGrader {
      * submission folders: copies of the starter template (such as RenameToYourStudentID) that are not
      * a student's work, so grading them would only add errors and a missing scoresheet row.
      *
-     * @param submissionsRoot the value used by this method.
-     * @param questionsRoot the value used by this method.
-     * @param scoresheet the value used by this method.
-     * @param timeout the value used by this method.
-     * @param outputLimitBytes the value used by this method.
-     * @param templateCopies the value used by this method.
-     * @param reporter the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param submissionsRoot the argument supplied to this operation.
+     * @param questionsRoot the directory containing question definitions.
+     * @param scoresheet the CSV scoresheet to read or update.
+     * @param timeout the maximum process duration.
+     * @param outputLimitBytes the argument supplied to this operation.
+     * @param templateCopies the argument supplied to this operation.
+     * @param reporter the diagnostic reporter used for grading errors.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             Duration timeout, long outputLimitBytes, Set<String> templateCopies, ErrorReporter reporter) {
@@ -198,11 +198,11 @@ public final class JavaGrader {
     }
 
     /** Checks that the submissions folder, questions folder and scoresheet CSV are usable, reporting every failure found.
-     * @param submissionsRoot the value used by this method.
-     * @param questionsRoot the value used by this method.
-     * @param scoresheet the value used by this method.
-     * @param reporter the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param submissionsRoot the argument supplied to this operation.
+     * @param questionsRoot the directory containing question definitions.
+     * @param scoresheet the CSV scoresheet to read or update.
+     * @param reporter the diagnostic reporter used for grading errors.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static boolean validSetup(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             ErrorReporter reporter) {
@@ -248,9 +248,9 @@ public final class JavaGrader {
     }
 
     /** Lists question folder names in sorted order; records a fatal error and returns an empty list on failure.
-     * @param root the value used by this method.
-     * @param reporter the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param root the argument supplied to this operation.
+     * @param reporter the diagnostic reporter used for grading errors.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static List<String> questionNames(Path root, ErrorReporter reporter) {
         // Defensive recheck: validSetup normally catches this, but this method can be reached on its own.
@@ -287,9 +287,9 @@ public final class JavaGrader {
     }
 
     /** Lists one {@link Student} per sub-folder of the submissions directory, sorted by name.
-     * @param root the value used by this method.
-     * @param reporter the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param root the argument supplied to this operation.
+     * @param reporter the diagnostic reporter used for grading errors.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static List<Student> studentDirectories(Path root, ErrorReporter reporter) {
         // Same defensive check for the submissions folder.
@@ -331,15 +331,15 @@ public final class JavaGrader {
     /**
      * Grades one student's answer to one question: load fixtures, compile, run, compare output.
      *
-     * @param student the value used by this method.
-     * @param submission the value used by this method.
-     * @param question the value used by this method.
-     * @param questionsRoot the value used by this method.
-     * @param source the value used by this method.
-     * @param timeout the value used by this method.
-     * @param outputLimitBytes the value used by this method.
-     * @param reporter the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param student the registered student identity.
+     * @param submission the argument supplied to this operation.
+     * @param question the question name being graded or looked up.
+     * @param questionsRoot the directory containing question definitions.
+     * @param source the argument supplied to this operation.
+     * @param timeout the maximum process duration.
+     * @param outputLimitBytes the argument supplied to this operation.
+     * @param reporter the diagnostic reporter used for grading errors.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static int runQuestion(String student, Path submission, String question, Path questionsRoot,
             Path source, Duration timeout, long outputLimitBytes, ErrorReporter reporter) {
@@ -507,7 +507,7 @@ public final class JavaGrader {
     }
 
     /** Best-effort recursive delete of the temporary build folder.
-     * @param root the value used by this method.
+     * @param root the argument supplied to this operation.
      */
     static void deleteTree(Path root) {
         // Walk the whole temp folder recursively; the stream is closed by try-with-resources.
@@ -528,9 +528,9 @@ public final class JavaGrader {
     }
 
     /** Picks the tool's own error text if there is any, otherwise the supplied fallback sentence.
-     * @param stderr the value used by this method.
-     * @param fallback the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param stderr the argument supplied to this operation.
+     * @param fallback the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static String details(String stderr, String fallback) {
         // Treat missing stderr as empty and trim surrounding whitespace so the message is tidy.
@@ -540,8 +540,8 @@ public final class JavaGrader {
     }
 
     /** Renders text in quotes with control characters escaped, so mismatch messages stay on one readable line.
-     * @param text the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param text the text to parse, render, or escape.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static String quote(String text) {
         // Wrap the text in quotes and escape backslashes first, then carriage returns, newlines and quotes, so whitespace differences are visible in messages.
@@ -550,8 +550,8 @@ public final class JavaGrader {
     }
 
     /** Wording for the output cap used in the output-limit error messages.
-     * @param bytes the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param bytes the output byte limit.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static String outputLimitDescription(long bytes) {
         // Format the limit for messages, e.g. "1048576 byte(s)".
@@ -559,8 +559,8 @@ public final class JavaGrader {
     }
 
     /** Wording for the time limit used in the timeout error messages.
-     * @param timeout the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param timeout the maximum process duration.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static String timeoutDescription(Duration timeout) {
         // Whole seconds read better as seconds (e.g. "10 second(s)").
@@ -573,8 +573,8 @@ public final class JavaGrader {
     }
 
     /** Formats a path for error records and the report.
-     * @param path the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param path the file or directory path being inspected or written.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static String display(Path path) {
         // Absolute, normalised path for unambiguous messages; a null path prints as <missing> instead of throwing.
@@ -584,8 +584,8 @@ public final class JavaGrader {
     // A student's folder name (shown in the CSV and report) plus the path to their submission folder.
     /**
      * Stores the student name and the directory containing that student submission.
-     * @param name the value used by this method.
-     * @param directory the value used by this method.
+     * @param name the name used for lookup or display.
+     * @param directory the argument supplied to this operation.
      */
     private record Student(String name, Path directory) {
     }

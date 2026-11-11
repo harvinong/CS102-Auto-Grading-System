@@ -16,7 +16,7 @@ enum ConfigKey {
 
     /**
      * Stores the JSON key name used to persist one configuration value.
-     * @param value the value used by this method.
+     * @param value the value to quote or convert.
      */
     private ConfigKey(String value) {
         this.value = value;
@@ -24,7 +24,7 @@ enum ConfigKey {
 
     /**
      * Returns the configuration key string used when reading or writing JSON.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public String getValue() {
         return this.value;
@@ -33,7 +33,7 @@ enum ConfigKey {
     @Override
     /**
      * Returns a readable representation of the submission or configuration value.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public String toString() {
         return this.value;

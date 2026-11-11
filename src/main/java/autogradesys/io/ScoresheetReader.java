@@ -26,8 +26,8 @@ public final class ScoresheetReader {
 
     /**
      * Reads the scoresheet CSV and returns its registered student records.
-     * @param scoresheet the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param scoresheet the CSV scoresheet to read or update.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      */
     public static List<Student> read(File scoresheet) throws IOException {
@@ -56,9 +56,9 @@ public final class ScoresheetReader {
 
     /**
      * Returns the index of a named CSV column, or the absent-column sentinel.
-     * @param header the value used by this method.
-     * @param title the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param header the argument supplied to this operation.
+     * @param title the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static int columnOf(List<String> header, String title) {
         for (int i = 0; i < header.size(); i++) if (header.get(i).trim().equalsIgnoreCase(title)) return i;
@@ -66,17 +66,17 @@ public final class ScoresheetReader {
     }
     /**
      * Returns the requested row cell, handling a missing trailing value safely.
-     * @param row the value used by this method.
-     * @param column the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param row the argument supplied to this operation.
+     * @param column the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String cell(List<String> row, int column) {
         return column < 0 || column >= row.size() ? "" : row.get(column).trim();
     }
     /** Small RFC-4180-compatible CSV parser. */
     /** Small RFC-4180-compatible parser, shared in spirit with grading.CsvScoresheet.
-     * @param text the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param text the text to parse, render, or escape.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      */
     private static List<List<String>> parse(String text) throws IOException {

@@ -17,8 +17,8 @@ public class unpacker {
     //just a checker if current file is a zip
     /**
      * Reports whether a filename has a ZIP extension.
-     * @param f the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param f the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static boolean isZip(File f){
         int fileSig = 0;
@@ -32,7 +32,7 @@ public class unpacker {
     // gets all zipped files of submission final arraylist will not include anything that is not a zip
     /**
      * Returns the ZIP files discovered in the configured source directory.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static ArrayList<String> getAllZip() {
         ArrayList<String> nameOfAllFile = new ArrayList<>();
@@ -53,7 +53,7 @@ public class unpacker {
     // can do error checking here for like fucked up zip or smth
     /**
      * Extracts selected ZIP entries while preventing paths from escaping the destination.
-     * @param srcPath the value used by this method.
+     * @param srcPath the argument supplied to this operation.
      */
     public static void unpack(String srcPath){
         try {

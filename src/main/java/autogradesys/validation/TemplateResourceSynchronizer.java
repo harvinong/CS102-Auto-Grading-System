@@ -35,7 +35,7 @@ public class TemplateResourceSynchronizer {
 
     /**
      * Creates a template resource synchronizer instance.
-     * @param templateDir the value used by this method.
+     * @param templateDir the template directory used as a fallback.
      */
     public TemplateResourceSynchronizer(Path templateDir) {
         this.templateDir = templateDir == null
@@ -45,9 +45,9 @@ public class TemplateResourceSynchronizer {
 
     /**
      * Synchronises one student's working submission with the template.
-     * @param student the value used by this method.
-     * @param studentDir the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param student the registered student identity.
+     * @param studentDir the directory containing one student submission.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public List<ValidationEvent> synchronize(
             String student,
@@ -83,9 +83,9 @@ public class TemplateResourceSynchronizer {
                 @Override
                 /**
                  * Pre visit directory.
-                 * @param dir the value used by this method.
-                 * @param attrs the value used by this method.
-                 * @return the value produced by this operation, including any empty or absent result defined by its contract.
+                 * @param dir the directory to scan or compile.
+                 * @param attrs the argument supplied to this operation.
+                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
                  */
                 public FileVisitResult preVisitDirectory(
                         Path dir,
@@ -107,9 +107,9 @@ public class TemplateResourceSynchronizer {
                 @Override
                 /**
                  * Visit file.
-                 * @param file the value used by this method.
-                 * @param attrs the value used by this method.
-                 * @return the value produced by this operation, including any empty or absent result defined by its contract.
+                 * @param file the file being validated or processed.
+                 * @param attrs the argument supplied to this operation.
+                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
                  */
                 public FileVisitResult visitFile(
                         Path file,
@@ -244,9 +244,9 @@ public class TemplateResourceSynchronizer {
                 @Override
                 /**
                  * Visit file.
-                 * @param file the value used by this method.
-                 * @param attrs the value used by this method.
-                 * @return the value produced by this operation, including any empty or absent result defined by its contract.
+                 * @param file the file being validated or processed.
+                 * @param attrs the argument supplied to this operation.
+                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
                  * @throws IOException when the operation cannot complete.
                  */
                 public FileVisitResult visitFile(
@@ -276,9 +276,9 @@ public class TemplateResourceSynchronizer {
                 @Override
                 /**
                  * Post visit directory.
-                 * @param dir the value used by this method.
-                 * @param exc the value used by this method.
-                 * @return the value produced by this operation, including any empty or absent result defined by its contract.
+                 * @param dir the directory to scan or compile.
+                 * @param exc the argument supplied to this operation.
+                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
                  * @throws IOException when the operation cannot complete.
                  */
                 public FileVisitResult postVisitDirectory(
@@ -326,8 +326,8 @@ public class TemplateResourceSynchronizer {
     /**
      * Checks whether a path represents a Java source file.
      * Case-insensitive so files such as Example.JAVA are also preserved.
-     * @param path the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param path the file or directory path being inspected or written.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static boolean isJavaFile(Path path) {
 
@@ -338,8 +338,8 @@ public class TemplateResourceSynchronizer {
 
     /**
      * Checks recursively for Java files without following symbolic links.
-     * @param folder the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param folder the directory whose contents are processed.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      */
     private static boolean containsJavaFile(Path folder) throws IOException {
@@ -351,9 +351,9 @@ public class TemplateResourceSynchronizer {
             @Override
             /**
              * Visit file.
-             * @param file the value used by this method.
-             * @param attrs the value used by this method.
-             * @return the value produced by this operation, including any empty or absent result defined by its contract.
+             * @param file the file being validated or processed.
+             * @param attrs the argument supplied to this operation.
+             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
              */
             public FileVisitResult visitFile(
                     Path file,
@@ -374,7 +374,7 @@ public class TemplateResourceSynchronizer {
     /**
      * Deletes a folder recursively without following symbolic links.
      * Unlike SubmissionFiles.deleteTree(), this method reports failures.
-     * @param root the value used by this method.
+     * @param root the argument supplied to this operation.
      * @throws IOException when the operation cannot complete.
      */
     private static void deleteTreeStrict(Path root) throws IOException {
@@ -384,9 +384,9 @@ public class TemplateResourceSynchronizer {
             @Override
             /**
              * Visit file.
-             * @param file the value used by this method.
-             * @param attrs the value used by this method.
-             * @return the value produced by this operation, including any empty or absent result defined by its contract.
+             * @param file the file being validated or processed.
+             * @param attrs the argument supplied to this operation.
+             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
              * @throws IOException when the operation cannot complete.
              */
             public FileVisitResult visitFile(
@@ -400,9 +400,9 @@ public class TemplateResourceSynchronizer {
             @Override
             /**
              * Post visit directory.
-             * @param dir the value used by this method.
-             * @param exc the value used by this method.
-             * @return the value produced by this operation, including any empty or absent result defined by its contract.
+             * @param dir the directory to scan or compile.
+             * @param exc the argument supplied to this operation.
+             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
              * @throws IOException when the operation cannot complete.
              */
             public FileVisitResult postVisitDirectory(
@@ -421,10 +421,10 @@ public class TemplateResourceSynchronizer {
 
     /**
      * Removed.
-     * @param student the value used by this method.
-     * @param relative the value used by this method.
-     * @param message the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param student the registered student identity.
+     * @param relative the argument supplied to this operation.
+     * @param message the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static ValidationEvent removed(
             String student,
@@ -440,10 +440,10 @@ public class TemplateResourceSynchronizer {
 
     /**
      * Failed.
-     * @param student the value used by this method.
-     * @param path the value used by this method.
-     * @param message the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param student the registered student identity.
+     * @param path the file or directory path being inspected or written.
+     * @param message the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static ValidationEvent failed(
             String student,
@@ -460,9 +460,9 @@ public class TemplateResourceSynchronizer {
     /**
      * Combines all successful resource changes into one summary event,
      * while keeping individual failures visible.
-     * @param student the value used by this method.
-     * @param events the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param student the registered student identity.
+     * @param events the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static List<ValidationEvent> summarise(
             String student,

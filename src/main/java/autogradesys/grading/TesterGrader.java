@@ -36,8 +36,8 @@ final class TesterGrader {
     }
 
     /** Returns true when the question folder is graded with testers rather than a Main.java and expected.txt.
-     * @param testerDir the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param testerDir the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static boolean usesTesters(Path testerDir) {
         // A folder that holds at least one tester class is clearly tester based.
@@ -51,8 +51,8 @@ final class TesterGrader {
     }
 
     /** Number of tester classes in the question folder, which is the number of marks the question is worth.
-     * @param testerDir the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param testerDir the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static int testerCount(Path testerDir) {
         // Each tester is worth one mark, so the count is the question's maximum.
@@ -65,9 +65,9 @@ final class TesterGrader {
      * <p>Students often zip the whole template folder, so the question folders may sit one folder
      * down (for example {@code RenameToYourStudentID/Q1}). The submission check already warns about
      * that; grading tolerates it so those students still receive marks.</p>
-     * @param studentDir the value used by this method.
-     * @param questions the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param studentDir the directory containing one student submission.
+     * @param questions the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static Path submissionRoot(Path studentDir, List<String> questions) {
         // Normal case: a question folder sits directly in the student's folder.
@@ -103,14 +103,14 @@ final class TesterGrader {
     /**
      * Grades one question.
      *
-     * @param student the value used by this method.
-     * @param submissionRoot the value used by this method.
-     * @param question the value used by this method.
-     * @param testerDir the value used by this method.
-     * @param timeout the value used by this method.
-     * @param outputLimitBytes the value used by this method.
-     * @param reporter the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param student the registered student identity.
+     * @param submissionRoot the argument supplied to this operation.
+     * @param question the question name being graded or looked up.
+     * @param testerDir the argument supplied to this operation.
+     * @param timeout the maximum process duration.
+     * @param outputLimitBytes the argument supplied to this operation.
+     * @param reporter the diagnostic reporter used for grading errors.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static int grade(String student, Path submissionRoot, String question, Path testerDir,
             Duration timeout, long outputLimitBytes, ErrorReporter reporter) {
@@ -234,16 +234,16 @@ final class TesterGrader {
     // Runs one compiled tester inside the build folder and returns 1 if its output matches, else 0.
     /**
      * Compiles and runs one tester against the student question, returning its score.
-     * @param student the value used by this method.
-     * @param studentQuestion the value used by this method.
-     * @param question the value used by this method.
-     * @param tester the value used by this method.
-     * @param build the value used by this method.
-     * @param out the value used by this method.
-     * @param timeout the value used by this method.
-     * @param outputLimitBytes the value used by this method.
-     * @param reporter the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param student the registered student identity.
+     * @param studentQuestion the argument supplied to this operation.
+     * @param question the question name being graded or looked up.
+     * @param tester the argument supplied to this operation.
+     * @param build the argument supplied to this operation.
+     * @param out the argument supplied to this operation.
+     * @param timeout the maximum process duration.
+     * @param outputLimitBytes the argument supplied to this operation.
+     * @param reporter the diagnostic reporter used for grading errors.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      * @throws InterruptedException when the operation cannot complete.
      */
@@ -345,8 +345,8 @@ final class TesterGrader {
     // Output: that line without spaces around it, or "" if nothing was printed
     /**
      * Last line.
-     * @param output the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param output the destination stream or output buffer.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String lastLine(String output) {
         String[] lines = output.split("\r?\n");
@@ -363,9 +363,9 @@ final class TesterGrader {
     // Output: the shortened message, ending with "... (N more lines)" when lines were cut
     /**
      * First lines.
-     * @param text the value used by this method.
-     * @param count the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param text the text to parse, render, or escape.
+     * @param count the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static String firstLines(String text, int count) {
         String[] lines = text.split("\r?\n");
@@ -386,8 +386,8 @@ final class TesterGrader {
     // Output: the question's full marks (at least 1 per tester)
     /**
      * Full marks.
-     * @param testerDir the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param testerDir the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     static int fullMarks(Path testerDir) {
         int total = 0;
@@ -421,8 +421,8 @@ final class TesterGrader {
     //         question sub-folders or has no tester files at the top level.
     /**
      * Group flat testers.
-     * @param testersRoot the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param testersRoot the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      */
     static Path groupFlatTesters(Path testersRoot) throws IOException {
@@ -456,8 +456,8 @@ final class TesterGrader {
     // Converts Windows line endings to Unix ones so only the text itself decides the comparison.
     /**
      * Normalizes output text before comparing tester and student results.
-     * @param text the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param text the text to parse, render, or escape.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String normalise(String text) {
         // Replace every carriage return plus line feed pair with a single line feed.
@@ -467,9 +467,9 @@ final class TesterGrader {
     // True when the folder directly contains a sub-folder named after one of the questions.
     /**
      * Reports whether a folder contains the requested question layout.
-     * @param folder the value used by this method.
-     * @param questions the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param folder the directory whose contents are processed.
+     * @param questions the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static boolean holdsQuestion(Path folder, List<String> questions) {
         // True as soon as one configured question name exists as a directory inside the folder.
@@ -479,8 +479,8 @@ final class TesterGrader {
     // The instructor's tester sources in a question folder, sorted by name; empty if the folder is unreadable.
     /**
      * Returns the tester source files found in the tester directory.
-     * @param testerDir the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param testerDir the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static List<Path> testerFiles(Path testerDir) {
         // The listing holds an OS handle, so try-with-resources closes it.
@@ -503,8 +503,8 @@ final class TesterGrader {
      * left out, so the source is always what gets graded. Hidden files such as 
      * .DS_Store are left out too.
      * Returns the Java source files belonging to the student question.
-     * @param studentQuestion the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param studentQuestion the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static List<Path> studentFiles(Path studentQuestion) {
         // The listing holds an OS handle, so try-with-resources closes it.

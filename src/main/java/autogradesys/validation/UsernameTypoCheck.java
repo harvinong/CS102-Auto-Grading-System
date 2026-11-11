@@ -27,9 +27,9 @@ public final class UsernameTypoCheck {
 
     /**
      *         or the same report if no folder name looks like a typo.
-     * @param report the value used by this method.
-     * @param students the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param report the argument supplied to this operation.
+     * @param students the registered student identities used for matching.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static PreflightReport addFindings(PreflightReport report, List<Student> students) {
         Map<String, String> owners = UsernameResolver.owners(report.students(), students);
@@ -60,11 +60,11 @@ public final class UsernameTypoCheck {
     // One USERNAME_TYPO finding; owner is the folder that already uses the correct name, or null.
     /**
      * Creates a preflight finding describing a likely username typo and its owner.
-     * @param folder the value used by this method.
-     * @param claimed the value used by this method.
-     * @param match the value used by this method.
-     * @param owner the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param folder the directory whose contents are processed.
+     * @param claimed the argument supplied to this operation.
+     * @param match the argument supplied to this operation.
+     * @param owner the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static PreflightFinding finding(String folder, String claimed, Student match, String owner) {
         String message = "'" + match.username() + "' is the closest registered name to '" + claimed

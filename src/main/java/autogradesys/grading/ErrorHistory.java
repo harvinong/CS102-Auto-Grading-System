@@ -34,7 +34,7 @@ public final class ErrorHistory {
     }
 
     /** Creates history storage at the supplied JSONL path.
-     * @param path the value used by this method.
+     * @param path the file or directory path being inspected or written.
      */
     public ErrorHistory(Path path) {
         // Remember the file location; the file itself is only touched by append().
@@ -42,7 +42,7 @@ public final class ErrorHistory {
     }
 
     /** Returns the configured history path for diagnostics and callers.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public Path path() {
         // Lets ErrorReporter name the file in a message when writing to it fails.
@@ -56,7 +56,7 @@ public final class ErrorHistory {
     // Called by ErrorReporter after each error; failures propagate so the reporter can mark the history as failed.
     /**
      * Appends one diagnostic record to the JSON Lines error history.
-     * @param record the value used by this method.
+     * @param record the diagnostic or scoresheet record to store.
      * @throws IOException when the operation cannot complete.
      */
     public void append(ErrorRecord record) throws IOException {

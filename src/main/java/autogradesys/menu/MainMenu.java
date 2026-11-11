@@ -23,8 +23,8 @@ public class MainMenu {
 
     /**
      * Initializes the main menu with its input scanner and configuration controller.
-     * @param sc the value used by this method.
-     * @param ctrl the value used by this method.
+     * @param sc the scanner used to read interactive input.
+     * @param ctrl the argument supplied to this operation.
      */
     public MainMenu(Scanner sc, MainCtrl ctrl) {
         this.sc = sc;
@@ -198,7 +198,7 @@ public class MainMenu {
     // Helper functions
     /**
      * Prompts for configuration paths and persists the selected values.
-     * @param askNewFiles the value used by this method.
+     * @param askNewFiles the argument supplied to this operation.
      */
     private void inputConfig(boolean askNewFiles) {
         File startingFolder = Input.promptFile(
@@ -243,8 +243,8 @@ public class MainMenu {
 
     /**
      * Reads and returns the text resource used by the menu display.
-     * @param textPathString the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param textPathString the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String getText(String textPathString) {
         // Read as UTF-8 so the box-drawing title survives a platform default such as windows-1252 (JDK 17 on Windows).

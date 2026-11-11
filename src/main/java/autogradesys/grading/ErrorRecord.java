@@ -8,15 +8,15 @@ import java.util.Objects;
  * <p>This is the single shape shared by the console output, the JSONL history file and the HTML
  * report. {@code student}, {@code submission} and {@code question} are null for run-level errors.</p>
  *
- * @param stage the value used by this method.
- * @param category the value used by this method.
- * @param severity the value used by this method.
- * @param message the value used by this method.
- * @param guidance the value used by this method.
- * @param student the value used by this method.
- * @param submission the value used by this method.
- * @param question the value used by this method.
- * @param canContinue the value used by this method.
+ * @param stage the argument supplied to this operation.
+ * @param category the argument supplied to this operation.
+ * @param severity the argument supplied to this operation.
+ * @param message the argument supplied to this operation.
+ * @param guidance the argument supplied to this operation.
+ * @param student the registered student identity.
+ * @param submission the argument supplied to this operation.
+ * @param question the question name being graded or looked up.
+ * @param canContinue the argument supplied to this operation.
  */
 public record ErrorRecord(
         String stage,

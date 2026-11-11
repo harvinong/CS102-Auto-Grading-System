@@ -16,15 +16,15 @@ import autogradesys.cli.TextColor;
 // Describes one submission or setup defect found before compilation begins.
 /**
  * Stores the category, severity, location, message, and suggested fix for one finding.
- * @param student the value used by this method.
- * @param problem the value used by this method.
- * @param category the value used by this method.
- * @param is the value used by this method.
- * @param severity the value used by this method.
- * @param is the value used by this method.
- * @param path the value used by this method.
- * @param message the value used by this method.
- * @param fix the value used by this method.
+ * @param student the registered student identity.
+ * @param problem the argument supplied to this operation.
+ * @param category the argument supplied to this operation.
+ * @param is the argument supplied to this operation.
+ * @param severity the argument supplied to this operation.
+ * @param is the argument supplied to this operation.
+ * @param path the file or directory path being inspected or written.
+ * @param message the argument supplied to this operation.
+ * @param fix the argument supplied to this operation.
  */
 public record PreflightFinding(
         // Which submission this belongs to ("" means it is about the whole run, not one
@@ -111,7 +111,7 @@ public record PreflightFinding(
      * - NOTE is applied with TextColor.INFO;
      * - WARNING is applied with TextColor.WARNING;
      * - ERROR and FATAL is applied with TextColor.ERROR;
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public String getTagWithColor() {
         TextColor color;

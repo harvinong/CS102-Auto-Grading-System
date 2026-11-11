@@ -20,9 +20,9 @@ public final class UsernameMatcher {
 
     /**
      * Computes the normalized edit distance used to detect username typos.
-     * @param a the value used by this method.
-     * @param b the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param a the argument supplied to this operation.
+     * @param b the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static double distance(String a, String b) {
         double[] d = new double[b.length() + 1];
@@ -48,18 +48,18 @@ public final class UsernameMatcher {
     }
 
     /** The student whose username equals the name (ignoring case), if any.
-     * @param name the value used by this method.
-     * @param students the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param name the name used for lookup or display.
+     * @param students the registered student identities used for matching.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static Optional<Student> findExact(String name, List<Student> students) {
         return students.stream().filter(s -> s.username().equalsIgnoreCase(name)).findFirst();
     }
 
     /** The student whose username is closest to the name, if any is close enough to be a typo.
-     * @param name the value used by this method.
-     * @param students the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param name the name used for lookup or display.
+     * @param students the registered student identities used for matching.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static Optional<Student> findClosest(String name, List<Student> students) {
         Student closest = null;

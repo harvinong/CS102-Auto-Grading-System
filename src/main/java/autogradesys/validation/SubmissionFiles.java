@@ -29,8 +29,8 @@ public final class SubmissionFiles {
     /**
      * Hidden files (e.g. macOS "._Q1a.java") and __MACOSX are clutter, not student work.
      *
-     * @param relative the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param relative the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static boolean isJunk(Path relative) {
         for (Path part : relative) {
@@ -43,8 +43,8 @@ public final class SubmissionFiles {
     }
 
     /** True for a real file (not a link) whose name ends in .zip in any letter case.
-     * @param path the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param path the file or directory path being inspected or written.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static boolean isZipFile(Path path) {
         return Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)
@@ -52,16 +52,16 @@ public final class SubmissionFiles {
     }
 
     /** "frank.zip" gives "frank".
-     * @param zipName the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param zipName the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static String stem(String zipName) {
         return zipName.substring(0, zipName.length() - ZIP_EXTENSION.length());
     }
 
     /** The last part of the path as text.
-     * @param path the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param path the file or directory path being inspected or written.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static String nameOf(Path path) {
         Path name = path.getFileName();
@@ -69,8 +69,8 @@ public final class SubmissionFiles {
     }
 
     /** The one zip a folder contains, if that zip is the folder's only content; otherwise null.
-     * @param folder the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param folder the directory whose contents are processed.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public static Path onlyContentIsZip(Path folder) {
         try (Stream<Path> stream = Files.list(folder)) {
@@ -85,9 +85,9 @@ public final class SubmissionFiles {
      * Copies a file or folder to the target, skipping junk and links and never overwriting a file
      * that already exists there.
      *
-     * @param source the value used by this method.
-     * @param target the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param source the argument supplied to this operation.
+     * @param target the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      */
     public static int copyMissing(Path source, Path target) throws IOException {
@@ -96,9 +96,9 @@ public final class SubmissionFiles {
             @Override
             /**
              * Creates missing target directories while copying a submission file tree.
-             * @param dir the value used by this method.
-             * @param attrs the value used by this method.
-             * @return the value produced by this operation, including any empty or absent result defined by its contract.
+             * @param dir the directory to scan or compile.
+             * @param attrs the argument supplied to this operation.
+             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
              * @throws IOException when the operation cannot complete.
              */
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
@@ -112,9 +112,9 @@ public final class SubmissionFiles {
             @Override
             /**
              * Copies a file when it is missing from the target submission tree.
-             * @param file the value used by this method.
-             * @param attrs the value used by this method.
-             * @return the value produced by this operation, including any empty or absent result defined by its contract.
+             * @param file the file being validated or processed.
+             * @param attrs the argument supplied to this operation.
+             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
              * @throws IOException when the operation cannot complete.
              */
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -131,7 +131,7 @@ public final class SubmissionFiles {
     }
 
     /** Deletes a folder and everything in it (links are removed, never followed). Best effort.
-     * @param root the value used by this method.
+     * @param root the argument supplied to this operation.
      */
     public static void deleteTree(Path root) {
         try {
@@ -139,9 +139,9 @@ public final class SubmissionFiles {
                 @Override
                 /**
                  * Copies a file when it is missing from the target submission tree.
-                 * @param file the value used by this method.
-                 * @param attrs the value used by this method.
-                 * @return the value produced by this operation, including any empty or absent result defined by its contract.
+                 * @param file the file being validated or processed.
+                 * @param attrs the argument supplied to this operation.
+                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
                  * @throws IOException when the operation cannot complete.
                  */
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -152,9 +152,9 @@ public final class SubmissionFiles {
                 @Override
                 /**
                  * Completes directory traversal while propagating any copy failure.
-                 * @param dir the value used by this method.
-                 * @param exc the value used by this method.
-                 * @return the value produced by this operation, including any empty or absent result defined by its contract.
+                 * @param dir the directory to scan or compile.
+                 * @param exc the argument supplied to this operation.
+                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
                  * @throws IOException when the operation cannot complete.
                  */
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {

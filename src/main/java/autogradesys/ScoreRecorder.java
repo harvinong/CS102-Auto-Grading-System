@@ -24,21 +24,6 @@ public class ScoreRecorder {
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSSSSSSSS");
 
 
-    // Input: the scoresheet file, the scores (student -> sub-question -> marks), and the error reporter.
-    // Function: Merges the scores into the existing scoresheet. JavaGrader calls this after grading.
-    // Output: true if the scoresheet was updated, false if something went wrong.
-    /**
-     * Updates the scoresheet with the marks produced by the grading run.
-     * @param scoresheet the value used by this method.
-     * @param scores the value used by this method.
-     * @param reporter the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
-     */
-    public static boolean recordScores(Path scoresheet, Map<String, Map<String, Integer>> scores,
-            autogradesys.grading.ErrorReporter reporter) {
-        return autogradesys.grading.CsvScoresheet.update(scoresheet, scores, reporter);
-    }
-
     // Input: the GradeResult that JavaGrader.grade returns. It holds
     //        scores():         student -> (question -> marks earned), e.g. "alice" -> {"Q1" -> 2, "Q2" -> 0}
     //        availableMarks(): question -> marks it is worth,          e.g. "Q1" -> 3
@@ -48,8 +33,8 @@ public class ScoreRecorder {
     // Output: Path to the newly created CSV file
     /**
      * Exports the grading result and diagnostics to the configured report files.
-     * @param result the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param result the completed grading result to export.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      */
     public static Path exportResults(GradeResult result) throws IOException {
@@ -114,8 +99,8 @@ public class ScoreRecorder {
     // Output: The quoted value, e.g. chee"teo becomes "chee""teo"
     /**
      * Escapes a value for safe inclusion in a CSV field.
-     * @param value the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param value the value to quote or convert.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static String quote(String value) {
         return "\"" + value.replace("\"", "\"\"") + "\"";

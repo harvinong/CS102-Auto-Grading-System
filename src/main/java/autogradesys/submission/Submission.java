@@ -9,8 +9,8 @@ public class Submission {
 
     /**
      * Associates a student username with the archive containing that submission.
-     * @param username the value used by this method.
-     * @param zipPath the value used by this method.
+     * @param username the student username used for lookup.
+     * @param zipPath the argument supplied to this operation.
      */
     public Submission(String username, Path zipPath) {
         this.username = username;
@@ -19,7 +19,7 @@ public class Submission {
 
     /**
      * Returns the username associated with this submission.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public String getUsername() {
         return username;
@@ -27,7 +27,7 @@ public class Submission {
 
     /**
      * Returns the archive path associated with this submission.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public Path getZipPath() {
         return zipPath;
@@ -36,7 +36,7 @@ public class Submission {
     @Override
     /**
      * Returns a readable representation of the submission or configuration value.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public String toString() {
         return username;

@@ -30,10 +30,10 @@ final class ProcessRunner {
     }
 
     /** Runs a command with no working-directory override.
-     * @param command the value used by this method.
-     * @param input the value used by this method.
-     * @param timeout the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param command the argument supplied to this operation.
+     * @param input the process input or source text.
+     * @param timeout the maximum process duration.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      * @throws InterruptedException when the operation cannot complete.
      */
@@ -48,11 +48,11 @@ final class ProcessRunner {
      *
      * <p>Output is drained concurrently so a noisy child cannot block waiting
      * for a pipe that the parent has not yet read.</p>
-     * @param command the value used by this method.
-     * @param input the value used by this method.
-     * @param timeout the value used by this method.
-     * @param workingDirectory the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param command the argument supplied to this operation.
+     * @param input the process input or source text.
+     * @param timeout the maximum process duration.
+     * @param workingDirectory the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      * @throws InterruptedException when the operation cannot complete.
      */
@@ -65,12 +65,12 @@ final class ProcessRunner {
     /**
      * Full implementation: start the process, feed it stdin, collect stdout and stderr, and kill it
      * if it exceeds the timeout or the output cap. Returns a {@link Result} describing how it ended.
-     * @param command the value used by this method.
-     * @param input the value used by this method.
-     * @param timeout the value used by this method.
-     * @param workingDirectory the value used by this method.
-     * @param outputLimitBytes the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param command the argument supplied to this operation.
+     * @param input the process input or source text.
+     * @param timeout the maximum process duration.
+     * @param workingDirectory the argument supplied to this operation.
+     * @param outputLimitBytes the argument supplied to this operation.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      * @throws IOException when the operation cannot complete.
      * @throws InterruptedException when the operation cannot complete.
      */
@@ -171,11 +171,11 @@ final class ProcessRunner {
     }
 
     /** Starts a daemon thread that copies one of the child's output streams into a shared capture buffer.
-     * @param input the value used by this method.
-     * @param output the value used by this method.
-     * @param capture the value used by this method.
-     * @param name the value used by this method.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @param input the process input or source text.
+     * @param output the destination stream or output buffer.
+     * @param capture the argument supplied to this operation.
+     * @param name the name used for lookup or display.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     private static Thread copyAsync(InputStream input, ByteArrayOutputStream output,
             Capture capture, String name) {
@@ -205,7 +205,7 @@ final class ProcessRunner {
     }
 
     /** Stops a process and everything it spawned, escalating from a polite request to a forced kill.
-     * @param process the value used by this method.
+     * @param process the argument supplied to this operation.
      * @throws InterruptedException when the operation cannot complete.
      */
     private static void terminate(Process process) throws InterruptedException {
@@ -239,7 +239,7 @@ final class ProcessRunner {
 
         /**
          * Initializes an output capture with the configured byte limit.
-         * @param limit the value used by this method.
+         * @param limit the argument supplied to this operation.
          */
         Capture(long limit) {
             // Remember the cap chosen by the caller of run().
@@ -249,9 +249,9 @@ final class ProcessRunner {
         // synchronized: stdout and stderr threads share the byte budget, so the check and update must be atomic.
         /**
          * Appends one diagnostic record to the JSON Lines error history.
-         * @param output the value used by this method.
-         * @param bytes the value used by this method.
-         * @param count the value used by this method.
+         * @param output the destination stream or output buffer.
+         * @param bytes the output byte limit.
+         * @param count the argument supplied to this operation.
          */
         synchronized void append(ByteArrayOutputStream output, byte[] bytes, int count) {
             // How many bytes we may still keep before hitting the cap.
@@ -275,7 +275,7 @@ final class ProcessRunner {
         // True once any output has been discarded because of the size cap.
         /**
          * Reports whether captured process output has reached its configured limit.
-         * @return the value produced by this operation, including any empty or absent result defined by its contract.
+         * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
          */
         boolean limitExceeded() {
             // Read the flag that append() sets; the run() wait loop and both reader threads poll it to stop early.

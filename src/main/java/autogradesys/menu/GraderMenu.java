@@ -47,8 +47,8 @@ public class GraderMenu {
 
     /**
      * Initializes the grading menu with its input scanner and grading controller.
-     * @param sc the value used by this method.
-     * @param ctrl the value used by this method.
+     * @param sc the scanner used to read interactive input.
+     * @param ctrl the argument supplied to this operation.
      */
     public GraderMenu(Scanner sc, GraderCtrl ctrl) {
         this.sc = sc;
@@ -56,7 +56,7 @@ public class GraderMenu {
     }
     /**
      * Returns the working directory currently selected for grading.
-     * @return the value produced by this operation, including any empty or absent result defined by its contract.
+     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public Path getGradingPath() {
         return this.gradingPath;

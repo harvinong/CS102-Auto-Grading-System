@@ -7,7 +7,7 @@ package autogradesys.cli;
 public class InputEndedException extends IllegalStateException {
 
     /**
-     * @param waitingFor the value used by this method.
+     * @param waitingFor the argument supplied to this operation.
      */
     public InputEndedException(String waitingFor) {
         super("Input ended while waiting for " + waitingFor);
