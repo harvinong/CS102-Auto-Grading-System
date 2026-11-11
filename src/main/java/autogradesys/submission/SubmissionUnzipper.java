@@ -5,23 +5,29 @@ import java.nio.file.Path;
 
 import autogradesys.validation.ArchiveExtractor;
 
-// Unzips one student's zip file into a folder, and refuses files that would end up outside it
+// AI use: the docstrings (/** ... */ comments) in this file were generated with Claude AI.
+/**
+ * Unzips one student's zip file into a folder. The unzipping itself, including refusing files that
+ * would end up outside the folder, is done by the team's ArchiveExtractor.
+ */
 public final class SubmissionUnzipper {
     /**
-     * Prevents instantiation; extraction is done through the static {@link #unzip} method.
+     * Stops anyone creating a SubmissionUnzipper object; the class is only used through its
+     * static {@link #unzip} method.
      */
     private SubmissionUnzipper() {
     }
 
-    // ArchiveExtractor is the sole extraction implementation, returns how many files were written
     /**
-     * Unzips one student's zip into a folder, refusing entries that would land outside it. An existing
-     * empty target folder is removed first so that extraction can create it fresh.
+     * Unzips one student's zip into a folder. An existing empty target folder is removed first,
+     * because ArchiveExtractor creates the folder itself; a folder that already has files in it is
+     * never overwritten.
      *
-     * @param zipFile the student's zip file
-     * @param targetFolder where to extract; it may be absent or an empty folder
+     * @param zipFile      the student's zip file
+     * @param targetFolder where to extract; it must not exist yet or be an empty folder
      * @return how many files were written
-     * @throws IOException if the target folder already contains anything, or the zip cannot be read or extracted safely
+     * @throws IOException if the target folder already has something in it, or the zip cannot be read or
+     *                     extracted safely
      */
     public static int unzip(Path zipFile, Path targetFolder) throws IOException {
         if (java.nio.file.Files.isDirectory(targetFolder)) { 

@@ -13,9 +13,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-// Looks through the folder of submissions and goes through the zip files one by one.
-// Files that are not valid submission zips are kept in a separate list so we can tell the grader.
-
+// AI use: the docstrings (/** ... */ comments) in this file were generated with Claude AI.
+/**
+ * Looks through the folder of submissions and goes through the zip files one by one, so the
+ * students can be used in a for-each loop. Files that are not valid submission zips are kept in
+ * a separate list, and two zips for the same student are recorded as a duplicate, so the grader
+ * can be told about both.
+ */
 public class SubmissionIterator implements Iterable<Submission> {
     private final Map<String, Submission> submissions = new LinkedHashMap<>(); // Linked Hashmap needed to maintain order
     private final List<String> skipped = new ArrayList<>();
@@ -23,14 +27,15 @@ public class SubmissionIterator implements Iterable<Submission> {
 
     /**
      * Scans a folder and sorts its entries into accepted submissions, skipped entries and duplicates.
-     * Names are visited in sorted order; names starting with "." (system junk such as macOS files) are ignored
-     * completely. A regular file whose name matches the pattern is accepted; everything else is recorded as skipped.
-     * If two zips belong to the same username (compared ignoring case), the later one in sorted order is used.
+     * Names are visited in sorted order, and names starting with "." (system junk such as macOS files)
+     * are ignored completely. A regular file whose whole name matches the pattern is accepted;
+     * everything else is recorded as skipped. If two zips belong to the same username (ignoring case),
+     * the later one in sorted order is used.
      *
-     * @param folder the folder holding the students' zip files
-     * @param zipNamePattern pattern the whole file name must match; its first group captures the username
-     * @throws IOException if the folder cannot be listed
-     * @throws IllegalArgumentException if {@code folder} is not a directory
+     * @param folder         the folder holding the students' zip files
+     * @param zipNamePattern the pattern the whole file name must match; its first group captures the username
+     * @throws IOException              if the folder cannot be listed
+     * @throws IllegalArgumentException if {@code folder} is not a folder
      */
     public SubmissionIterator(Path folder, Pattern zipNamePattern) throws IOException {
         if (!Files.isDirectory(folder)) {
@@ -58,9 +63,10 @@ public class SubmissionIterator implements Iterable<Submission> {
     }
 
     /**
-     * Adds a submission, replacing an earlier one with the same username (ignoring case) and recording that as a duplicate.
+     * Adds a submission to the map. If the same username (ignoring case) is already there, the new
+     * submission replaces it and a duplicate message is recorded.
      *
-     * @param submission the accepted submission to index
+     * @param submission the accepted submission to add
      */
     private void addSubmission(Submission submission) {
         String key = submission.getUsername().toLowerCase();
@@ -73,12 +79,12 @@ public class SubmissionIterator implements Iterable<Submission> {
         }
     }
 
-    @Override
     /**
      * Lets the accepted submissions be used in a for-each loop.
      *
      * @return an iterator over the accepted submissions, one per username, in the order they were first found
      */
+    @Override
     public Iterator<Submission> iterator() {
         return submissions.values().iterator();
     }
@@ -86,7 +92,7 @@ public class SubmissionIterator implements Iterable<Submission> {
     /**
      * Counts the accepted submissions.
      *
-     * @return the number of distinct usernames accepted, not counting skipped entries or replaced duplicates
+     * @return the number of different usernames accepted, not counting skipped entries or replaced duplicates
      */
     public int size() {
         return submissions.size();
@@ -95,16 +101,16 @@ public class SubmissionIterator implements Iterable<Submission> {
     /**
      * Lists the entries that were not taken as submissions.
      *
-     * @return the file names that were not regular files or did not match the pattern; the live list, empty if none
+     * @return the names of entries that were not files or did not match the pattern; an empty list if there were none
      */
     public List<String> getSkipped() {
         return skipped;
     }
 
     /**
-     * Lists the duplicate-username warnings.
+     * Lists the duplicate-username messages.
      *
-     * @return one human-readable message per replaced zip, saying which file is used; the live list, empty if there were none
+     * @return one message per replaced zip, saying which file is used; an empty list if there were none
      */
     public List<String> getDuplicates() {
         return duplicates;
