@@ -44,6 +44,9 @@ public class StudentFileExec {
     record CompileAttempt(boolean success, Map<String, List<String>> errorsByFile) {}
 
     record CompileResult(Map<String, List<String>> errorsByFile) {
+    /**
+     * Compiles the supplied source file and returns any compiler errors.
+     */
     String errorsForFile(Path javaFile) {
         String fileName = javaFile.getFileName().toString();
         List<String> errors = errorsByFile.getOrDefault(fileName, List.of());
@@ -56,6 +59,9 @@ public class StudentFileExec {
     private static final Map<String, MethodSpec> SPECS_BY_CLASS = QuestionTests.getSPECS_BY_CLASS();
     //entry point from GradingEntry
     @TestFactory
+    /**
+     * Builds dynamic tests for every discovered student submission.
+     */
     Stream<DynamicNode> testAllSubmissions() throws Exception {
         Path submissionsRoot = Paths.get(mc.getStartingFolder().getPath());
         List<Path> studentDirs = Files.list(submissionsRoot)
@@ -71,6 +77,9 @@ public class StudentFileExec {
     }
 
         // Recursively turns ObjSpec / List into real objects using the student's classloader
+    /**
+     * Resolves a serialized argument into the runtime type expected by the student method.
+     */
     private Object resolveArg(Object arg, ClassLoader loader) throws Exception {
         if (arg instanceof ObjSpec spec) {
             Class<?> cls = Class.forName(spec.className(), true, loader);
@@ -88,6 +97,9 @@ public class StudentFileExec {
         return arg; // plain values (String, Integer, ...) pass through untouched
     }
 
+    /**
+     * Resolves every serialized test argument using the supplied class loader.
+     */
     private Object[] resolveArgs(Object[] args, ClassLoader loader) throws Exception {
         Object[] out = new Object[args.length];
         for (int i = 0; i < args.length; i++) out[i] = resolveArg(args[i], loader);
@@ -95,6 +107,9 @@ public class StudentFileExec {
     }
 
     // Finds a constructor whose parameters can accept the args (allows int -> double widening)
+    /**
+     * Constructs an object using the matching student constructor and resolved arguments.
+     */
     private Object construct(Class<?> cls, Object[] args) throws Exception {
         for (java.lang.reflect.Constructor<?> c : cls.getConstructors()) {
             Class<?>[] pts = c.getParameterTypes();
@@ -113,6 +128,9 @@ public class StudentFileExec {
 
     private static final Object NO_MATCH = new Object();
 
+    /**
+     * Converts an argument to the target primitive or reference type when possible.
+     */
     private Object coerce(Object arg, Class<?> target) {
         if (arg instanceof Number n) {
             if (target == double.class || target == Double.class) return n.doubleValue();
@@ -125,6 +143,9 @@ public class StudentFileExec {
         return target.isInstance(arg) ? arg : NO_MATCH;
     }
     // this is the MAIN question container
+    /**
+     * Builds dynamic test containers for each question in a student directory.
+     */
     private Stream<DynamicNode> buildQuestionContainers(Path studentDir) {
         try {
             List<Path> questionDirs = Files.list(studentDir)
@@ -146,6 +167,9 @@ public class StudentFileExec {
     }
 
     // this is the SUB QUESTION (1a, 1b, 1c etc) container 
+    /**
+     * Builds dynamic test containers for each Java sub-question in a question directory.
+     */
     private Stream<DynamicNode> buildSubQuestionContainers(Path questionDir) {
     try {
         CompileResult compileResult = compileAll(questionDir);
@@ -175,6 +199,9 @@ public class StudentFileExec {
 }
 
 //actual like dir where question is. so can test
+/**
+ * Builds the dynamic container and tests associated with one sub-question source file.
+ */
 private DynamicNode buildOneSubQuestionContainer(Path javaFile, Path questionDir,
                                                    CompileResult compileResult, URLClassLoader loader) {
     String className = javaFile.getFileName().toString().replace(".java", "");
@@ -214,6 +241,9 @@ private DynamicNode buildOneSubQuestionContainer(Path javaFile, Path questionDir
 
     // each test case within the subquestion yes
     //dynamicnode cos its what junit thing is for test generated at runtime like instead of @test function {} or whatever
+/**
+ * Creates dynamic tests from the configured cases for one sub-question class.
+ */
 private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLClassLoader loader, Path questionDir) {
         MethodSpec spec = SPECS_BY_CLASS.get(className);
     if (spec == null) {
@@ -244,6 +274,9 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
     }
 }
     // compiling student .java to .class if they didnt do so
+    /**
+     * Compiles all Java sources in the supplied directory and reports the compilation result.
+     */
     private CompileResult compileAll(Path dir) throws Exception {
     javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
 
@@ -277,6 +310,9 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
     return new CompileResult(firstAttempt.errorsByFile());
 }
 //the fun begins
+/**
+ * Invokes one student method and records whether its result matches the test case.
+ */
 private void runTestCase(String className, MethodSpec spec, TestCase tc,
                          Class<?> studentClass, Method method,
                          ClassLoader loader, Path questionDir) throws Throwable {
@@ -359,6 +395,9 @@ private void runTestCase(String className, MethodSpec spec, TestCase tc,
     }
 }
 //try compile, if cant compile all java, compile all again without said fail java 
+/**
+ * Attempts compilation with the available compiler settings and captures diagnostics.
+ */
 private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles, Path questionDir) throws Exception {
     DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
     boolean success;
@@ -386,6 +425,9 @@ private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles,
 
 
 
+    /**
+     * Copies non-Java resources needed by the submission into its working directory.
+     */
     private List<Path> copyResourceFilesToWorkingDir(Path questionDir) throws Exception {
         Path workingDir = Paths.get("").toAbsolutePath();
         List<Path> copiedPaths = new ArrayList<>();
@@ -417,6 +459,9 @@ private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles,
     return copiedPaths;
     }
     //cleanup after each test case run to prevent contaminatioon
+    /**
+     * Removes the temporary resource copies created for compilation.
+     */
     private void cleanupCopiedFiles(List<Path> copiedFiles) {
         for (Path p : copiedFiles) {
             for (int attempt = 0; attempt < 3; attempt++) {

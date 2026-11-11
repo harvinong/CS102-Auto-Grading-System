@@ -19,8 +19,14 @@ public final class ScoresheetReader {
     private static final String EMAIL_COLUMN = "Email";
     private static final String FIRST_NAME_COLUMN = "First Name";
     private static final String LAST_NAME_COLUMN = "Last Name";
+    /**
+     * Initializes the reader that converts a scoresheet CSV into registered students.
+     */
     private ScoresheetReader() { }
 
+    /**
+     * Reads the scoresheet CSV and returns its registered student records.
+     */
     public static List<Student> read(File scoresheet) throws IOException {
         List<List<String>> rows = parse(Files.readString(scoresheet.toPath(), StandardCharsets.UTF_8));
         if (rows.isEmpty()) throw new IOException("The scoresheet is empty.");
@@ -45,14 +51,20 @@ public final class ScoresheetReader {
         return result;
     }
 
+    /**
+     * Returns the index of a named CSV column, or the absent-column sentinel.
+     */
     private static int columnOf(List<String> header, String title) {
         for (int i = 0; i < header.size(); i++) if (header.get(i).trim().equalsIgnoreCase(title)) return i;
         return -1;
     }
+    /**
+     * Returns the requested row cell, handling a missing trailing value safely.
+     */
     private static String cell(List<String> row, int column) {
         return column < 0 || column >= row.size() ? "" : row.get(column).trim();
     }
-    /** Small RFC-4180-compatible parser, shared in spirit with grading.CsvScoresheet. */
+    /** Small RFC-4180-compatible CSV parser. */
     private static List<List<String>> parse(String text) throws IOException {
         List<List<String>> rows = new ArrayList<>();
         List<String> row = new ArrayList<>();

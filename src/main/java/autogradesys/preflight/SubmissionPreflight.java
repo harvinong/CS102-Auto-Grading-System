@@ -52,6 +52,9 @@ public final class SubmissionPreflight {
     private final List<PreflightFinding> findings = new ArrayList<>();
 
     // Private: callers go through the static check(...) method instead.
+    /**
+     * Initializes a checker with the template and question layout used for comparison.
+     */
     private SubmissionPreflight(Path submissions, String templateName, Map<String, Question> questions) {
         // Remember the submissions folder for building relative paths.
         this.submissions = submissions;
@@ -118,6 +121,9 @@ public final class SubmissionPreflight {
 
     // Reads the template folder into a map of question name -> expected files;
     // reports fatal problems.
+    /**
+     * Reads the template question structure and returns its expected layout.
+     */
     private static Map<String, Question> readTemplate(Path template, String templateName,
             List<PreflightFinding> fatal) {
         // The same advice is attached to every template problem.
@@ -231,6 +237,9 @@ public final class SubmissionPreflight {
 
     // Looks at every entry in the submissions folder and returns the sorted
     // submission names.
+    /**
+     * Scans every submission folder and returns the student names discovered.
+     */
     private List<String> scanAll() {
         // TreeSet gives sorted, de-duplicated names.
         TreeSet<String> names = new TreeSet<>();
@@ -303,6 +312,9 @@ public final class SubmissionPreflight {
     }
 
     // Checks one student folder (after the template-copy test).
+    /**
+     * Scans one submission against the expected folder and file layout.
+     */
     private void scanStudent(String student, Path dir) {
         // A folder named exactly like the template is probably the blank starter, not a
         // student.
@@ -453,6 +465,9 @@ public final class SubmissionPreflight {
 
     // Checks the files inside one question folder against the template's
     // expectations.
+    /**
+     * Checks one question folder for missing, extra, or malformed content.
+     */
     private void scanQuestion(String student, Question q, Path questionDir) {
         // Children of the question folder, sorted.
         List<Path> entries;
@@ -661,6 +676,9 @@ public final class SubmissionPreflight {
     }
 
     // Records "this is not in the template" for a file or folder.
+    /**
+     * Adds a finding for an unexpected file or folder in a submission.
+     */
     private void addExtra(String student, Path path, boolean folder) {
         // WARNING (not ERROR): an extra does not stop the student being "ready";
         // folders get a trailing slash in the path.
@@ -669,12 +687,18 @@ public final class SubmissionPreflight {
     }
 
     // Appends one finding to the list.
+    /**
+     * Adds a categorized finding to the current preflight report.
+     */
     private void add(String student, Category category, Severity severity, String path, String message, String fix) {
         // Build the immutable finding and keep it in discovery order for the report.
         findings.add(new PreflightFinding(student, category, severity, path, message, fix));
     }
 
     // Path relative to the submissions folder, always with forward slashes.
+    /**
+     * Returns a path relative to the submissions root for user-facing diagnostics.
+     */
     private String rel(Path path) {
         // Relative to the submissions folder; backslashes become slashes so Windows
         // output matches Unix.
@@ -683,6 +707,9 @@ public final class SubmissionPreflight {
 
     // True when the file is empty or only whitespace (reads at most
     // BLANK_CHECK_BYTES, read-only).
+    /**
+     * Reports whether a file contains no meaningful submission content.
+     */
     private static boolean isBlank(Path file) {
         try {
             // Zero bytes is trivially empty.
@@ -710,6 +737,9 @@ public final class SubmissionPreflight {
     }
 
     // True when the folder directly contains at least one .java file.
+    /**
+     * Reports whether a directory contains at least one Java source file.
+     */
     private static boolean containsJava(Path dir) {
         try {
             // Any regular (non-link) .java file directly inside the folder is enough.
@@ -723,6 +753,9 @@ public final class SubmissionPreflight {
 
     // Lists a folder's children sorted by name (so output never depends on the file
     // system's order).
+    /**
+     * Returns a stable, name-sorted list of a directory’s children.
+     */
     private static List<Path> sortedChildren(Path dir) throws IOException {
         // Files.list holds a directory handle, so close it with try-with-resources.
         try (Stream<Path> stream = Files.list(dir)) {
@@ -732,12 +765,18 @@ public final class SubmissionPreflight {
     }
 
     // A folder we are allowed to look inside.
+    /**
+     * Reports whether a path is a readable real directory.
+     */
     private static boolean isReadableDirectory(Path dir) {
         // Must be a directory and readable, otherwise listing it would fail.
         return Files.isDirectory(dir) && Files.isReadable(dir);
     }
 
     // A genuine folder, not a symbolic link to one.
+    /**
+     * Reports whether a path is a directory rather than a symbolic link.
+     */
     private static boolean isRealDirectory(Path dir) {
         // NOFOLLOW_LINKS makes a symbolic link to a folder answer false.
         return Files.isDirectory(dir, LinkOption.NOFOLLOW_LINKS);
@@ -746,23 +785,35 @@ public final class SubmissionPreflight {
     // Names we ignore: hidden files and macOS resource folders.
     // .class files are deliberately NOT ignored because they may be required
     // by the grading algorithm and are part of the Starting Folder template.
+    /**
+     * Reports whether a path is a generated or otherwise ignored submission file.
+     */
     private static boolean isJunk(String name) {
         return name.startsWith(".") || name.equals("__MACOSX");
     }
 
     // True for .zip names in any letter case.
+    /**
+     * Reports whether a filename has a ZIP extension.
+     */
     private static boolean isZip(String name) {
         // Lower-case first so .ZIP and .Zip count too.
         return name.toLowerCase(Locale.ROOT).endsWith(".zip");
     }
 
     // "frank.zip" -> "frank".
+    /**
+     * Returns the student name stem derived from a submission archive filename.
+     */
     private static String stem(String zipName) {
         // Drop the last four characters, ".zip".
         return zipName.substring(0, zipName.length() - ".zip".length());
     }
 
     // Last part of a path; falls back to the whole path for roots like "/".
+    /**
+     * Returns the final path component used as a display name.
+     */
     private static String nameOf(Path path) {
         // getFileName() is null for a root path such as "/".
         Path name = path.getFileName();

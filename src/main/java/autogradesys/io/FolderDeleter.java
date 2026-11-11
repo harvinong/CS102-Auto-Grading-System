@@ -11,9 +11,15 @@ import java.util.stream.Stream;
 
 /** Deletes a folder together with everything inside it. */
 public final class FolderDeleter {
+    /**
+     * Initializes the stateless utility used to delete folder trees.
+     */
     private FolderDeleter() {
     }
 
+    /**
+     * Deletes the supplied folder tree without following symbolic links.
+     */
     public static void delete(Path folder) throws IOException {
         if (!Files.exists(folder)) {
             return;

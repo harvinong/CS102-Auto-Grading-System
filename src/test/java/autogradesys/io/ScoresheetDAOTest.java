@@ -1,35 +1,40 @@
 package autogradesys.io;
- 
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
- 
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
- 
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
- 
-/** Checks that ScoresheetDAO reads and writes ScoreRecorder's CSV format. */
+
+/** Checks that ScoresheetDAO reads and writes the course scoresheet (IS442-ScoreSheet.csv layout). */
 class ScoresheetDAOTest {
- 
-    // The CSV ScoreRecorder writes for its sample students (see ScoreRecorderTest).
-    private static final String RECORDER_CSV =
-            "username,\"Q1a\",\"Q1b\",final_score\r\n"
-            + "\"chee.teo.2022\",3,2,5\r\n"
-            + "\"jing.lim.2021\",1,0,1\r\n"
-            + "\"david.2024\",0,0,0\r\n"
-            + "\"% full marks\",33.3%,0.0%,\r\n";
- 
+
+    // A blank course scoresheet, as downloaded.
+    private static final String BLANK =
+            "OrgDefinedId,Username,Last Name,First Name,Email,Calculated Final Grade Numerator,Calculated Final Grade Denominator,End-of-Line Indicator\n"
+            + "#01400001,#ping.lee.2023,_,PING LEE,ping.lee.2023@computing.smu.edu.sg,,20,#\n"
+            + "#01400002,#chee.teo.2022,_,TEO CHEE,chee.teo.2022@computing.smu.edu.sg,,20,#\n";
+
+    // The same scoresheet after marks were saved: question columns plus the total.
+    private static final String MARKED =
+            "OrgDefinedId,Username,Last Name,First Name,Email,Calculated Final Grade Numerator,Calculated Final Grade Denominator,Q1,Q2,End-of-Line Indicator\n"
+            + "#01400001,#ping.lee.2023,_,PING LEE,ping.lee.2023@computing.smu.edu.sg,16,20,6,10,#\n"
+            + "#01400002,#chee.teo.2022,_,TEO CHEE,chee.teo.2022@computing.smu.edu.sg,,20,,,#\n";
+
     // Fresh temp folder per test, so no real scoresheet is touched.
     @TempDir
     Path root;
- 
+
     // Input: the CSV text to put in the file.
     // Function: writes a scoresheet.csv into the temp folder.
     // Output: the file.
@@ -38,78 +43,96 @@ class ScoresheetDAOTest {
         Files.writeString(file, text, StandardCharsets.UTF_8);
         return file.toFile();
     }
-    // test that ScoresheetDAO can read the CSV ScoreRecorder writes, and that it can write it back out unchanged.
+
+    // Input: None
+    // Function: Checks that load() finds every student (without the "#") and that a blank sheet has no marks
+    // Output: Passes if the usernames and records are right
     @Test
-    void loadReadsScoreRecorderFormat() throws IOException {
-        ScoresheetDAO dao = new ScoresheetDAO(sheet(RECORDER_CSV));
- 
+    void loadReadsTheCourseScoresheet() throws IOException {
+        ScoresheetDAO dao = new ScoresheetDAO(sheet(BLANK));
+
         assertTrue(dao.load());
-        // The "% full marks" row is not a student.
-        assertEquals(List.of("chee.teo.2022", "jing.lim.2021", "david.2024"), dao.getUsernames());
- 
-        ScoresheetRecord chee = dao.get("chee.teo.2022");
-        assertEquals("chee.teo.2022", chee.username());
-        assertEquals(3, chee.marks().get("Q1a"));
-        assertEquals(2, chee.marks().get("Q1b"));
-        assertEquals(5, chee.finalScore());
+        assertEquals(List.of("ping.lee.2023", "chee.teo.2022"), dao.getUsernames());
+        assertTrue(dao.get("ping.lee.2023").marks().isEmpty());
+        // A leading "#" in the lookup is ignored too.
+        assertEquals("chee.teo.2022", dao.get("#chee.teo.2022").username());
         assertNull(dao.get("nobody"));
     }
-    // test that ScoresheetDAO can write the CSV ScoreRecorder writes, and that it can read it back unchanged.
+
+    // Input: None
+    // Function: Checks that set() + saveAs() add the question columns before End-of-Line Indicator,
+    //           fill the total, keep every other cell, and leave the original file unchanged
+    // Output: Passes if the new file matches MARKED exactly
     @Test
-    void saveWithoutChangesWritesTheSameFile() throws IOException {
-        File file = sheet(RECORDER_CSV);
-        ScoresheetDAO dao = new ScoresheetDAO(file);
+    void saveAsWritesTheMarksIntoANewFile() throws IOException {
+        File original = sheet(BLANK);
+        ScoresheetDAO dao = new ScoresheetDAO(original);
         assertTrue(dao.load());
-        assertTrue(dao.save());
-        assertEquals(RECORDER_CSV, Files.readString(file.toPath(), StandardCharsets.UTF_8));
-    }
- 
-    @Test
-    void setThenSaveUpdatesMarksAndFinalScore() throws IOException {
-        File file = sheet(RECORDER_CSV);
-        ScoresheetDAO dao = new ScoresheetDAO(file);
-        assertTrue(dao.load());
- 
-        // jing's Q1b now gets 2 marks, and Q2a is a new sub-question.
-        ScoresheetRecord jing = dao.get("jing.lim.2021");
-        jing.marks().put("Q1b", 2);
-        jing.marks().put("Q2a", 4);
-        assertTrue(dao.set("jing.lim.2021", jing));
-        // A student who is not in the scoresheet cannot be set (no create).
-        assertFalse(dao.set("carol", jing));
-        assertTrue(dao.save());
- 
-        assertEquals("username,\"Q1a\",\"Q1b\",\"Q2a\",final_score\r\n"
-                + "\"chee.teo.2022\",3,2,0,5\r\n"
-                + "\"jing.lim.2021\",1,2,4,7\r\n"
-                + "\"david.2024\",0,0,0,0\r\n"
-                + "\"% full marks\",33.3%,0.0%,,\r\n",
-                Files.readString(file.toPath(), StandardCharsets.UTF_8));
- 
-        // A second DAO reading the saved file sees the same marks.
-        ScoresheetDAO again = new ScoresheetDAO(file);
-        assertTrue(again.load());
-        assertEquals(4, again.get("jing.lim.2021").marks().get("Q2a"));
+
+        LinkedHashMap<String, Integer> marks = new LinkedHashMap<>();
+        marks.put("Q2", 10);
+        marks.put("Q1", 6);
+        assertTrue(dao.set("ping.lee.2023", new ScoresheetRecord("ping.lee.2023", marks)));
+
+        File copy = root.resolve("copy.csv").toFile();
+        assertTrue(dao.saveAs(copy));
+        assertEquals(MARKED, Files.readString(copy.toPath()));
+        assertEquals(BLANK, Files.readString(original.toPath()));
+        // saveAs never overwrites an existing file.
+        assertFalse(dao.saveAs(copy));
     }
 
+    // Input: None
+    // Function: Checks that a sheet with marks loads them back, and saving it unchanged gives the same file
+    // Output: Passes if the marks are read and the file is unchanged after save()
     @Test
-    void loadRejectsBrokenFiles() throws IOException {
+    void markedSheetLoadsAndSavesUnchanged() throws IOException {
+        File file = sheet(MARKED);
+        ScoresheetDAO dao = new ScoresheetDAO(file);
+        assertTrue(dao.load());
+
+        ScoresheetRecord ping = dao.get("ping.lee.2023");
+        assertEquals(6, ping.marks().get("Q1"));
+        assertEquals(10, ping.marks().get("Q2"));
+        assertEquals(16, ping.finalScore());
+        assertTrue(dao.get("chee.teo.2022").marks().isEmpty());
+
+        assertTrue(dao.save());
+        assertEquals(MARKED, Files.readString(file.toPath()));
+    }
+
+    // Input: None
+    // Function: Checks that set() refuses a student who is not in the sheet (no create)
+    // Output: Passes if set() returns false
+    @Test
+    void setOnlyUpdatesExistingStudents() throws IOException {
+        ScoresheetDAO dao = new ScoresheetDAO(sheet(BLANK));
+        assertTrue(dao.load());
+        assertFalse(dao.set("nobody", new ScoresheetRecord("nobody", new LinkedHashMap<>())));
+        assertFalse(dao.set("ping.lee.2023", null));
+    }
+
+    // Input: None
+    // Function: Checks that broken scoresheets are refused and that save() needs a successful load()
+    // Output: Passes if load() and save() return false
+    @Test
+    void brokenSheetsAreRefused() throws IOException {
         assertFalse(new ScoresheetDAO(root.resolve("missing.csv").toFile()).load());
         assertFalse(new ScoresheetDAO(sheet("")).load());
-        assertFalse(new ScoresheetDAO(sheet("name,\"Q1a\",final_score\r\n\"a\",1,1\r\n")).load());
-        assertFalse(new ScoresheetDAO(sheet("username,\"Q1a\",\"Q1a\",final_score\r\n\"a\",1,1,2\r\n")).load());
-        assertFalse(new ScoresheetDAO(sheet("username,\"Q1a\",final_score\r\n\"a\",1,1,extra\r\n")).load());
-        assertFalse(new ScoresheetDAO(sheet("username,\"Q1a\",final_score\r\n\"a,1,1\r\n")).load());
-        assertFalse(new ScoresheetDAO(sheet("username,\"Q1a\",final_score\r\n\"a\",1,1\r\n\"a\",0,0\r\n")).load());
-        assertFalse(new ScoresheetDAO(sheet("username,\"Q1a\",final_score\r\n\"a\",abc,1\r\n")).load());
-    }
- 
-    // If the file is missing, save() does nothing and returns false.
-    @Test
-    void saveBeforeLoadDoesNothing() throws IOException {
-        File file = sheet(RECORDER_CSV);
-        assertFalse(new ScoresheetDAO(file).save());
-        assertEquals(RECORDER_CSV, Files.readString(file.toPath(), StandardCharsets.UTF_8));
+        // No Username column
+        assertFalse(new ScoresheetDAO(sheet("name,total\nalice,1\n")).load());
+        // Repeated column
+        assertFalse(new ScoresheetDAO(sheet("Username,Username\nalice,alice\n")).load());
+        // Row longer than the header
+        assertFalse(new ScoresheetDAO(sheet("Username,Email\nalice,a@x,extra\n")).load());
+        // Unclosed quote
+        assertFalse(new ScoresheetDAO(sheet("Username,Email\n\"alice,a@x\n")).load());
+        // Same student twice
+        assertFalse(new ScoresheetDAO(sheet("Username,Email\n#alice,a\n#alice,b\n")).load());
+        // A mark that is not a whole number
+        assertFalse(new ScoresheetDAO(sheet(
+                "Username,Calculated Final Grade Denominator,Q1,End-of-Line Indicator\n#alice,20,abc,#\n")).load());
+        // save() before load() does nothing
+        assertFalse(new ScoresheetDAO(sheet(BLANK)).save());
     }
 }
- 
