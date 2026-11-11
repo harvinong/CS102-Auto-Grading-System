@@ -5,7 +5,6 @@ import autogradesys.cli.TextColor;
 /**
  * One thing the preflight noticed about a submission.
  *
-<<<<<<< HEAD
  * @param student  The submission folder (or archive) name; empty for findings
  *                 about the
  *                 submissions folder or the template as a whole.
@@ -16,9 +15,7 @@ import autogradesys.cli.TextColor;
  * @param message  What is wrong.
  * @param fix      What the instructor or student can do about it; empty when
  *                 nothing is needed.
-=======
  *                 submissions folder or the template as a whole.
->>>>>>> 4d262fc (Add parameter return and exception documentation)
  */
 // A record is an immutable value holder: Java generates the constructor,
 // getters and equals for us.

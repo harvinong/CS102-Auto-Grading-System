@@ -81,7 +81,6 @@ public class ScoresheetDAO {
     }
 
     /**
-<<<<<<< HEAD
      * reads the whole CSV. Every student row becomes a ScoresheetRecord (its marks in the
      * question columns) stored under its username, and the row's other cells are kept so they
      * can be written back unchanged. An empty mark cell means "not graded" and is left out.
@@ -89,10 +88,8 @@ public class ScoresheetDAO {
      * @return true if the file was read; false if it is missing, unreadable, badly quoted, has no
      *         Username (or student) column, repeats a column, has a row longer than the header, lists a student
      *         twice, or has a mark that is not a whole number. On false, whatever was loaded before is kept.
-=======
      * Loads the persisted configuration or scoresheet data into this object.
      * @return the value produced by this operation, including any empty or absent result defined by its contract.
->>>>>>> 4d262fc (Add parameter return and exception documentation)
      */
     public boolean load() {
         if (scoresheetFile == null) {
@@ -204,16 +201,13 @@ public class ScoresheetDAO {
     }
 
     /**
-<<<<<<< HEAD
      * writes every record back to the scoresheet file it was loaded from. The file is first
      * written to a temporary file and then swapped in, so a failed save never leaves a broken file.
      * 
      * @return true if the file was written; false if nothing has been loaded or the write failed
      *         (the original file is left as it was).
-=======
      * Persists the current configuration or scoresheet data to its configured file.
      * @return the value produced by this operation, including any empty or absent result defined by its contract.
->>>>>>> 4d262fc (Add parameter return and exception documentation)
      */
     public boolean save() {
         if (!loaded || scoresheetFile == null) {
@@ -388,7 +382,6 @@ public class ScoresheetDAO {
         }
         return -1;
     }
-<<<<<<< HEAD
 
     // Input: the cells of one row
     // Function: joins them with commas, quoting a cell only when it holds a comma, a quote or a line
@@ -407,7 +400,6 @@ public class ScoresheetDAO {
             line += value;
         }
         return line;
-=======
  
     // Input: A text value to put in the CSV, e.g. a username or sub-question name.
     // Function: Wraps the value in double quotes and doubles any quotes inside it, so commas cannot
@@ -420,7 +412,6 @@ public class ScoresheetDAO {
      */
     private static String quote(String value) {
         return "\"" + value.replace("\"", "\"\"") + "\"";
->>>>>>> 4d262fc (Add parameter return and exception documentation)
     }
 
     // Input: the full text of a CSV file.

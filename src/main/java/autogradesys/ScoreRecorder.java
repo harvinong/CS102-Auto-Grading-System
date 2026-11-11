@@ -24,8 +24,6 @@ public class ScoreRecorder {
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSSSSSSSS");
 
 
-<<<<<<< HEAD
-=======
     // Input: the scoresheet file, the scores (student -> sub-question -> marks), and the error reporter.
     // Function: Merges the scores into the existing scoresheet. JavaGrader calls this after grading.
     // Output: true if the scoresheet was updated, false if something went wrong.
@@ -41,7 +39,6 @@ public class ScoreRecorder {
         return autogradesys.grading.CsvScoresheet.update(scoresheet, scores, reporter);
     }
 
->>>>>>> 4d262fc (Add parameter return and exception documentation)
     // Input: the GradeResult that JavaGrader.grade returns. It holds
     //        scores():         student -> (question -> marks earned), e.g. "alice" -> {"Q1" -> 2, "Q2" -> 0}
     //        availableMarks(): question -> marks it is worth,          e.g. "Q1" -> 3
@@ -49,15 +46,12 @@ public class ScoreRecorder {
     //           username, one column per question (sorted), final_score, then a "% full marks" row.
     //           A student has full marks on a question when marks earned == marks it is worth.
     // Output: Path to the newly created CSV file
-<<<<<<< HEAD
-=======
     /**
      * Exports the grading result and diagnostics to the configured report files.
      * @param result the value used by this method.
      * @return the value produced by this operation, including any empty or absent result defined by its contract.
      * @throws IOException when the operation cannot complete.
      */
->>>>>>> 4d262fc (Add parameter return and exception documentation)
     public static Path exportResults(GradeResult result) throws IOException {
         Map<String, Map<String, Integer>> scores = result.scores(); // student -> (question -> marks)
 
@@ -118,14 +112,11 @@ public class ScoreRecorder {
     // Input: A text value to put in the CSV, e.g. a username or sub-question name
     // Function: Wraps the value in double quotes and doubles any quotes inside it, so commas cannot break the CSV
     // Output: The quoted value, e.g. chee"teo becomes "chee""teo"
-<<<<<<< HEAD
-=======
     /**
      * Escapes a value for safe inclusion in a CSV field.
      * @param value the value used by this method.
      * @return the value produced by this operation, including any empty or absent result defined by its contract.
      */
->>>>>>> 4d262fc (Add parameter return and exception documentation)
     private static String quote(String value) {
         return "\"" + value.replace("\"", "\"\"") + "\"";
     }

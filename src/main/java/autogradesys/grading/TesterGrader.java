@@ -473,7 +473,6 @@ final class TesterGrader {
     }
 
     /**
-<<<<<<< HEAD
      * lists the files to copy into the build folder: sources, resources such as 
      * persons.txt, and .class files that have no .java source next to them (the 
      * template's DataException.class, Shape.class, ...). A .class file that has 
@@ -482,11 +481,9 @@ final class TesterGrader {
      * .DS_Store are left out too.
      * @param studentQuestion the student's folder for one question
      * @return the files, sorted by name
-=======
      * Returns the Java source files belonging to the student question.
      * @param studentQuestion the value used by this method.
      * @return the value produced by this operation, including any empty or absent result defined by its contract.
->>>>>>> 4d262fc (Add parameter return and exception documentation)
      */
     private static List<Path> studentFiles(Path studentQuestion) {
         // The listing holds an OS handle, so try-with-resources closes it.

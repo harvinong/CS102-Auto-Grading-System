@@ -73,15 +73,12 @@ public final class ScoresheetReader {
     private static String cell(List<String> row, int column) {
         return column < 0 || column >= row.size() ? "" : row.get(column).trim();
     }
-<<<<<<< HEAD
     /** Small RFC-4180-compatible CSV parser. */
-=======
     /** Small RFC-4180-compatible parser, shared in spirit with grading.CsvScoresheet.
      * @param text the value used by this method.
      * @return the value produced by this operation, including any empty or absent result defined by its contract.
      * @throws IOException when the operation cannot complete.
      */
->>>>>>> 4d262fc (Add parameter return and exception documentation)
     private static List<List<String>> parse(String text) throws IOException {
         List<List<String>> rows = new ArrayList<>();
         List<String> row = new ArrayList<>();

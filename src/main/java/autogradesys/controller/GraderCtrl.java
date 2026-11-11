@@ -49,19 +49,16 @@ public class GraderCtrl {
     }
 
     /**
-<<<<<<< HEAD
      * Synchronises non-Java resources in the working copy with the Starting
      * Folder template, then runs the preflight check on the updated copy.
      *
      * Original submissions and the Starting Folder are never modified.
-=======
      * Runs the preflight check on the working copy and adds a USERNAME_TYPO finding
      * for every folder whose
      * name looks like a mistyped username, so the instructor is alerted before any
      * fix is run.
      * @param workingDir the value used by this method.
      * @return the value produced by this operation, including any empty or absent result defined by its contract.
->>>>>>> 4d262fc (Add parameter return and exception documentation)
      */
     public PreflightReport checkSubmissions(Path workingDir) {
 

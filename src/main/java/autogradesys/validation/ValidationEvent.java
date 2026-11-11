@@ -79,17 +79,14 @@ public record ValidationEvent(String student, Type type, String path, String mes
         return type.isFixed();
     }
 
-<<<<<<< HEAD
     /**
      * Get log message with format:
      * 
      * <pre>
      * "  [TYPE] path/of/files - log message"
      * </pre>
-=======
     /** Get log message with format: <pre>"  [TYPE] path/of/files - log message"</pre>
      * @return the value produced by this operation, including any empty or absent result defined by its contract.
->>>>>>> 4d262fc (Add parameter return and exception documentation)
      */
     public String getLogMessage() {
         return "  " + this.type.getTagWithColor() + " " + this.path() + " - " + this.message();
