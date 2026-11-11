@@ -50,7 +50,7 @@ The first launch asks for these paths. **Every path must be absolute**, and the 
 
 1. **Starting Folder** - the blank assignment/template folder. Its question folders and required files define what preflight checks.
 2. **Tester Files Folder** - one folder per question, containing tester source files.
-3. **Scoresheet File** - a `.csv` file. It must have a `Username` column, or the grading-compatible `student` column. Optional columns `Email`, `First Name`, and `Last Name` supply header information. Keep a backup: grading updates this file in place.
+3. **Scoresheet File** - a `.csv` file. It must have a `Username` column, or the grading-compatible `student` column. Course sheets may also contain `Calculated Final Grade Numerator`, `Calculated Final Grade Denominator`, and `End-of-Line Indicator`; optional `Email`, `First Name`, and `Last Name` columns supply header information. The configured file is read but never overwritten. The grader writes a new timestamped export after a successful run.
 
 A tester source is a regular Java file ending in `Tester.java` (for example, `Q1aTester.java`). Put its expected output beside it as `Q1aTester.expected.txt`. Each tester that produces exactly the expected UTF-8 text earns one mark. `\r\n` and `\n` are treated as equivalent, but other whitespace is significant.
 
@@ -71,6 +71,7 @@ assignment/
     Q2/
       Q2aTester.java
       Q2aTester.expected.txt
+  # Alternatively, testers/ may contain flat Q1aTester.java files and matching expected files.
   scores.csv                       # Username or student column; one row/student
   submissions/                     # selected later in the grading flow
     alice/
@@ -113,7 +114,7 @@ The main menu is:
 
 ## 5. Select submissions and preflight
 
-Choose **3**, then give an absolute **Submissions Folder** path. The program immediately clears the cache and creates/reuses a working copy under `cache/<submissions-folder-name>/`. It copies folders and extracts ZIPs; the original submissions folder is never edited. It recognizes ordinary folders, ZIPs beside the folder, and archives named like `2024-0002-username.zip`. It ignores OS clutter such as `.DS_Store`, `__MACOSX`, and symlinks are not followed.
+Choose **3**, then give an absolute **Submissions Folder** path. The program immediately clears the cache and creates/reuses a working copy under `cache/<submissions-folder-name>/`. It copies folders and extracts ZIPs; the original submissions folder is never edited. It recognizes ordinary folders, ZIPs beside the folder, and archives named like `2024-0002-username.zip`. It ignores OS clutter such as `.DS_Store` and `__MACOSX`; symlinks are not followed.
 
 It then performs a read-only submission check against the Starting Folder. The check reports fatal setup problems and per-student findings such as:
 
@@ -135,7 +136,7 @@ The grader menu is:
 0. Cancel and return to the main menu
 ```
 
-- **1** works only on the cached copy. It can flatten a wrapper folder, rename a likely username typo after a `Y/N` confirmation, add/correct a Java header, and restore missing questions/files/resources. Restoration first tries the original submission and then the Starting Folder. It does not overwrite an existing destination. A header naming another registered student is reported for human attention rather than silently changed.
+- **1** works only on the cached copy. It can flatten a wrapper folder, rename a likely username typo after a `Y/N` confirmation, add/correct a Java header, and restore missing questions/files/resources. Restoration first tries the original submission and then the Starting Folder. It also synchronizes non-Java resources with the Starting Folder: template resources replace student versions, missing resources are restored, and non-Java files absent from the template are removed. Java files are not modified or deleted. A header naming another registered student is reported for human attention rather than silently changed.
 - **2** repeats the read-only check after you manually edit the cached copy.
 - **3** accepts the current copy and begins grading, even if a student still has findings; unresolved problems become grading errors or zero marks where applicable.
 - **0** abandons this run without grading.
@@ -147,8 +148,8 @@ After option 1, read the `__ Submission validation __` output. It reports fixed 
 Select **3. Start grading** in the grader menu. The program processes each student and each question independently:
 
 1. It finds the question folder (including the supported single wrapper case).
-2. It copies the student's regular source/resource files and the instructor's `*Tester.java` files into a fresh temporary directory.
-3. It runs one bounded `javac` process for that question.
+2. It copies the student's source/resource files and relevant existing `.class` files, plus the instructor's `*Tester.java` files, into a fresh temporary directory.
+3. It runs one bounded `javac` process for that question. If the configured tester folder contains flat `*Tester.java` files, the grader groups them into question folders using the leading question name (for example, `Q1aTester.java` becomes part of `Q1`).
 4. It runs each tester as a bounded `java` process and compares its output with the matching `.expected.txt`.
 5. It awards one mark per passing tester and updates the configured scoresheet.
 
@@ -177,9 +178,9 @@ The grader runs student code as the local user without a sandbox. The timeout an
 
 At the end of a successful grading run, the program prints paths for:
 
-- **Updated scoresheet** - the configured CSV, with marks merged into the question columns. Existing rows/columns are preserved where possible.
+- **Configured scoresheet** - read and validated as input; it is never changed by grading.
 - **HTML report** - `.grader-report.html` in the current directory. It contains scores and all recorded diagnostics and can be opened through main-menu option 4.
-- **Score export** - a new timestamped CSV in the current directory with `username`, question columns, `final_score`, and a `% full marks` row.
+- **Score export** - the new timestamped CSV printed as `Score export: ...`. It contains the graded usernames, question columns, `final_score`, and a `% full marks` row. This is the updated score sheet to submit or import.
 - **Error history** - `.grader-error-history.jsonl`, one JSON object per recorded issue. It is append-only across runs.
 
 The console finishes with a summary such as:
@@ -190,7 +191,7 @@ Score export: .../2026-11-11_11-41-29-889778000.csv
 [INFO] Completed: 1 submission(s), 0 reported issue(s).
 ```
 
-Generated files are local run state. Back up the original scoresheet if you need a pristine copy, and remove generated cache/report/export/history files when resetting a run.
+Generated files are local run state. Keep the configured scoresheet as the source input and retain the timestamped export as the result. Remove generated cache/report/export/history files when resetting a run.
 
 ## Common errors and fixes
 
