@@ -1,0 +1,316 @@
+package autogradesys;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+/**
+ * Drives the real menu in a separate JVM: first-run setup, then "Grade
+ * students". The working
+ * directory is a temp folder so the program's ./config.json never touches the
+ * developer's copy.
+ */
+class RunGraderPreflightTest {
+
+    // Fresh temp folder per test; holds the template, submissions and the program's
+    // working directory.
+    @TempDir
+    Path root;
+
+    // Creates a file (and its parent folders) with the given text.
+    private static void file(Path base, String rel, String content) throws IOException {
+        // Where the file goes.
+        Path p = base.resolve(rel);
+        // Make sure the parent folders exist.
+        Files.createDirectories(p.getParent());
+        // Write the content.
+        Files.writeString(p, content);
+    }
+
+    // Starts the real program, types the given lines into it, and returns
+    // everything it printed.
+    private String runMenu(String input) throws IOException, InterruptedException {
+        return runMenu(input, 0);
+    }
+
+    // Same, for a run expected to end with the given exit status (1 when the input ends at a prompt).
+    private String runMenu(String input, int expectedStatus) throws IOException, InterruptedException {
+        // Working directory for the program: ./config.json is created here, not in the
+        // repository.
+        Path work = Files.createDirectories(root.resolve("work"));
+        // Launch "java -cp <this test's classpath> autogradesys.App" exactly like
+        // run.bat does.
+        Process process = new ProcessBuilder(
+                Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                // Headless, like a server or an SSH session, so no browser or window can ever pop up during a test.
+                "-Djava.awt.headless=true", "-cp", System.getProperty("java.class.path"), "autogradesys.App")
+                .directory(work.toFile())
+                // Merge error output so a crash would show up in the assertions.
+                .redirectErrorStream(true)
+                .start();
+        // Type the scripted answers, then close the input.
+        process.getOutputStream().write(input.getBytes(StandardCharsets.UTF_8));
+        process.getOutputStream().close();
+        // Read everything the program printed.
+        String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        // The program must exit with the expected status.
+        assertEquals(expectedStatus, process.waitFor(), output);
+        return output;
+    }
+
+    // The scripted answers: three config paths, two blank answers that keep the default timeout and
+    // output limit, menu option 3, the submissions path, then 0 to quit.
+    private static String script(Path startingFolder, Path testers, Path scores, Path submissions) {
+        return String.join("\n", startingFolder.toString(), testers.toString(), scores.toString(), "", "",
+                "3", submissions.toString(), "3", "0") + "\n";
+    }
+
+    // For runs where the preflight is fatal: the grader options are still shown, so the first 0
+    // cancels them and the second 0 quits the main menu.
+    private static String scriptWithoutFixPrompt(Path startingFolder, Path testers, Path scores, Path submissions) {
+        return String.join("\n", startingFolder.toString(), testers.toString(), scores.toString(), "", "",
+                "3", submissions.toString(), "0", "0") + "\n";
+    }
+
+    @Test
+    void gradeStudentsPrintsThePreflightThenTheExistingTodoLine() throws Exception {
+        // A one-question template.
+        Path template = root.resolve("RenameToYourStudentID");
+        file(template, "Q1/Q1a.java", "class Q1a {}");
+        // The other two configuration inputs.
+        Path testers = Files.createDirectories(root.resolve("testers"));
+        Path scores = root.resolve("scores.csv");
+        Files.writeString(scores, "username,final_score\n");
+        // One good student and one whose work is inside an un-renamed wrapper folder.
+        Path subs = root.resolve("subs");
+        file(subs, "alice/Q1/Q1a.java", "class Q1a { int x; }");
+        file(subs, "bob/RenameToYourStudentID/Q1/Q1a.java", "class Q1a { int x; }");
+
+        // Run the real menu.
+        String output = runMenu(script(template, testers, scores, subs));
+
+        // The summary and the wrapper finding appear.
+        assertTrue(output.contains("Checked 2 submissions: 1 ready, 1 need attention"), output);
+        assertTrue(output.contains("[WRAPPED_FOLDER] bob/RenameToYourStudentID/"), output);
+        // The report comes BEFORE the existing todo line, which is still printed.
+        int report = output.indexOf("__ Submission check");
+        int todo = output.indexOf("Running autograder!");
+        assertTrue(report >= 0 && todo > report, output);
+        // Nothing crashed.
+        assertFalse(output.contains("Exception"), output);
+        // The scoresheet is untouched.
+        assertEquals("username,final_score\n", Files.readString(scores));
+        // No compiled class appeared next to the submitted source (nothing was compiled
+        // or run).
+        assertFalse(Files.exists(subs.resolve("alice").resolve("Q1").resolve("Q1a.class")));
+    }
+
+    @Test
+    void startingFolderOneLevelTooHighIsRejectedThroughTheMenu() throws Exception {
+        // The instructor's course folder holds the template AND the submissions.
+        Path course = root.resolve("course");
+        file(course, "RenameToYourStudentID/Q1/Q1a.java", "class Q1a {}");
+        file(course, "subs/alice/Q1/Q1a.java", "class Q1a { int x; }");
+        Path testers = Files.createDirectories(root.resolve("testers"));
+        Path scores = root.resolve("scores.csv");
+        Files.writeString(scores, "username,final_score\n");
+
+        // Mistake: the Starting Folder is the course folder instead of the template
+        // inside it.
+        String output = runMenu(scriptWithoutFixPrompt(course, testers, scores, course.resolve("subs")));
+
+        // A single clear diagnostic with the exact folder to use instead.
+        assertTrue(output.contains("[TEMPLATE_INVALID]"), output);
+        assertTrue(output.contains("one level too high"), output);
+        assertTrue(output.contains("Set Starting Folder to " + course.resolve("RenameToYourStudentID")), output);
+        // Nothing was scanned, so no student is listed as ready or needing attention.
+        assertTrue(output.contains("no submissions were scanned"), output);
+        assertFalse(output.contains("needs attention"), output);
+    }
+
+    @Test
+    void zipBesideItsExtractedFolderIsNotCountedThroughTheMenu() throws Exception {
+        // A normal template and a student who is both extracted (frank/) and still
+        // zipped (frank.zip).
+        Path template = root.resolve("RenameToYourStudentID");
+        file(template, "Q1/Q1a.java", "class Q1a {}");
+        Path testers = Files.createDirectories(root.resolve("testers"));
+        Path scores = root.resolve("scores.csv");
+        Files.writeString(scores, "username,final_score\n");
+        Path subs = root.resolve("subs");
+        file(subs, "frank/Q1/Q1a.java", "class Q1a { int x; }");
+        file(subs, "frank.zip", "PK");
+
+        String output = runMenu(script(template, testers, scores, subs));
+
+        // Only one submission is counted and it is ready.
+        assertTrue(output.contains("Checked 1 submissions: 1 ready, 0 need attention"), output);
+        // The zip is explained by a note instead of being an extra student.
+        assertFalse(output.contains("[UNEXTRACTED_ARCHIVE]"), output);
+        // The zip is never extracted again or counted: only the extracted folder is in the working copy.
+        assertTrue(Files.isDirectory(root.resolve("work/cache/subs/frank")));
+        assertFalse(Files.exists(root.resolve("work/cache/subs/frank.zip")));
+    }
+
+    @Test
+    void gradingLimitsAreShownEditedWithValidationAndSavedThroughTheMenu() throws Exception {
+        Path template = root.resolve("RenameToYourStudentID");
+        file(template, "Q1/Q1a.java", "class Q1a {}");
+        Path testers = Files.createDirectories(root.resolve("testers"));
+        Path scores = root.resolve("scores.csv");
+        Files.writeString(scores, "username,final_score\n");
+
+        // First-run setup (3 paths and two blank limits), view (1), edit (2) keeping all three paths with blank lines, then the
+        // timeout gets "0", "abc", "1.5" and the old crash value 9999999999999999 (all refused) before 6, and the output
+        // limit gets "-1" and 67108865 (one above the maximum) before 2048; view again, quit.
+        String typed = String.join("\n", template.toString(), testers.toString(), scores.toString(), "", "",
+                "1", "2", "", "", "", "0", "abc", "1.5", "9999999999999999", "6", "-1", "67108865", "2048", "1", "0") + "\n";
+        String output = runMenu(typed);
+
+        // The first view shows the defaults a new config gets.
+        assertTrue(output.contains("Grading timeout: 2 second(s) per process"), output);
+        assertTrue(output.contains("Output limit:    1048576 bytes per process"), output);
+        // Each of the six bad inputs was refused with the accepted range named, and the prompt came back.
+        assertEquals(6, output.split("must be a whole number from 1 to", -1).length - 1, output);
+        // The second view shows the edited values.
+        assertTrue(output.contains("Grading timeout: 6 second(s) per process"), output);
+        assertTrue(output.contains("Output limit:    2048 bytes per process"), output);
+        // And they were written to the program's config.json.
+        String saved = Files.readString(root.resolve("work").resolve("config.json"));
+        assertTrue(saved.contains("\"grading_timeout_seconds\" : 6"), saved);
+        assertTrue(saved.contains("\"output_limit_bytes\" : 2048"), saved);
+    }
+
+    // Writes a zip holding the given entry names and texts, in order.
+    private static void zip(Path zipFile, String... namesAndTexts) throws IOException {
+        Files.createDirectories(zipFile.getParent());
+        try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+            for (int i = 0; i < namesAndTexts.length; i += 2) {
+                out.putNextEntry(new ZipEntry(namesAndTexts[i]));
+                out.write(namesAndTexts[i + 1].getBytes(StandardCharsets.UTF_8));
+                out.closeEntry();
+            }
+        }
+    }
+
+    // How many times the text appears in the output.
+    private static int count(String output, String text) {
+        return output.split(java.util.regex.Pattern.quote(text), -1).length - 1;
+    }
+
+    @Test
+    void templateCopyNamedArchiveAndBrokenZipAreHandledThroughTheWholeMenuFlow() throws Exception {
+        // Grading compiles and runs the testers, so the JDK tools must be on PATH.
+        Assumptions.assumeTrue(System.getenv("PATH") != null && java.util.Arrays.stream(
+                System.getenv("PATH").split(java.io.File.pathSeparator))
+                .anyMatch(dir -> Files.isExecutable(Path.of(dir, "javac"))), "JDK is required");
+        // A one-question template with a resource file, and one tester worth one mark.
+        Path template = root.resolve("RenameToYourStudentID");
+        file(template, "Q1/Q1a.java", "public class Q1a { public static int one() { return 0; } }");
+        file(template, "Q1/data.txt", "data");
+        Path testers = root.resolve("testers");
+        file(testers, "Q1/Q1aTester.java",
+                "public class Q1aTester { public static void main(String[] a) { System.out.println(Q1a.one()); } }");
+        file(testers, "Q1/Q1aTester.expected.txt", "1\n");
+        // The scoresheet in the documented format: a student column and one column per question.
+        Path scores = root.resolve("scores.csv");
+        Files.writeString(scores, "student,Q1\nalice,\ngina,\nfrank,\n");
+        String answer = "public class Q1a { public static int one() { return 1; } }";
+        Path subs = root.resolve("subs");
+        file(subs, "alice/Q1/Q1a.java", answer);
+        file(subs, "alice/Q1/data.txt", "data");
+        // The blank starter template copied into the submissions folder by mistake.
+        file(subs, "RenameToYourStudentID/Q1/Q1a.java", "public class Q1a { public static int one() { return 0; } }");
+        file(subs, "RenameToYourStudentID/Q1/data.txt", "data");
+        // A zip named the way the course exports it (term prefix, then the username).
+        zip(subs.resolve("2023-2024-gina.zip"), "Q1/Q1a.java", answer, "Q1/data.txt", "data");
+        // A broken zip.
+        file(subs, "frank.zip", "PK");
+
+        // Setup, Grade students, fix common mistakes (1), check again (2), start grading (3), quit.
+        String output = runMenu(String.join("\n", template.toString(), testers.toString(), scores.toString(), "", "",
+                "3", subs.toString(), "1", "2", "3", "0") + "\n");
+
+        // The named zip is extracted once, under the username, and the real file count is shown.
+        assertEquals(1, count(output, "[ARCHIVE_EXTRACTED] 2023-2024-gina.zip - extracted 2 files"), output);
+        assertTrue(Files.isDirectory(root.resolve("work/cache/subs/gina")));
+        assertFalse(Files.exists(root.resolve("work/cache/subs/2023-2024-gina")));
+        // The fix action reads the student column instead of stopping on a missing Username column.
+        assertFalse(output.contains("Could not validate"), output);
+        assertTrue(output.contains("__ Submission validation __"), output);
+        // The template copy is shown as not graded, skipped by grading, and never needs a scoresheet row.
+        assertTrue(output.contains("RenameToYourStudentID ...... not graded"), output);
+        assertTrue(output.contains("Checked 3 submissions: 2 ready, 0 need attention, 1 not graded"), output);
+        assertTrue(output.contains("Not graded: RenameToYourStudentID/ is a copy of the starter template"), output);
+        assertFalse(output.contains("student=RenameToYourStudentID"), output);
+        assertFalse(output.contains("No scoresheet row"), output);
+        // The broken zip is reported with the grading errors and kept in the history behind the HTML report.
+        assertTrue(output.contains("[ERROR] submission/working-copy: frank.zip was not graded"), output);
+        String history = Files.readString(root.resolve("work/.grader-error-history.jsonl"));
+        assertTrue(history.contains("frank.zip was not graded"), history);
+        assertTrue(Files.readString(root.resolve("work/.grader-report.html")).contains("frank.zip was not graded"));
+        // Marks land in the scoresheet for the two real students; frank stays blank.
+        assertEquals("student,Q1\nalice,1\ngina,1\nfrank,\n", Files.readString(scores));
+    }
+
+    @Test
+    void invalidMenuAnswersGetOneClearMessageAndEndedInputExitsCleanly() throws Exception {
+        Path template = root.resolve("RenameToYourStudentID");
+        file(template, "Q1/Q1a.java", "class Q1a {}");
+        Path testers = Files.createDirectories(root.resolve("testers"));
+        Path scores = root.resolve("scores.csv");
+        Files.writeString(scores, "student,Q1\nalice,\n");
+        Path subs = root.resolve("subs");
+        file(subs, "alice/Q1/Q1a.java", "class Q1a { int x; }");
+
+        // A blank first answer, then setup; "abc" and "9" at the main menu; Grade students; "abc" and "7" at
+        // the submission-check menu; then the input ends while that menu waits for an option.
+        String output = runMenu(String.join("\n", "", template.toString(), testers.toString(), scores.toString(), "", "",
+                "abc", "9", "3", subs.toString(), "abc", "7") + "\n", 1);
+
+        // A blank path asks for a path instead of saying it must be absolute.
+        assertTrue(output.contains("Invalid input: Please enter a path."), output);
+        assertFalse(output.contains("The path must be absolute"), output);
+        // Every bad menu answer, at either menu, gets the same message.
+        assertEquals(4, count(output, "Please enter a number between 0 and"), output);
+        assertFalse(output.contains("0 to 3"), output);
+        // The ended input is named, without blaming the start of grading.
+        assertTrue(output.contains("Input ended while waiting for an option; exiting."), output);
+        assertFalse(output.contains("Could not start grading"), output);
+        // Nothing was graded.
+        assertEquals("student,Q1\nalice,\n", Files.readString(scores));
+    }
+
+    @Test
+    void reportOptionBeforeAnyGradingReturnsToTheMenu() throws Exception {
+        // A valid first-run setup, so the main menu is reached.
+        Path template = root.resolve("RenameToYourStudentID");
+        file(template, "Q1/Q1a.java", "class Q1a {}");
+        Path testers = Files.createDirectories(root.resolve("testers"));
+        Path scores = root.resolve("scores.csv");
+        Files.writeString(scores, "student,Q1\nalice,\n");
+
+        // Setup, then option 4 (no report exists yet), then option 1 to prove the menu still answers, then 0 to quit.
+        // The child JVM is headless, as on a server or over SSH.
+        String output = runMenu(String.join("\n", template.toString(), testers.toString(), scores.toString(), "", "",
+                "4", "1", "0") + "\n");
+
+        // The missing report is explained instead of ending the program.
+        assertTrue(output.contains("No report yet: run option 3 (Grade students) first."), output);
+        assertFalse(output.contains("Could not start grading"), output);
+        // The menu came back: option 1 printed the configuration and option 0 said goodbye with exit status 0.
+        assertTrue(output.contains("__ Configuration __"), output);
+        assertTrue(output.contains("Thank you for using!"), output);
+    }
+}
