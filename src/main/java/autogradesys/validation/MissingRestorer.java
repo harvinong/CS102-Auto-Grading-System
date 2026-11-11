@@ -30,6 +30,9 @@ public class MissingRestorer {
     private final SubmissionCache cache;
     private final Path templateDir;
 
+    /**
+     * Creates a missing restorer instance.
+     */
     public MissingRestorer(SubmissionCache cache, Path templateDir) {
         this.cache = cache;
         this.templateDir = templateDir == null
@@ -44,6 +47,9 @@ public class MissingRestorer {
         this(cache, null);
     }
 
+    /**
+     * Restore.
+     */
     public List<ValidationEvent> restore(
             Path workingDir,
             PreflightReport preflight) {

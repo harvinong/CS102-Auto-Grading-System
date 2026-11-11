@@ -22,10 +22,16 @@ public class GraderCtrl {
     private final SubmissionCache cache = new SubmissionCache(SubmissionCache.DEFAULT_ROOT);
     public final Config config;
 
+    /**
+     * Creates a grader ctrl instance.
+     */
     public GraderCtrl(Config config) {
         this.config = config;
     }
 
+    /**
+     * Prepare working copy.
+     */
     public CacheReport prepareWorkingCopy(File submissions) {
         return cache.prepare(submissions.toPath());
     }
@@ -56,6 +62,9 @@ public class GraderCtrl {
         }
     }
 
+    /**
+     * Validate submissions.
+     */
     public ValidationReport validateSubmissions(Path workingDir, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {
         List<Student> students = ScoresheetReader.read(config.scoresheetFile());
@@ -66,6 +75,9 @@ public class GraderCtrl {
                 config.startingFolder().toPath()).run(workingDir, preflight);
     }
 
+    /**
+     * Validate submissions.
+     */
     public ValidationReport validateSubmissions(File submissions, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {
         return validateSubmissions(submissions.toPath(), preflight, confirm);

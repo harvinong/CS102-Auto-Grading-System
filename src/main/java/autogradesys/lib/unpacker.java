@@ -15,6 +15,9 @@ public class unpacker {
     //getAllZip() is entry function
     
     //just a checker if current file is a zip
+    /**
+     * Returns is zip.
+     */
     private static boolean isZip(File f){
         int fileSig = 0;
         try (RandomAccessFile raf = new RandomAccessFile(f, "r")){
@@ -25,6 +28,9 @@ public class unpacker {
         return fileSig == 0x504B0304 || fileSig == 0x504B0506 || fileSig == 0x504B0708;
     }
     // gets all zipped files of submission final arraylist will not include anything that is not a zip
+    /**
+     * Returns all zip.
+     */
     public static ArrayList<String> getAllZip() {
         ArrayList<String> nameOfAllFile = new ArrayList<>();
         String tmp = System.getProperty("user.dir") + "\\student-submission";  
@@ -42,6 +48,9 @@ public class unpacker {
     }
     //unpacks the zip file and creates a folder with the zip's name
     // can do error checking here for like fucked up zip or smth
+    /**
+     * Unpack.
+     */
     public static void unpack(String srcPath){
         try {
             Path zipPath = Path.of(srcPath);

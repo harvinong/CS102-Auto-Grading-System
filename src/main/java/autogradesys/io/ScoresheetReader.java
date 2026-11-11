@@ -19,8 +19,14 @@ public final class ScoresheetReader {
     private static final String EMAIL_COLUMN = "Email";
     private static final String FIRST_NAME_COLUMN = "First Name";
     private static final String LAST_NAME_COLUMN = "Last Name";
+    /**
+     * Creates a scoresheet reader instance.
+     */
     private ScoresheetReader() { }
 
+    /**
+     * Read.
+     */
     public static List<Student> read(File scoresheet) throws IOException {
         List<List<String>> rows = parse(Files.readString(scoresheet.toPath(), StandardCharsets.UTF_8));
         if (rows.isEmpty()) throw new IOException("The scoresheet is empty.");
@@ -45,10 +51,16 @@ public final class ScoresheetReader {
         return result;
     }
 
+    /**
+     * Column of.
+     */
     private static int columnOf(List<String> header, String title) {
         for (int i = 0; i < header.size(); i++) if (header.get(i).trim().equalsIgnoreCase(title)) return i;
         return -1;
     }
+    /**
+     * Cell.
+     */
     private static String cell(List<String> row, int column) {
         return column < 0 || column >= row.size() ? "" : row.get(column).trim();
     }

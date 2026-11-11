@@ -28,6 +28,9 @@ final class TesterGrader {
     private static final String EXPECTED_SUFFIX = ".expected.txt";
 
     // Utility class with only static methods, so the constructor is private to block instantiation.
+    /**
+     * Creates a tester grader instance.
+     */
     private TesterGrader() {
     }
 
@@ -216,6 +219,9 @@ final class TesterGrader {
     }
 
     // Runs one compiled tester inside the build folder and returns 1 if its output matches, else 0.
+    /**
+     * Run tester.
+     */
     private static int runTester(String student, Path studentQuestion, String question, Path tester, Path build,
             Duration timeout, long outputLimitBytes, ErrorReporter reporter)
             throws IOException, InterruptedException {
@@ -294,18 +300,27 @@ final class TesterGrader {
     }
 
     // Converts Windows line endings to Unix ones so only the text itself decides the comparison.
+    /**
+     * Normalise.
+     */
     private static String normalise(String text) {
         // Replace every carriage return plus line feed pair with a single line feed.
         return text.replace("\r\n", "\n");
     }
 
     // True when the folder directly contains a sub-folder named after one of the questions.
+    /**
+     * Holds question.
+     */
     private static boolean holdsQuestion(Path folder, List<String> questions) {
         // True as soon as one configured question name exists as a directory inside the folder.
         return questions.stream().anyMatch(question -> Files.isDirectory(folder.resolve(question)));
     }
 
     // The instructor's tester sources in a question folder, sorted by name; empty if the folder is unreadable.
+    /**
+     * Tester files.
+     */
     private static List<Path> testerFiles(Path testerDir) {
         // The listing holds an OS handle, so try-with-resources closes it.
         try (Stream<Path> paths = Files.list(testerDir)) {
@@ -320,6 +335,9 @@ final class TesterGrader {
     }
 
     // The student's regular files for a question, minus compiled classes and hidden OS files like .DS_Store.
+    /**
+     * Student files.
+     */
     private static List<Path> studentFiles(Path studentQuestion) {
         // The listing holds an OS handle, so try-with-resources closes it.
         try (Stream<Path> paths = Files.list(studentQuestion)) {

@@ -14,15 +14,24 @@ enum ConfigKey {
 
     private String value;
 
+    /**
+     * Creates a config key instance.
+     */
     private ConfigKey(String value) {
         this.value = value;
     }
 
+    /**
+     * Returns value.
+     */
     public String getValue() {
         return this.value;
     }
 
     @Override
+    /**
+     * To string.
+     */
     public String toString() {
         return this.value;
     }

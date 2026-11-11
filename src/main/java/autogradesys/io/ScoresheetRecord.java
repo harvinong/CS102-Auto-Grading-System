@@ -13,6 +13,9 @@ public record ScoresheetRecord(String username, LinkedHashMap<String, Integer> m
     // Input: nothing (uses this record's marks).
     // Function: adds up the marks of every sub-question.
     // Output: the total, which is what goes in the final_score column.
+    /**
+     * Final score.
+     */
     public int finalScore() {
         // Running total of the marks.
         int total = 0;

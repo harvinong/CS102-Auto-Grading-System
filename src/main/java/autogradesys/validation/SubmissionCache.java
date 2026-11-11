@@ -52,6 +52,9 @@ public class SubmissionCache {
     private Path manifestFile;
     private String sourceRecord;
 
+    /**
+     * Creates a submission cache instance.
+     */
     public SubmissionCache(Path cacheRoot) {
         this.cacheRoot = cacheRoot;
     }
@@ -126,6 +129,9 @@ public class SubmissionCache {
     }
 
     // Puts one submission into the working copy; returns an event, or null for a plain folder that copied fine.
+    /**
+     * Build.
+     */
     private ValidationEvent build(Path originals, String student, Path source) {
         Path destination = workingDir.resolve(student);
         String shown = originals.relativize(source).toString().replace('\\', '/');
@@ -146,6 +152,9 @@ public class SubmissionCache {
     }
 
     // Finds what each student's original is: a folder, or a zip (beside or inside the folder).
+    /**
+     * Find sources.
+     */
     private void findSources(Path originals, List<ValidationEvent> events) throws IOException {
         // Use the teammate iterator for the canonical named-archive discovery path.
         SubmissionIterator namedArchives = new SubmissionIterator(originals,
@@ -191,6 +200,9 @@ public class SubmissionCache {
     }
 
     // True if the student is already in the working copy (under its own name or a name the validation gave it).
+    /**
+     * Returns has working folder.
+     */
     private boolean hasWorkingFolder(String student) {
         if (Files.exists(workingDir.resolve(student), LinkOption.NOFOLLOW_LINKS)) {
             return true;
@@ -201,6 +213,9 @@ public class SubmissionCache {
 
     // Reads the manifest. A working copy of a different submissions folder, or a folder this program did not
     // create, is refused so that old files are never graded by mistake.
+    /**
+     * Load manifest.
+     */
     private void loadManifest() throws IOException {
         if (!Files.exists(manifestFile)) {
             if (hasContent(workingDir)) {
@@ -228,6 +243,9 @@ public class SubmissionCache {
         }
     }
 
+    /**
+     * Save manifest.
+     */
     private void saveManifest() throws IOException {
         Properties properties = new Properties();
         properties.setProperty(SOURCE_KEY, sourceRecord);
@@ -238,6 +256,9 @@ public class SubmissionCache {
         }
     }
 
+    /**
+     * Returns has content.
+     */
     private static boolean hasContent(Path dir) throws IOException {
         if (!Files.isDirectory(dir)) {
             return false;

@@ -21,30 +21,48 @@ public enum Field {
     private String[] extensions;
 
     // A folder field: no extensions are allowed.
+    /**
+     * Creates a field instance.
+     */
     private Field(String field) {
         this.name = field;
         this.extensions = new String[0];
     }
 
     // A file field: only the listed extensions are accepted.
+    /**
+     * Creates a field instance.
+     */
     private Field(String field, String... extensions) {
         this.name = field;
         this.extensions = extensions;
     }
 
+    /**
+     * Returns name.
+     */
     public String getName() {
         return this.name;
     }
 
+    /**
+     * Returns is dir.
+     */
     public boolean isDir() {
         // A field with no extensions is a folder.
         return this.extensions.length == 0;
     }
 
+    /**
+     * Returns extensions.
+     */
     public String[] getExtensions() {
         return this.extensions;
     }
 
+    /**
+     * Returns description.
+     */
     public String getDescription() {
         // Folders are described with one word.
         if (isDir()) {

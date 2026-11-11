@@ -33,15 +33,24 @@ public class ConfigDAO {
     private long timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
     private long outputLimitBytes = DEFAULT_OUTPUT_LIMIT_BYTES;
 
+    /**
+     * Creates a config dao instance.
+     */
     public ConfigDAO() {
         this(DEF_CONFIG_FILE);
     }
 
     // Lets tests point the DAO at a temporary file instead of the developer's ./config.json.
+    /**
+     * Creates a config dao instance.
+     */
     public ConfigDAO(File configFile) {
         this.configFile = configFile;
     }
 
+    /**
+     * Load.
+     */
     public boolean load() {
         if (!configFile.exists()) {
             return false;
@@ -68,6 +77,9 @@ public class ConfigDAO {
         }
     }
 
+    /**
+     * Save.
+     */
     public boolean save() {
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode jsonNode = objectMapper.createObjectNode();
@@ -90,39 +102,66 @@ public class ConfigDAO {
         }
     }
 
+    /**
+     * Returns starting folder.
+     */
     public File getStartingFolder() {
         return startingFolder;
     }
 
+    /**
+     * Returns testers folder.
+     */
     public File getTestersFolder() {
         return testersFolder;
     }
 
+    /**
+     * Returns scoresheet file.
+     */
     public File getScoresheetFile() {
         return scoresheetFile;
     }
 
+    /**
+     * Returns timeout seconds.
+     */
     public long getTimeoutSeconds() {
         return timeoutSeconds;
     }
 
+    /**
+     * Returns output limit bytes.
+     */
     public long getOutputLimitBytes() {
         return outputLimitBytes;
     }
 
+    /**
+     * Set starting folder.
+     */
     public void setStartingFolder(File startingFolder) {
         this.startingFolder = startingFolder;
     }
 
+    /**
+     * Set testers folder.
+     */
     public void setTestersFolder(File testersFolder) {
         this.testersFolder = testersFolder;
     }
 
+    /**
+     * Set scoresheet file.
+     */
     public void setScoresheetFile(File scoresheetFile) {
         this.scoresheetFile = scoresheetFile;
     }
 
     // Rejects out-of-range limits here too, so a caller that skips the menu prompt cannot save a value that would stop every process at once or crash grading.
+    /**
+     * Set timeout seconds.
+     */
     public void setTimeoutSeconds(long timeoutSeconds) {
         // A limit of 0 or less would kill every compile and run immediately; above the maximum it could hang or overflow.
         if (timeoutSeconds <= 0 || timeoutSeconds > MAX_TIMEOUT_SECONDS) {
@@ -132,6 +171,9 @@ public class ConfigDAO {
         this.timeoutSeconds = timeoutSeconds;
     }
 
+    /**
+     * Set output limit bytes.
+     */
     public void setOutputLimitBytes(long outputLimitBytes) {
         // A cap of 0 or less could not hold any output, and JavaGrader would reject it as a fatal setup error; above the maximum it risks running out of memory.
         if (outputLimitBytes <= 0 || outputLimitBytes > MAX_OUTPUT_LIMIT_BYTES) {
@@ -142,6 +184,9 @@ public class ConfigDAO {
     }
 
     // Reads an optional JSON number: only a whole number from 1 to max counts, everything else (absent, text, 1.5, 0, -3, too big) gives the default.
+    /**
+     * Integer in range or default.
+     */
     private static long integerInRangeOrDefault(JsonNode node, long max, long defaultValue) {
         // node is null when the key is missing, and isIntegralNumber() is false for strings and decimals; a long-sized value is required.
         if (node != null && node.isIntegralNumber() && node.canConvertToLong()

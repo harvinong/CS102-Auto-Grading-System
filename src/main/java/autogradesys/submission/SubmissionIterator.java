@@ -21,6 +21,9 @@ public class SubmissionIterator implements Iterable<Submission> {
     private final List<String> skipped = new ArrayList<>();
     private final List<String> duplicates = new ArrayList<>();
 
+    /**
+     * Creates a submission iterator instance.
+     */
     public SubmissionIterator(Path folder, Pattern zipNamePattern) throws IOException {
         if (!Files.isDirectory(folder)) {
             throw new IllegalArgumentException("Not a folder: " + folder);
@@ -46,6 +49,9 @@ public class SubmissionIterator implements Iterable<Submission> {
         }
     }
 
+    /**
+     * Add submission.
+     */
     private void addSubmission(Submission submission) {
         String key = submission.getUsername().toLowerCase();
         Submission earlier = submissions.put(key, submission); // put to replace
@@ -58,18 +64,30 @@ public class SubmissionIterator implements Iterable<Submission> {
     }
 
     @Override
+    /**
+     * Iterator.
+     */
     public Iterator<Submission> iterator() {
         return submissions.values().iterator();
     }
 
+    /**
+     * Size.
+     */
     public int size() {
         return submissions.size();
     }
 
+    /**
+     * Returns skipped.
+     */
     public List<String> getSkipped() {
         return skipped;
     }
 
+    /**
+     * Returns duplicates.
+     */
     public List<String> getDuplicates() {
         return duplicates;
     }

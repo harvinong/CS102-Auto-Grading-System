@@ -18,6 +18,9 @@ public final class UsernameMatcher {
     // For most characters, substituting one for another costs 1.0.
     private static final double SUBSTITUTION_COST = 1.0;
 
+    /**
+     * Distance.
+     */
     private static double distance(String a, String b) {
         double[] d = new double[b.length() + 1];
         for (int j = 0; j <= b.length(); j++) d[j] = j;
@@ -35,6 +38,9 @@ public final class UsernameMatcher {
         return d[b.length()];
     }
 
+    /**
+     * Creates a username matcher instance.
+     */
     private UsernameMatcher() {
     }
 

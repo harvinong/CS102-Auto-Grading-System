@@ -24,11 +24,17 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
     private TestPlan testPlan;
 
     @Override
+    /**
+     * Test plan execution started.
+     */
     public void testPlanExecutionStarted(TestPlan testPlan) {
         this.testPlan = testPlan; //this is just a callback that has the whole tree of what to run where what where why whatever
     }
 
     @Override
+    /**
+     * Execution finished.
+     */
     public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult result) {
         if (!testIdentifier.isTest()) return; // only count leaf DynamicTests
         if (result.getStatus() != TestExecutionResult.Status.SUCCESSFUL) {
@@ -56,6 +62,9 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
         }
     }
 
+    /**
+     * Returns sub question scores by student.
+     */
     public static Map<String, Map<String, Score>> getSubQuestionScoresByStudent(Map<String, int[]> scores) {
     Map<String, Map<String, Score>> result = new LinkedHashMap<>();
 
@@ -72,6 +81,9 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
    
 
 
+    /**
+     * Collect ancestor display names.
+     */
     private List<String> collectAncestorDisplayNames(TestIdentifier leaf) {
         LinkedList<String> names = new LinkedList<>();
         Optional<TestIdentifier> current = testPlan.getParent(leaf);
@@ -85,23 +97,35 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
         return names;
     }
 
+    /**
+     * Strip prefix.
+     */
     private String stripPrefix(String displayName) {
         return displayName.startsWith("2023-2024-")
                 ? displayName.substring("2023-2024-".length())
                 : displayName;
     }
 
+    /**
+     * Print scores.
+     */
     public void printScores() {
         scores.forEach((path, s) ->
                 System.out.println(path + ": " + s[0] + "/" + s[1]));
     }
 
+    /**
+     * Returns scores.
+     */
     public Map<String, int[]> getScores() {
         return scores;
     }
 }
 public class GradingEntry {
     
+    /**
+     * Run grading.
+     */
     public static Map<String, Map<String, Score>> runGrading() {
         LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
                 .selectors(DiscoverySelectors.selectClass(StudentFileExec.class)) // finds this class 
@@ -114,6 +138,9 @@ public class GradingEntry {
 
         return PerStudentListener.getSubQuestionScoresByStudent(listener.getScores());
     }
+    /**
+     * Runs the application entry point.
+     */
     public static void main(String[] args) {
         Map<String, Map<String, Score>> results = runGrading();
         results.forEach((student, subs) -> System.out.println(student + " -> " + subs));

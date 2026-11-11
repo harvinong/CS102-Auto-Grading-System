@@ -19,6 +19,9 @@ public class ScoreRecorder {
     // Input: the scoresheet file, the scores (student -> sub-question -> marks), and the error reporter.
     // Function: Merges the scores into the existing scoresheet. JavaGrader calls this after grading.
     // Output: true if the scoresheet was updated, false if something went wrong.
+    /**
+     * Record scores.
+     */
     public static boolean recordScores(Path scoresheet, Map<String, Map<String, Integer>> scores,
             autogradesys.grading.ErrorReporter reporter) {
         return autogradesys.grading.CsvScoresheet.update(scoresheet, scores, reporter);
@@ -31,6 +34,9 @@ public class ScoreRecorder {
     //           username, one column per question (sorted), final_score, then a "% full marks" row.
     //           A student has full marks on a question when marks earned == marks it is worth.
     // Output: Path to the newly created CSV file
+    /**
+     * Export results.
+     */
     public static Path exportResults(GradeResult result) throws IOException {
         Map<String, Map<String, Integer>> scores = result.scores(); // student -> (question -> marks)
 
@@ -91,6 +97,9 @@ public class ScoreRecorder {
     // Input: A text value to put in the CSV, e.g. a username or sub-question name
     // Function: Wraps the value in double quotes and doubles any quotes inside it, so commas cannot break the CSV
     // Output: The quoted value, e.g. chee"teo becomes "chee""teo"
+    /**
+     * Quote.
+     */
     private static String quote(String value) {
         return "\"" + value.replace("\"", "\"\"") + "\"";
     }

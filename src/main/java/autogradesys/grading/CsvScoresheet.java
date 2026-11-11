@@ -26,6 +26,9 @@ import java.util.Set;
  */
 public final class CsvScoresheet {
     // Static utility class; no instances.
+    /**
+     * Creates a csv scoresheet instance.
+     */
     private CsvScoresheet() {
     }
 
@@ -290,6 +293,9 @@ public final class CsvScoresheet {
     }
 
     // Minimal RFC 4180 style parser: commas separate cells, quotes wrap cells containing commas or newlines, and "" is a literal quote.
+    /**
+     * Parse.
+     */
     private static List<List<String>> parse(String content) throws IOException {
         // Completed rows.
         List<List<String>> rows = new ArrayList<>();
@@ -410,6 +416,9 @@ public final class CsvScoresheet {
     }
 
     // Turns rows back into CSV text, quoting cells that need it.
+    /**
+     * Render.
+     */
     private static String render(List<List<String>> rows) {
         // Holds the CSV text being built.
         StringBuilder output = new StringBuilder();

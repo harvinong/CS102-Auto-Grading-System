@@ -11,9 +11,15 @@ import java.util.stream.Stream;
 
 /** Deletes a folder together with everything inside it. */
 public final class FolderDeleter {
+    /**
+     * Creates a folder deleter instance.
+     */
     private FolderDeleter() {
     }
 
+    /**
+     * Delete.
+     */
     public static void delete(Path folder) throws IOException {
         if (!Files.exists(folder)) {
             return;

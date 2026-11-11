@@ -31,6 +31,9 @@ public final class JavaGrader {
     public static final long DEFAULT_OUTPUT_LIMIT_BYTES = 1024 * 1024L;
 
     // Utility class with only static methods, so the constructor is private to block instantiation.
+    /**
+     * Creates a java grader instance.
+     */
     private JavaGrader() {
     }
 
@@ -515,6 +518,9 @@ public final class JavaGrader {
     }
 
     // A student's folder name (shown in the CSV and report) plus the path to their submission folder.
+    /**
+     * Creates a student instance.
+     */
     private record Student(String name, Path directory) {
     }
 }

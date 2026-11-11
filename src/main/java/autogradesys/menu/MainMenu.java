@@ -22,6 +22,9 @@ public class MainMenu {
     private Scanner sc;
     private MainCtrl ctrl;
 
+    /**
+     * Creates a main menu instance.
+     */
     public MainMenu(Scanner sc, MainCtrl ctrl) {
         this.sc = sc;
         this.ctrl = ctrl;
@@ -37,6 +40,9 @@ public class MainMenu {
         }
     }
 
+    /**
+     * Read option.
+     */
     public void readOption() {
         int menuOption;
         do {
@@ -69,6 +75,9 @@ public class MainMenu {
     }
 
     // -- Displays --
+    /**
+     * Display menu title.
+     */
     private void displayMenuTitle() {
         System.out.println("+== Auto-Grading System ==+");
     }
@@ -114,6 +123,9 @@ public class MainMenu {
 
     /**Menu option 3: the full grade-students flow. */
     // Set to public to be used non-interactively.
+    /**
+     * Run grader.
+     */
     public void runGrader() {
         // clear the cache folder before grading, so the working copy is always fresh.
         clearCache();
@@ -183,6 +195,9 @@ public class MainMenu {
     }
 
     // Helper functions
+    /**
+     * Input config.
+     */
     private void inputConfig(boolean askNewFiles) {
         File startingFolder = Input.promptFile(
                 Field.STARTING_FOLDER,
@@ -224,6 +239,9 @@ public class MainMenu {
         }
     }
 
+    /**
+     * Returns text.
+     */
     private static String getText(String textPathString) {
         // Read as UTF-8 so the box-drawing title survives a platform default such as windows-1252 (JDK 17 on Windows).
         try (Scanner sc = new Scanner(new File(textPathString), StandardCharsets.UTF_8)) {

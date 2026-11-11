@@ -52,6 +52,9 @@ public final class ErrorHistory {
      * @throws IOException when the history cannot be created or written
      */
     // Called by ErrorReporter after each error; failures propagate so the reporter can mark the history as failed.
+    /**
+     * Append.
+     */
     public void append(ErrorRecord record) throws IOException {
         // Resolve to a clean absolute path so relative inputs like "logs/../history.jsonl" behave predictably.
         Path absolute = path.toAbsolutePath().normalize();

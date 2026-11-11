@@ -61,6 +61,9 @@ public class ScoresheetDAO {
 
     // Input: the scoresheet CSV file to read from and write to.
     // Output: a new ScoresheetDAO.
+    /**
+     * Creates a scoresheet dao instance.
+     */
     public ScoresheetDAO(File scoresheetFile) {
         this.scoresheetFile = scoresheetFile;
     }
@@ -73,6 +76,9 @@ public class ScoresheetDAO {
     //         username column, repeats a column, has a row longer than the header, lists a student
     //         twice, or has a mark that is not a whole number. On false, whatever was loaded before is kept.
 
+    /**
+     * Load.
+     */
     public boolean load() {
         // return false if invalid
         if (scoresheetFile == null || !scoresheetFile.isFile()){
@@ -201,6 +207,9 @@ public class ScoresheetDAO {
     // Output: true if the file was written; false if nothing has been loaded or the write failed
     //         (the original file is left as it was).
 
+    /**
+     * Save.
+     */
     public boolean save() {
         if (!loaded ||  scoresheetFile == null) {
             return false; // Don't overwrite a real file with an empty one
@@ -278,6 +287,9 @@ public class ScoresheetDAO {
     // Input: a student's username, e.g. "chee.teo.2022".
     // Function: looks the student up in the map (Read).
     // Output: that student's record, or null if the username is not in the scoresheet.
+    /**
+     * Returns .
+     */
     public ScoresheetRecord get(String username) {
         if (username == null) {
             return null;
@@ -290,6 +302,9 @@ public class ScoresheetDAO {
     //           to write it to the file. A username that is not in the scoresheet is not added,
     //           because the DAO only reads and updates (no create or delete).
     // Output: true if the record was replaced; false if the username is not in the scoresheet or the record is null.
+    /**
+     * Set.
+     */
     public boolean set(String username, ScoresheetRecord record) {
         if (username == null || record == null) {
             return false;
@@ -306,6 +321,9 @@ public class ScoresheetDAO {
     // Input: nothing.
     // Function: lists every student's username, so a caller can go through all the records with get().
     // Output: the usernames in scoresheet order (empty before load()).
+    /**
+     * Returns usernames.
+     */
     public ArrayList<String> getUsernames() {
         return new ArrayList<>(records.keySet());
     }
@@ -313,6 +331,9 @@ public class ScoresheetDAO {
     // Input: nothing.
     // Function: gives back the file this DAO reads and writes.
     // Output: the scoresheet file.
+    /**
+     * Returns scoresheet file.
+     */
     public File getScoresheetFile() {
         return scoresheetFile;
     }
@@ -320,6 +341,9 @@ public class ScoresheetDAO {
     // Input: the column names and the column to find.
     // Function: looks for the column, ignoring spaces and upper/lower case.
     // Output: the column's position, or -1 if it is not there.
+    /**
+     * Column of.
+     */
     private static int columnOf(List<String> columns, String name) {
         for (int i = 0; i < columns.size(); i++) {
             if (columns.get(i).trim().equalsIgnoreCase(name.trim())) {
@@ -333,6 +357,9 @@ public class ScoresheetDAO {
     // Function: Wraps the value in double quotes and doubles any quotes inside it, so commas cannot
     //           break the CSV. Same as ScoreRecorder.quote().
     // Output: The quoted value, e.g. chee"teo becomes "chee""teo".
+    /**
+     * Quote.
+     */
     private static String quote(String value) {
         return "\"" + value.replace("\"", "\"\"") + "\"";
     }
@@ -343,6 +370,9 @@ public class ScoresheetDAO {
     //           Blank lines are skipped. Accepts both Windows (\r\n) and Unix (\n) line endings.
     // Output: a list of rows, each a list of cells.
     // Throws IOException if a quoted cell is never closed.
+    /**
+     * Parse.
+     */
     private static ArrayList<ArrayList<String>> parse(String text) throws IOException {
         // All finished rows.
         ArrayList<ArrayList<String>> result = new ArrayList<>();
@@ -408,6 +438,9 @@ public class ScoresheetDAO {
     // Input: the list of finished rows and one new row.
     // Function: adds the row unless it is a blank line (a single empty cell).
     // Output: nothing; "result" is changed directly.
+    /**
+     * Add row if not blank.
+     */
     private static void addRowIfNotBlank(ArrayList<ArrayList<String>> result, ArrayList<String> row) {
         boolean blank = row.size() == 1 && row.get(0).trim().isEmpty();
         if (!blank) {

@@ -16,6 +16,9 @@ public enum TextColor {
     private String prefixEscapeCode;
 
     // Each constant above passes its own colour code in here.
+    /**
+     * Creates a text color instance.
+     */
     private TextColor(String prefixEscapeCode) {
         this.prefixEscapeCode = prefixEscapeCode;
     }

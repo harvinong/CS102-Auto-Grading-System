@@ -8,6 +8,9 @@ import java.util.Map;
 
 public class QuestionTests {
 
+    /**
+     * Returns specs by class.
+     */
     public static Map<String, MethodSpec> getSPECS_BY_CLASS() {
         return SPECS_BY_CLASS;
     }

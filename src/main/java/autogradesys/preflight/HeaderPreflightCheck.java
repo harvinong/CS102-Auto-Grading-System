@@ -39,6 +39,9 @@ public final class HeaderPreflightCheck {
     private static final Pattern HEADER_LABEL = Pattern.compile(
             "(?im)^[ \\t]*(?:\\*+|//+)?[ \\t]*(?:name|email(?:[ \\t]*id)?)[ \\t]*:");
 
+    /**
+     * Creates a header preflight check instance.
+     */
     private HeaderPreflightCheck() {
     }
 
@@ -106,6 +109,9 @@ public final class HeaderPreflightCheck {
                 all);
     }
 
+    /**
+     * Scan student.
+     */
     private static void scanStudent(
             String folder,
             Path studentDir,
@@ -125,6 +131,9 @@ public final class HeaderPreflightCheck {
         }
     }
 
+    /**
+     * Check file.
+     */
     private static void checkFile(
             String folder,
             Path studentDir,
@@ -181,6 +190,9 @@ public final class HeaderPreflightCheck {
         }
     }
 
+    /**
+     * First lines.
+     */
     private static String firstLines(String content, int maxLines) {
         int end = 0;
         int lines = 0;
@@ -195,6 +207,9 @@ public final class HeaderPreflightCheck {
         return content.substring(0, end);
     }
 
+    /**
+     * Name matches.
+     */
     private static boolean nameMatches(String headerName, String fullName) {
         String[] expectedParts = fullName.toLowerCase(Locale.ROOT).trim().split("\\s+");
         String actual = headerName.toLowerCase(Locale.ROOT);
@@ -208,6 +223,9 @@ public final class HeaderPreflightCheck {
         return true;
     }
 
+    /**
+     * Returns is junk.
+     */
     private static boolean isJunk(Path relativePath) {
         for (Path part : relativePath) {
             String name = part.toString();

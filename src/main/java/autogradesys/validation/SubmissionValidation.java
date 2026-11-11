@@ -21,6 +21,9 @@ public class SubmissionValidation {
     private final MissingRestorer restorer;
     private final SubmissionCache cache;
 
+    /**
+     * Creates a submission validation instance.
+     */
     public SubmissionValidation(
             List<Student> students,
             Predicate<String> confirm,
@@ -28,6 +31,9 @@ public class SubmissionValidation {
         this(students, confirm, cache, null);
     }
 
+    /**
+     * Creates a submission validation instance.
+     */
     public SubmissionValidation(
             List<Student> students,
             Predicate<String> confirm,
@@ -40,6 +46,9 @@ public class SubmissionValidation {
         this.cache = cache;
     }
 
+    /**
+     * Run.
+     */
     public ValidationReport run(Path submissions, PreflightReport preflight) {
 
         List<ValidationEvent> events = new ArrayList<>();

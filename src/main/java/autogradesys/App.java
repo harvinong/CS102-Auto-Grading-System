@@ -12,8 +12,14 @@ import autogradesys.menu.MainMenu;
  */
 public final class App {
     // Entry-point class with only static methods; no instances.
+    /**
+     * Creates an app instance.
+     */
     private App() {}
 
+    /**
+     * Runs the application entry point.
+     */
     public static void main(String[] args) {
         
         boolean debugMode = ( args.length == 1 && args[0].equals("--debug") );

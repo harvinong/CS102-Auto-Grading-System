@@ -17,6 +17,9 @@ import autogradesys.io.FileManager;
  */
 public class Input {
 
+    /**
+     * Creates a input instance.
+     */
     private Input() {} // disable instancing
 
     /**<p>

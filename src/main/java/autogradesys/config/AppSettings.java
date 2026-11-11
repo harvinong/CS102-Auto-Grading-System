@@ -13,12 +13,27 @@ public final class AppSettings {
             "^\\d{4}-\\d{4}-(.+)\\.zip$", Pattern.CASE_INSENSITIVE);
     private final Path cacheDir;
     private final Pattern zipNamePattern;
+    /**
+     * Creates a app settings instance.
+     */
     public AppSettings(Path cacheDir, Pattern zipNamePattern) {
         this.cacheDir = cacheDir;
         this.zipNamePattern = zipNamePattern;
     }
+    /**
+     * Load.
+     */
     public static AppSettings load() { return defaultSettings(); }
+    /**
+     * Default settings.
+     */
     public static AppSettings defaultSettings() { return new AppSettings(DEFAULT_CACHE_DIR, DEFAULT_ZIP_NAME_PATTERN); }
+    /**
+     * Returns cache dir.
+     */
     public Path getCacheDir() { return cacheDir; }
+    /**
+     * Returns zip name pattern.
+     */
     public Pattern getZipNamePattern() { return zipNamePattern; }
 }

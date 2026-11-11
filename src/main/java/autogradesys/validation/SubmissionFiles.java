@@ -20,6 +20,9 @@ public final class SubmissionFiles {
     private static final String MAC_METADATA_FOLDER = "__MACOSX";
     private static final String ZIP_EXTENSION = ".zip";
 
+    /**
+     * Creates a submission files instance.
+     */
     private SubmissionFiles() {
     }
 
@@ -75,6 +78,9 @@ public final class SubmissionFiles {
         int[] copied = {0};
         Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
             @Override
+            /**
+             * Pre visit directory.
+             */
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 if (isJunk(source.relativize(dir))) {
                     return FileVisitResult.SKIP_SUBTREE;
@@ -84,6 +90,9 @@ public final class SubmissionFiles {
             }
 
             @Override
+            /**
+             * Visit file.
+             */
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 Path destination = target.resolve(source.relativize(file));
                 if (attrs.isRegularFile() && !isJunk(source.relativize(file))
@@ -102,12 +111,18 @@ public final class SubmissionFiles {
         try {
             Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
                 @Override
+                /**
+                 * Visit file.
+                 */
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     Files.delete(file);
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
+                /**
+                 * Post visit directory.
+                 */
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
                     Files.delete(dir);
                     return FileVisitResult.CONTINUE;
