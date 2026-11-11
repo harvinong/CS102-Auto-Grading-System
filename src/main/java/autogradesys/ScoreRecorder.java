@@ -1,3 +1,5 @@
+// Co-authored by Claude (Anthropic) for debugging, comments and code completion.
+
 package autogradesys;
 import java.util.List;
 import java.io.BufferedWriter;

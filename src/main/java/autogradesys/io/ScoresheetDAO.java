@@ -1,3 +1,5 @@
+// Co-authored by Claude (Anthropic) for debugging, comments and code completion.
+
 package autogradesys.io;
 
 import java.io.File;
