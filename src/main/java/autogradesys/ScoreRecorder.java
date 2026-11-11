@@ -1,31 +1,28 @@
 package autogradesys;
-import java.io.BufferedWriter; // Writes text to a file efficiently
+import java.util.List;
+import java.io.BufferedWriter;
 import java.io.IOException; // The error Java raises when reading/writing a file fails
-import java.nio.charset.StandardCharsets; // Save as UTF-8
-import java.nio.file.*; // File operations
-import java.time.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path; // Represents a file location
+import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter; // Formats a date/time into a string
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
-import autogradesys.grading.GradeResult; // What JavaGrader.grade hands back: scores + marks each question is worth
+import autogradesys.grading.GradeResult; // What JavaGrader.grade hands back: the scores
 
-// Writes the grader's scores to a CSV file, one row per student and one column per sub-question.
+// Saves the grader's scores into a dated copy of the course scoresheet (e.g. IS442-ScoreSheet.csv).
+// ScoresheetDAO does the file reading and writing; ScoreRecorder decides what marks go in and where
+// the copy is saved. The original scoresheet is never changed.
 public class ScoreRecorder {
-    // Pattern for the file name, e.g. 2026-11-04_03-28-45-123456789.csv, so every run gets a new file
+    // Pattern for the date and time added to the file name, e.g. 2026-11-11_11-04-00
     private static final DateTimeFormatter TIMESTAMP =
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSSSSSSSS");
 
-
-    // Input: the scoresheet file, the scores (student -> sub-question -> marks), and the error reporter.
-    // Function: Merges the scores into the existing scoresheet. JavaGrader calls this after grading.
-    // Output: true if the scoresheet was updated, false if something went wrong.
-    /**
-     * Updates the scoresheet with the marks produced by the grading run.
-     */
-    public static boolean recordScores(Path scoresheet, Map<String, Map<String, Integer>> scores,
-            autogradesys.grading.ErrorReporter reporter) {
-        return autogradesys.grading.CsvScoresheet.update(scoresheet, scores, reporter);
-    }
 
     // Input: the GradeResult that JavaGrader.grade returns. It holds
     //        scores():         student -> (question -> marks earned), e.g. "alice" -> {"Q1" -> 2, "Q2" -> 0}
@@ -34,9 +31,6 @@ public class ScoreRecorder {
     //           username, one column per question (sorted), final_score, then a "% full marks" row.
     //           A student has full marks on a question when marks earned == marks it is worth.
     // Output: Path to the newly created CSV file
-    /**
-     * Exports the grading result and diagnostics to the configured report files.
-     */
     public static Path exportResults(GradeResult result) throws IOException {
         Map<String, Map<String, Integer>> scores = result.scores(); // student -> (question -> marks)
 
@@ -97,9 +91,6 @@ public class ScoreRecorder {
     // Input: A text value to put in the CSV, e.g. a username or sub-question name
     // Function: Wraps the value in double quotes and doubles any quotes inside it, so commas cannot break the CSV
     // Output: The quoted value, e.g. chee"teo becomes "chee""teo"
-    /**
-     * Escapes a value for safe inclusion in a CSV field.
-     */
     private static String quote(String value) {
         return "\"" + value.replace("\"", "\"\"") + "\"";
     }

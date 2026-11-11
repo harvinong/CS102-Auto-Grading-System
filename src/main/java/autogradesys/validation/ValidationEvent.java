@@ -16,7 +16,10 @@ import autogradesys.cli.TextColor;
  */
 public record ValidationEvent(String student, Type type, String path, String message) {
 
-    /** What happened. The constant's flag says whether the problem was fixed automatically. */
+    /**
+     * What happened. The constant's flag says whether the problem was fixed
+     * automatically.
+     */
     public enum Type {
         // Fixed automatically.
         FOLDER_FLATTENED(true),
@@ -34,7 +37,11 @@ public record ValidationEvent(String student, Type type, String path, String mes
         ARCHIVE_FAILED(false),
         COPY_FAILED(false),
         ITEM_MISSING(false),
-        FIX_FAILED(false);
+        FIX_FAILED(false),
+        RESOURCE_REPLACED(true),
+        RESOURCE_REMOVED(true),
+        RESOURCES_SYNCHRONISED(true),
+        RESOURCE_SYNC_FAILED(false);
 
         private final boolean fixed;
 
@@ -56,7 +63,7 @@ public record ValidationEvent(String student, Type type, String path, String mes
          * Returns the colored tag used to display this validation event type.
          */
         public String getTagWithColor() {
-            TextColor color = this.isFixed()? TextColor.SUCCESS: TextColor.ERROR;
+            TextColor color = this.isFixed() ? TextColor.SUCCESS : TextColor.ERROR;
             return color.getActionTag(this.toString());
         }
     }
@@ -68,7 +75,13 @@ public record ValidationEvent(String student, Type type, String path, String mes
         return type.isFixed();
     }
 
-    /** Get log message with format: <pre>"  [TYPE] path/of/files - log message"</pre> */
+    /**
+     * Get log message with format:
+     * 
+     * <pre>
+     * "  [TYPE] path/of/files - log message"
+     * </pre>
+     */
     public String getLogMessage() {
         return "  " + this.type.getTagWithColor() + " " + this.path() + " - " + this.message();
     }

@@ -1,105 +1,84 @@
-﻿package autogradesys;
+package autogradesys;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException; // The error raised if the CSV file cannot be saved
-import java.io.PrintStream;
+import java.io.IOException; // The error raised if the CSV file cannot be read or saved
 import java.nio.file.Files;
-import java.nio.file.Path; // Represents the location of the saved CSV file
+import java.nio.file.Path; // Represents the location of a CSV file
 import java.util.LinkedHashMap; // A map that remembers the order items were added
 import java.util.Map; // Key -> value lookup table
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import autogradesys.grading.ErrorHistory;
-import autogradesys.grading.ErrorReporter;
 import autogradesys.grading.GradeResult;
 
-/** Checks the two ScoreRecorder entry points the app uses: updating the scoresheet and exporting results. */
+/** Checks that ScoreRecorder.exportResults writes a dated copy of the course scoresheet with the marks. */
 class ScoreRecorderTest {
+    // A small scoresheet in the same layout as IS442-ScoreSheet.csv
+    private static final String SHEET =
+            "OrgDefinedId,Username,Last Name,First Name,Email,Calculated Final Grade Numerator,Calculated Final Grade Denominator,End-of-Line Indicator\n"
+            + "#01400001,#ping.lee.2023,_,PING LEE,ping.lee.2023@computing.smu.edu.sg,,20,#\n"
+            + "#01400002,#chee.teo.2022,_,TEO CHEE,chee.teo.2022@computing.smu.edu.sg,,20,#\n"
+            + "#01400003,#david.2024,_,DAVID KONG,david.2024@computing.smu.edu.sg,,20,#\n";
+
     // Fresh temp folder per test, so no real scoresheet is touched.
     @TempDir
     Path dir;
 
-    // Input: None (a small scoresheet and scores are built inside the test)
-    // Function: Checks that the method JavaGrader calls writes each mark into the right row and column
-    // Output: Passes if the CSV matches and no errors were reported
+    // Input: None (a scoresheet and a GradeResult are built inside the test)
+    // Function: Checks that the copy keeps every original cell, adds Q1/Q2/Q3 before End-of-Line Indicator,
+    //           fills the total, leaves an ungraded student empty, and leaves the original file unchanged
+    // Output: Passes if the copy matches exactly
     @Test
-    void liveGradingEntryPointWritesMarksIntoTheScoresheet() throws IOException {
-        // A scoresheet in the documented format: a student column and one column per question.
-        Path scoresheet = Files.writeString(dir.resolve("scores.csv"), "student,Q1,Q2\nalice,,\nbob,,\n");
-        ErrorReporter reporter = new ErrorReporter(new ErrorHistory(dir.resolve("history.jsonl")),
-                new PrintStream(new ByteArrayOutputStream()));
-        // Marks per student and question, as JavaGrader collects them.
+    void exportResultsWritesADatedCopyOfTheScoresheet() throws IOException {
+        Path scoresheet = Files.writeString(dir.resolve("IS442-ScoreSheet.csv"), SHEET);
+
+        // Marks each student earned. Q3 is put in first on purpose, to check the columns are sorted.
         Map<String, Map<String, Integer>> scores = new LinkedHashMap<>();
-        scores.put("alice", Map.of("Q1", 2, "Q2", 1));
-        scores.put("bob", Map.of("Q1", 0, "Q2", 2));
+        scores.put("ping.lee.2023", marks(4, 6, 10));
+        scores.put("chee.teo.2022", marks(0, 6, 6));
+        // david.2024 was not graded, so his mark cells stay empty.
 
-        assertTrue(ScoreRecorder.recordScores(scoresheet, scores, reporter));
+        GradeResult result = new GradeResult(scores.size(), 0, false, scores);
+        Path copy = ScoreRecorder.exportResults(result, scoresheet);
 
-        // Each mark lands in its student's row and question's column, and nothing went wrong.
-        assertEquals("student,Q1,Q2\nalice,2,1\nbob,0,2\n", Files.readString(scoresheet));
-        assertTrue(reporter.records().isEmpty(), reporter.records().toString());
+        // The copy sits next to the original and is named with the date and time.
+        assertEquals(dir.toAbsolutePath(), copy.getParent());
+        assertTrue(copy.getFileName().toString()
+                .matches("IS442-ScoreSheet_\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}\\.csv"), copy.toString());
+        assertNotEquals(scoresheet.toAbsolutePath(), copy);
+
+        assertEquals("OrgDefinedId,Username,Last Name,First Name,Email,Calculated Final Grade Numerator,Calculated Final Grade Denominator,Q1,Q2,Q3,End-of-Line Indicator\n"
+                + "#01400001,#ping.lee.2023,_,PING LEE,ping.lee.2023@computing.smu.edu.sg,20,20,6,10,4,#\n"
+                + "#01400002,#chee.teo.2022,_,TEO CHEE,chee.teo.2022@computing.smu.edu.sg,12,20,6,6,0,#\n"
+                + "#01400003,#david.2024,_,DAVID KONG,david.2024@computing.smu.edu.sg,,20,,,,#\n",
+                Files.readString(copy));
+        // The original scoresheet is not changed.
+        assertEquals(SHEET, Files.readString(scoresheet));
     }
 
-    // Input: None (a GradeResult with 5 students and 5 sub-questions is built inside the test)
-    // Function: Checks that exportResults writes username, the sub-question columns (sorted),
-    //           final_score and the % full marks row, including a student with a missing sub-question
-    // Output: Passes if the exported CSV matches exactly
+    // Input: None
+    // Function: Checks that a scoresheet without a Username column is refused with a clear error
+    // Output: Passes if an IOException is thrown
     @Test
-    void exportResultsWritesTheResultsCsv() throws IOException {
-        // How many marks each sub-question is worth (one mark per tester).
-        Map<String, Integer> worth = new LinkedHashMap<>();
-        worth.put("Q1a", 3);
-        worth.put("Q1b", 2);
-        worth.put("Q2a", 4);
-        worth.put("Q2b", 1);
-        worth.put("Q3", 5);
-
-        // Marks each student earned: 
-        Map<String, Map<String, Integer>> scores = new LinkedHashMap<>();
-        scores.put("chee.teo.2022", marks(3, 2, 4, 1, 5));
-        scores.put("jing.lim.2021", marks(1, 0, 4, 1, 2));
-        Map<String, Integer> david = marks(3, 2, 0, 0, 0);
-        david.remove("Q3");
-        scores.put("david.2024", david);
-        scores.put("ann.tan.2023", marks(3, 2, 2, 0, 4));
-        scores.put("ben.ng.2023", marks(0, 0, 0, 0, 0));
-
-        GradeResult result = new GradeResult(scores.size(), 0, false, scores, worth);
-
-        Path file = ScoreRecorder.exportResults(result);
-        try {
-            // Full marks per sub-question, out of 5 students:
-            // Q1a: chee, david, ann = 3 -> 60.0%   Q1b: chee, david, ann = 3 -> 60.0%
-            // Q2a: chee, jing       = 2 -> 40.0%   Q2b: chee, jing       = 2 -> 40.0%
-            // Q3:  chee             = 1 -> 20.0%
-            assertEquals("username,\"Q1a\",\"Q1b\",\"Q2a\",\"Q2b\",\"Q3\",final_score\r\n"
-                    + "\"chee.teo.2022\",3,2,4,1,5,15\r\n"
-                    + "\"jing.lim.2021\",1,0,4,1,2,8\r\n"
-                    + "\"david.2024\",3,2,0,0,0,5\r\n"
-                    + "\"ann.tan.2023\",3,2,2,0,4,11\r\n"
-                    + "\"ben.ng.2023\",0,0,0,0,0,0\r\n"
-                    + "\"% full marks\",60.0%,60.0%,40.0%,40.0%,20.0%,\r\n", Files.readString(file));
-        } finally {
-            Files.deleteIfExists(file);
-        }
+    void scoresheetWithoutUsernameColumnIsRefused() throws IOException {
+        Path scoresheet = Files.writeString(dir.resolve("bad.csv"), "name,total\nalice,\n");
+        GradeResult result = new GradeResult(1, 0, false, Map.of("alice", Map.of("Q1", 1)));
+        assertThrows(IOException.class, () -> ScoreRecorder.exportResults(result, scoresheet));
     }
 
-    // Input: one student's marks for Q1a, Q1b, Q2a, Q2b and Q3
-    // Function: builds that student's marks map. Q3 is put in first on purpose, so the test
-    //           also checks that the export sorts the columns into Q1a, Q1b, Q2a, Q2b, Q3.
-    // Output: the map, e.g. {"Q3" -> 5, "Q1a" -> 3, "Q1b" -> 2, "Q2a" -> 4, "Q2b" -> 1}
-    private static Map<String, Integer> marks(int q1a, int q1b, int q2a, int q2b, int q3) {
+    // Input: one student's marks for Q3, Q1 and Q2
+    // Function: builds that student's marks map, with Q3 first
+    // Output: the map, e.g. {"Q3" -> 4, "Q1" -> 6, "Q2" -> 10}
+    private static Map<String, Integer> marks(int q3, int q1, int q2) {
         Map<String, Integer> result = new LinkedHashMap<>();
         result.put("Q3", q3);
-        result.put("Q1a", q1a);
-        result.put("Q1b", q1b);
-        result.put("Q2a", q2a);
-        result.put("Q2b", q2b);
+        result.put("Q1", q1);
+        result.put("Q2", q2);
         return result;
     }
 }

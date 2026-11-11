@@ -99,7 +99,7 @@ public record PreflightReport(String templateName, List<String> students, List<P
             // Say clearly that no student was looked at.
             out.println("Submission check skipped: no submissions were scanned.");
             // Repeat the safety boundary.
-            out.println("(Read-only check: nothing was graded, changed or moved.)");
+            out.println("(No files were changed during this check.)");
             // Trailing blank line before the menu returns.
             out.println();
             // Nothing else to print.
@@ -140,7 +140,7 @@ public record PreflightReport(String templateName, List<String> students, List<P
                 + "errors: " + count(Severity.ERROR) + ", warnings: " + count(Severity.WARNING)
                 + ", notes: " + count(Severity.NOTE) + ").");
         // Remind the reader what this check does not do.
-        out.println("(Read-only check: nothing was graded, changed or moved. Ready does not mean correct.)");
+        out.println("(Non-Java resources were synchronised in the working copy. Original submissions and the Starting Folder were not changed. Ready does not mean correct.)");
         // Trailing blank line before the menu returns.
         out.println();
     }

@@ -26,7 +26,7 @@ public final class App {
         if (args.length == 0 || debugMode) {
             startApp(debugMode);
         } else {
-            System.out.println(TextColor.ERROR.getActionTag() + " Usage: ./run.bat [--demo|--debug]");
+            System.out.println(TextColor.ERROR.getActionTag() + " Usage: ./run.sh (Mac) or run.bat (Windows), optionally with --debug");
         }
     }
 

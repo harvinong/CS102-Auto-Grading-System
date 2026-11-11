@@ -5,14 +5,11 @@ import java.util.LinkedHashMap;
 /**
  * One student's row in the scoresheet.
  *
- * @param username The student's username, e.g. chee.teo.2022.
- * @param marks    The student's marks per sub-question, in column order, e.g. "Q1a" -> 3, "Q1b" -> 2.
+ * @param username The student's username without the "#", e.g. chee.teo.2022.
+ * @param marks    The student's marks per question, e.g. "Q1" -> 6, "Q2" -> 10. Empty if not graded.
  */
 public record ScoresheetRecord(String username, LinkedHashMap<String, Integer> marks) {
  
-    // Input: nothing (uses this record's marks).
-    // Function: adds up the marks of every sub-question.
-    // Output: the total, which is what goes in the final_score column.
     /**
      * Returns the sum of all marks recorded for the student.
      */
