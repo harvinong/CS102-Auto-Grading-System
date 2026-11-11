@@ -31,7 +31,10 @@ public class MissingRestorer {
     private final Path templateDir;
 
     /**
-     * Initializes restoration with the submission cache and optional template fallback.
+     * Creates a restorer that tries the original submission first and the starter template second.
+     *
+     * @param cache the working-copy cache, used to find a student's original folder or zip
+     * @param templateDir the starter template folder used as the fallback source; null to disable the fallback (the path is made absolute and normalised)
      */
     public MissingRestorer(SubmissionCache cache, Path templateDir) {
         this.cache = cache;
@@ -41,14 +44,21 @@ public class MissingRestorer {
     }
 
     /**
-     * Backwards-compatible constructor.
+     * Creates a restorer without a template fallback, so only the original submission can supply missing items.
+     *
+     * @param cache the working-copy cache, used to find a student's original folder or zip
      */
     public MissingRestorer(SubmissionCache cache) {
         this(cache, null);
     }
 
     /**
-     * Restores missing submission items from the original archive or template and returns the resulting validation events.
+     * Tries to put back every missing question folder, Java file and resource that the check reported,
+     * skipping findings about the blank template.
+     *
+     * @param workingDir the working copy folder holding one folder per student
+     * @param preflight the check report whose MISSING_QUESTION, MISSING_FILE and MISSING_RESOURCE findings are handled
+     * @return one event per missing item: ITEM_RESTORED if it was put back, ITEM_MISSING if it could not be
      */
     public List<ValidationEvent> restore(
             Path workingDir,
@@ -82,7 +92,13 @@ public class MissingRestorer {
     }
 
     /**
-     * Restores one missing question folder or file.
+     * Restores one missing question folder or file: first from the student's original submission, then from
+     * the template, and otherwise reports it as missing. Paths that would leave the working copy or the template are refused.
+     *
+     * @param workingDir the working copy folder
+     * @param finding the finding naming the student and the missing path
+     * @param parts how many trailing path names make up the item: 1 for a question folder such as Q1, 2 for a file such as Q1/Q1a.java
+     * @return ITEM_RESTORED with the source and file count, or ITEM_MISSING with the reason
      */
     private ValidationEvent restoreOne(
             Path workingDir,
@@ -245,7 +261,13 @@ public class MissingRestorer {
     }
 
     /**
-     * Creates an event describing a missing item that was restored successfully.
+     * Creates the event for a missing item that was put back.
+     *
+     * @param finding the finding that reported the item missing
+     * @param item the restored item, e.g. "Q2" or "Q1/Q1b.java"
+     * @param restored how many files were copied
+     * @param source where the item came from, in words, e.g. "the original submission"
+     * @return an ITEM_RESTORED event under the finding's student and path
      */
     private static ValidationEvent restoredEvent(
             PreflightFinding finding,
@@ -264,7 +286,11 @@ public class MissingRestorer {
     }
 
     /**
-     * Creates an event describing a missing item that could not be restored.
+     * Creates the event for a missing item that could not be put back.
+     *
+     * @param finding the finding that reported the item missing
+     * @param message why it could not be restored
+     * @return an ITEM_MISSING event under the finding's student and path
      */
     private static ValidationEvent missing(
             PreflightFinding finding,
@@ -279,8 +305,14 @@ public class MissingRestorer {
     }
 
     /**
-     * Copies the missing item from the original submission,
-     * even if the original submission contains multiple wrappers.
+     * Copies the missing item from the original submission folder, even if the submission keeps its work
+     * inside one or more wrapper folders. Existing files are not overwritten.
+     *
+     * @param originalFolder the student's original submission folder
+     * @param projectDir the working copy folder that should hold the item
+     * @param item the item to copy, e.g. "Q2" or "Q1/Q1b.java"
+     * @return how many files were copied; 0 if the original does not contain the item
+     * @throws IOException if the folder cannot be listed or a file cannot be copied
      */
     private static int restoreFromFolder(
             Path originalFolder,
@@ -309,7 +341,12 @@ public class MissingRestorer {
     }
 
     /**
-     * Searches recursively for the requested item inside the original submission.
+     * Searches the folder, then its sub-folders in name order, for the requested item. Junk folders and links are not entered.
+     *
+     * @param folder the folder to search from
+     * @param item the relative path of the item, e.g. "Q2"
+     * @return the first matching path found, or null if the item is nowhere below the folder
+     * @throws IOException if a folder cannot be listed
      */
     private static Path findOriginalItem(
             Path folder,

@@ -20,12 +20,18 @@ public final class ScoresheetReader {
     private static final String FIRST_NAME_COLUMN = "First Name";
     private static final String LAST_NAME_COLUMN = "Last Name";
     /**
-     * Initializes the reader that converts a scoresheet CSV into registered students.
+     * Prevents instantiation; the class is used through {@link #read}.
      */
     private ScoresheetReader() { }
 
     /**
-     * Reads the scoresheet CSV and returns its registered student records.
+     * Reads the registered students from the scoresheet CSV. Rows with no username, and the "% full marks"
+     * summary row that grading adds, are skipped. A last name of "_" is treated as empty.
+     *
+     * @param scoresheet the CSV file; it needs a "Username" column or, failing that, a "student" column
+     * @return one {@link Student} per row, in file order, with username (without "#"), full name and email;
+     *         name and email are empty strings when their columns are absent
+     * @throws IOException if the file cannot be read, is empty, has no username column, or has an unclosed quote
      */
     public static List<Student> read(File scoresheet) throws IOException {
         List<List<String>> rows = parse(Files.readString(scoresheet.toPath(), StandardCharsets.UTF_8));
@@ -52,19 +58,33 @@ public final class ScoresheetReader {
     }
 
     /**
-     * Returns the index of a named CSV column, or the absent-column sentinel.
+     * Finds a header column by title, ignoring case and surrounding spaces.
+     *
+     * @param header the header cells in file order
+     * @param title the column title to find
+     * @return the zero-based position of the first match, or -1 if there is no such column
      */
     private static int columnOf(List<String> header, String title) {
         for (int i = 0; i < header.size(); i++) if (header.get(i).trim().equalsIgnoreCase(title)) return i;
         return -1;
     }
     /**
-     * Returns the requested row cell, handling a missing trailing value safely.
+     * Reads one cell of a row safely, so a short row does not cause an out-of-range error.
+     *
+     * @param row the cells of one row
+     * @param column the zero-based column wanted; -1 means the column does not exist
+     * @return the trimmed cell text, or an empty string if the column is -1 or beyond the end of the row
      */
     private static String cell(List<String> row, int column) {
         return column < 0 || column >= row.size() ? "" : row.get(column).trim();
     }
-    /** Small RFC-4180-compatible CSV parser. */
+    /**
+     * Splits CSV text into rows and cells following RFC 4180 quoting: commas and line breaks inside quotes belong to the cell, and two quotes mean one quote.
+     *
+     * @param text the full contents of the CSV file
+     * @return the rows in order, each a list of cells; blank lines come back as a row with one empty cell
+     * @throws IOException if a quoted cell is never closed
+     */
     private static List<List<String>> parse(String text) throws IOException {
         List<List<String>> rows = new ArrayList<>();
         List<String> row = new ArrayList<>();

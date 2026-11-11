@@ -12,13 +12,17 @@ import java.util.stream.Stream;
 /** Deletes a folder together with everything inside it. */
 public final class FolderDeleter {
     /**
-     * Initializes the stateless utility used to delete folder trees.
+     * Prevents instantiation; deletion is done through the static {@link #delete} method.
      */
     private FolderDeleter() {
     }
 
     /**
-     * Deletes the supplied folder tree without following symbolic links.
+     * Deletes a folder and everything inside it, deepest entries first. Symbolic links are removed
+     * themselves, not followed. The Windows read-only flag is cleared on each entry first so it cannot block deletion.
+     *
+     * @param folder the folder to remove; if it does not exist nothing happens
+     * @throws IOException if the folder cannot be walked or an entry cannot be deleted; entries deleted before the failure stay deleted
      */
     public static void delete(Path folder) throws IOException {
         if (!Files.exists(folder)) {

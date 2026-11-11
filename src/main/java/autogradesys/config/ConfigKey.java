@@ -15,14 +15,18 @@ enum ConfigKey {
     private String value;
 
     /**
-     * Stores the JSON key name used to persist one configuration value.
+     * Creates one key constant.
+     *
+     * @param value the exact key name used in {@code config.json}
      */
     private ConfigKey(String value) {
         this.value = value;
     }
 
     /**
-     * Returns the configuration key string used when reading or writing JSON.
+     * Gives the key name used in the JSON file.
+     *
+     * @return the key text, e.g. {@code starting_folder_path}
      */
     public String getValue() {
         return this.value;
@@ -30,7 +34,9 @@ enum ConfigKey {
 
     @Override
     /**
-     * Returns a readable representation of the submission or configuration value.
+     * Gives the same key text as {@link #getValue()}, so a constant can be used directly as a JSON key.
+     *
+     * @return the key text, e.g. {@code grading_timeout_seconds}
      */
     public String toString() {
         return this.value;

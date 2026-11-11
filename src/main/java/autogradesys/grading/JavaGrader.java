@@ -32,12 +32,22 @@ public final class JavaGrader {
 
     // Utility class with only static methods, so the constructor is private to block instantiation.
     /**
-     * Initializes the utility that grades submissions against Java question projects.
+     * Prevents instantiation; grading is done through the static {@code grade} methods.
      */
     private JavaGrader() {
     }
 
-    /** Backward-compatible entry point using a 1 MiB combined stdout/stderr limit. */
+    /**
+     * Grades with the default combined stdout and stderr limit of 1 MiB and no template copies to skip.
+     * Same as the longer {@code grade} overloads otherwise.
+     *
+     * @param submissionsRoot the folder holding one folder per student
+     * @param questionsRoot the folder holding the testers or question fixtures
+     * @param scoresheet the course scoresheet CSV; it must exist and be loadable, or grading stops with a fatal error
+     * @param timeout the longest each compile or run may take
+     * @param reporter where problems are recorded and progress is printed
+     * @return the student count, issue count, fatal flag and scores of the session
+     */
     public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             Duration timeout, ErrorReporter reporter) {
         // Forward to the full overload, filling in the default 1 MiB output cap.
@@ -46,15 +56,15 @@ public final class JavaGrader {
     }
 
     /**
-     * Grades each discovered student against each discovered question.
+     * Grades every student against every question, with no submission folder skipped as a template copy.
      *
-     * @param submissionsRoot directory containing one directory per student
-     * @param questionsRoot directory containing question fixtures
-     * @param scoresheet CSV file to update, or {@code null} to report a fatal setup error
-     * @param timeout maximum duration for each compile or execution process
-     * @param outputLimitBytes TODO: document outputLimitBytes
-     * @param reporter destination for recoverable and fatal diagnostics
-     * @return counts, scores, and fatal status for the grading session
+     * @param submissionsRoot the folder holding one folder per student
+     * @param questionsRoot the folder holding the testers or question fixtures
+     * @param scoresheet the course scoresheet CSV; it must exist and be loadable, or grading stops with a fatal error. Null is reported as a fatal setup error
+     * @param timeout the longest each compile or run may take
+     * @param outputLimitBytes the most bytes of stdout plus stderr kept per process; zero or negative is a fatal setup error
+     * @param reporter where problems are recorded and progress is printed
+     * @return the student count, issue count, fatal flag and scores of the session; on a fatal setup error it has no students and no scores
      */
     public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             Duration timeout, long outputLimitBytes, ErrorReporter reporter) {
@@ -63,11 +73,23 @@ public final class JavaGrader {
     }
 
     /**
-     * Same as {@link #grade(Path, Path, Path, Duration, long, ErrorReporter)}, but skips the named
-     * submission folders: copies of the starter template (such as RenameToYourStudentID) that are not
-     * a student's work, so grading them would only add errors and a missing scoresheet row.
+     * Grades each student folder against each question folder, but skips the named submission folders:
+     * copies of the starter template (such as RenameToYourStudentID) that are not a student's work, so
+     * grading them would only add errors and a missing scoresheet row. Each skipped folder is mentioned with an info line.
      *
-     * @param templateCopies names of submission folders to leave out of grading
+     * <p>Setup problems (bad output limit, missing folders, unreadable scoresheet, no questions or students)
+     * are recorded as fatal and end grading early. Problems within one student or question are recorded as
+     * recoverable, that question scores 0, and grading carries on. A question with instructor testers is worth
+     * one mark per tester; a question using {@code Main.java} and {@code expected.txt} is worth one mark.</p>
+     *
+     * @param submissionsRoot the folder holding one folder per student; each sub-folder is one student
+     * @param questionsRoot the folder holding the testers (together or one folder per question) or the question fixtures
+     * @param scoresheet the course scoresheet CSV; it must exist and be loadable. Null is reported as a fatal setup error
+     * @param timeout the longest each compile or run may take
+     * @param outputLimitBytes the most bytes of stdout plus stderr kept per process; zero or negative is a fatal setup error
+     * @param templateCopies names of submission folders to leave out of grading; empty to grade them all
+     * @param reporter where problems are recorded and progress is printed
+     * @return the student count, issue count, fatal flag, scores and marks available per question; on a fatal setup error it has no students and no scores
      */
     public static GradeResult grade(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             Duration timeout, long outputLimitBytes, Set<String> templateCopies, ErrorReporter reporter) {
@@ -183,7 +205,17 @@ public final class JavaGrader {
                 availableMarks);
     }
 
-    /** Checks that the submissions folder, questions folder and scoresheet CSV are usable, reporting every failure found. */
+    /**
+     * Checks that the submissions folder, questions folder and scoresheet CSV are usable, and reports every
+     * failure found rather than only the first. The scoresheet must also load successfully with the scoresheet
+     * DAO, so a sheet marks cannot be saved into stops grading before any student is graded.
+     *
+     * @param submissionsRoot the folder expected to hold the student folders
+     * @param questionsRoot the folder expected to hold the questions
+     * @param scoresheet the scoresheet CSV; null counts as unreadable
+     * @param reporter receives one fatal record per problem
+     * @return true if all three inputs are usable; false if at least one fatal record was reported
+     */
     private static boolean validSetup(Path submissionsRoot, Path questionsRoot, Path scoresheet,
             ErrorReporter reporter) {
         // Assume the setup is fine and flip this to false on each problem, so every problem is reported in one pass rather than only the first.
@@ -227,7 +259,13 @@ public final class JavaGrader {
         return valid;
     }
 
-    /** Lists question folder names in sorted order; records a fatal error and returns an empty list on failure. */
+    /**
+     * Lists the question folder names in sorted order. Plain files are ignored.
+     *
+     * @param root the questions folder
+     * @param reporter receives a fatal record if the folder is missing, unreadable or holds no sub-folder
+     * @return the sorted folder names; empty when a fatal record was reported
+     */
     private static List<String> questionNames(Path root, ErrorReporter reporter) {
         // Defensive recheck: validSetup normally catches this, but this method can be reached on its own.
         if (!Files.isDirectory(root)) {
@@ -262,7 +300,13 @@ public final class JavaGrader {
         }
     }
 
-    /** Lists one {@link Student} per sub-folder of the submissions directory, sorted by name. */
+    /**
+     * Lists one {@link Student} per sub-folder of the submissions folder, sorted by name. Plain files such as a stray {@code .DS_Store} are ignored.
+     *
+     * @param root the submissions folder
+     * @param reporter receives a fatal record if the folder is missing, unreadable or holds no sub-folder
+     * @return the students sorted by folder name; empty when a fatal record was reported
+     */
     private static List<Student> studentDirectories(Path root, ErrorReporter reporter) {
         // Same defensive check for the submissions folder.
         if (!Files.isDirectory(root)) {
@@ -301,9 +345,18 @@ public final class JavaGrader {
     }
 
     /**
-     * Grades one student's answer to one question: load fixtures, compile, run, compare output.
+     * Grades one student's answer to one question in the {@code Main.java} layout: load fixtures, compile,
+     * run, compare output. Every failure is recorded in the reporter, and a temporary build folder is always deleted.
      *
-     * @return 1 if the program printed exactly the expected text, otherwise 0 (the reason is recorded)
+     * @param student the student's folder name, used in messages
+     * @param submission the student's submission folder
+     * @param question the question's folder name, which is also the sub-folder of the submission to grade
+     * @param questionsRoot the folder holding the question fixtures ({@code expected.txt} and optional {@code input.txt})
+     * @param source the student's {@code Main.java} for this question
+     * @param timeout the longest each compile or run may take
+     * @param outputLimitBytes the most bytes of stdout plus stderr kept per process
+     * @param reporter where problems and the PASS line are recorded
+     * @return 1 if the program compiled, ran cleanly within the limits and printed exactly the expected text; otherwise 0, with the reason recorded
      */
     private static int runQuestion(String student, Path submission, String question, Path questionsRoot,
             Path source, Duration timeout, long outputLimitBytes, ErrorReporter reporter) {
@@ -470,7 +523,11 @@ public final class JavaGrader {
         }
     }
 
-    /** Best-effort recursive delete of the temporary build folder. */
+    /**
+     * Deletes a temporary folder and everything in it on a best-effort basis. Entries that cannot be deleted are left, and no error is reported.
+     *
+     * @param root the folder to remove
+     */
     static void deleteTree(Path root) {
         // Walk the whole temp folder recursively; the stream is closed by try-with-resources.
         try (Stream<Path> paths = Files.walk(root)) {
@@ -489,7 +546,13 @@ public final class JavaGrader {
         }
     }
 
-    /** Picks the tool's own error text if there is any, otherwise the supplied fallback sentence. */
+    /**
+     * Chooses the tool's own error text if there is any, otherwise a fallback sentence.
+     *
+     * @param stderr the captured error output; null is treated as empty
+     * @param fallback the sentence to use when {@code stderr} is empty after trimming, e.g. the exit status
+     * @return the trimmed error output, or {@code fallback} if there is none
+     */
     static String details(String stderr, String fallback) {
         // Treat missing stderr as empty and trim surrounding whitespace so the message is tidy.
         String text = stderr == null ? "" : stderr.trim();
@@ -497,20 +560,35 @@ public final class JavaGrader {
         return text.isEmpty() ? fallback : text;
     }
 
-    /** Renders text in quotes with control characters escaped, so mismatch messages stay on one readable line. */
+    /**
+     * Renders text in double quotes with backslashes, carriage returns, line feeds and quotes escaped, so mismatch messages stay on one readable line.
+     *
+     * @param text the text to show, e.g. the expected or actual program output
+     * @return the escaped text wrapped in double quotes
+     */
     static String quote(String text) {
         // Wrap the text in quotes and escape backslashes first, then carriage returns, newlines and quotes, so whitespace differences are visible in messages.
         return "\"" + text.replace("\\", "\\\\").replace("\r", "\\r")
                 .replace("\n", "\\n").replace("\"", "\\\"") + "\"";
     }
 
-    /** Wording for the output cap used in the output-limit error messages. */
+    /**
+     * Words the output cap for the output-limit error messages.
+     *
+     * @param bytes the output cap in bytes
+     * @return the cap with its unit, e.g. {@code 1048576 byte(s)}
+     */
     static String outputLimitDescription(long bytes) {
         // Format the limit for messages, e.g. "1048576 byte(s)".
         return bytes + " byte(s)";
     }
 
-    /** Wording for the time limit used in the timeout error messages. */
+    /**
+     * Words the time limit for the timeout error messages.
+     *
+     * @param timeout the time limit that was exceeded
+     * @return whole seconds as {@code "10 second(s)"}, otherwise milliseconds as {@code "1500 millisecond(s)"}
+     */
     static String timeoutDescription(Duration timeout) {
         // Whole seconds read better as seconds (e.g. "10 second(s)").
         if (timeout.toMillis() % 1_000 == 0) {
@@ -521,7 +599,12 @@ public final class JavaGrader {
         return timeout.toMillis() + " millisecond(s)";
     }
 
-    /** Formats a path for error records and the report. */
+    /**
+     * Formats a path for error records and the report.
+     *
+     * @param path the path to show; may be null
+     * @return the absolute, normalised path, or {@code <missing>} when {@code path} is null
+     */
     static String display(Path path) {
         // Absolute, normalised path for unambiguous messages; a null path prints as <missing> instead of throwing.
         return path == null ? "<missing>" : path.toAbsolutePath().normalize().toString();

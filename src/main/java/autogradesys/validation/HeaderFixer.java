@@ -42,17 +42,20 @@ public final class HeaderFixer {
             Pattern.compile("(?im)^[ \\t]*(?:\\*+|//+)?[ \\t]*(?:name|email(?:[ \\t]*id)?)[ \\t]*:");
 
     /**
-     * Initializes the utility that repairs source headers for a known student.
+     * Prevents instantiation; the fix is run through {@link #fixAll}.
      */
     private HeaderFixer() {
     }
 
     /**
-     * @param label       The name the events are listed under (the folder's name before any rename).
-     * @param studentDir  The student's folder.
-     * @param student     The student the folder belongs to.
-     * @param allStudents Every registered student, used to spot a header naming someone else.
-     * @return One event per file that was fixed or needs attention; nothing for files that are fine.
+     * Checks every Java file in a student's folder and fixes its author header: an existing header block has
+     * its empty or wrong Name and Email ID filled in, a missing header is added, and a header naming a different student is only reported.
+     *
+     * @param label the name the events are listed under (the folder's name before any rename)
+     * @param studentDir the student's folder
+     * @param student the student the folder belongs to
+     * @param allStudents every registered student, used to spot a header naming someone else
+     * @return one event per file that was fixed or needs attention; nothing for files that are fine, and a single FIX_FAILED event if the files cannot be listed
      */
     public static List<ValidationEvent> fixAll(String label, Path studentDir, Student student,
             List<Student> allStudents) {
@@ -79,7 +82,14 @@ public final class HeaderFixer {
 
     // Checks one file and adds the header if it is missing.
     /**
-     * Repairs the header of one source file and records the changes made.
+     * Checks one file and fixes or adds its header. The file is rewritten in the character set it was read in (UTF-8, or ISO-8859-1 when it is not valid UTF-8).
+     *
+     * @param label the name the events are listed under
+     * @param studentDir the student's folder, used to show a short path
+     * @param file the Java file to check
+     * @param student the student the folder belongs to
+     * @param allStudents every registered student
+     * @param events receives HEADER_ADDED, HEADER_CORRECTED, HEADER_FOREIGN or FIX_FAILED when something is done or found
      */
     private static void fixFile(String label, Path studentDir, Path file, Student student,
             List<Student> allStudents, List<ValidationEvent> events) {
@@ -123,7 +133,12 @@ public final class HeaderFixer {
 
     // The username of a different registered student that appears in the header, or null.
     /**
-     * Finds another registered student whose identity appears in the header.
+     * Looks for another registered student's username in the header.
+     *
+     * @param header the header text in lower case
+     * @param student the student the folder belongs to, who is not counted
+     * @param allStudents every registered student
+     * @return the username of a different student that appears in the header, or null if none does
      */
     private static String findOtherStudent(String header, Student student, List<Student> allStudents) {
         for (Student other : allStudents) {
@@ -137,7 +152,11 @@ public final class HeaderFixer {
 
     // True if the header holds the username, the email, or every part of the full name.
     /**
-     * Reports whether a header contains identifying text for the student.
+     * Checks whether the header already identifies the student.
+     *
+     * @param header the header text in lower case
+     * @param student the student the folder belongs to
+     * @return true if the header holds the username, the email, or every part of the full name
      */
     private static boolean mentions(String header, Student student) {
         if (header.contains(student.username().toLowerCase())) {
@@ -152,7 +171,10 @@ public final class HeaderFixer {
 
     // Where the header region (the first HEADER_LINES lines) ends in the content.
     /**
-     * Returns the character position immediately after the source header.
+     * Finds where the header region, the first ten lines, ends.
+     *
+     * @param content the whole file text
+     * @return the position just after the tenth line break, or the content length if the file has fewer lines
      */
     private static int headerEnd(String content) {
         int end = 0;
@@ -172,7 +194,12 @@ public final class HeaderFixer {
 
     // Sets Name and Email ID from the scoresheet wherever they are empty or do not match the student.
     /**
-     * Corrects the recognized name, username, and email fields in a source header.
+     * Sets Name and Email ID from the scoresheet wherever they are empty or do not match the student. The
+     * Email ID line is filled with the student's username.
+     *
+     * @param head the header region of a file
+     * @param student the student the folder belongs to
+     * @return the corrected header, the list of changes made, and whether text the student typed was replaced (as opposed to only filling empty fields)
      */
     private static FieldFix correctFields(String head, Student student) {
         List<String> changes = new ArrayList<>();
@@ -186,7 +213,15 @@ public final class HeaderFixer {
 
     // Rewrites every line of this field whose value is empty or not accepted, keeping the line's own start.
     /**
-     * Replaces one header field with the student’s registered value when needed.
+     * Rewrites every line of one field whose value is empty or not accepted, keeping the line's own start (the comment marker and label). A value that runs into the end of the comment is left alone.
+     *
+     * @param head the header text to fix
+     * @param line the pattern that finds this field's lines; group 1 is the part up to the colon and group 2 is the value
+     * @param field the field's display name used in the change messages, e.g. "Name"
+     * @param correct the value to write when the field is wrong
+     * @param accepts decides whether an existing value is already acceptable
+     * @param changes receives a "filled in" or "corrected" message for each line rewritten
+     * @return the header with the wrong lines rewritten
      */
     private static String correctField(String head, Pattern line, String field, String correct,
             Predicate<String> accepts, List<String> changes) {
@@ -210,7 +245,11 @@ public final class HeaderFixer {
 
     // A name is accepted if it is not empty and holds every part of the registered name, in any order.
     /**
-     * Reports whether a header name is an accepted form of the student name.
+     * Checks a typed name against the registered one.
+     *
+     * @param value the text after "Name:" in the header
+     * @param student the student whose registered name is expected
+     * @return true if the value is not empty and holds every part of the registered name in any order and letter case
      */
     private static boolean nameAccepts(String value, Student student) {
         return !value.isEmpty() && containsAll(value.toLowerCase(), nameParts(student));
@@ -218,7 +257,10 @@ public final class HeaderFixer {
 
     // The words of the registered name in lower case ("TEO CHEE" gives teo, chee).
     /**
-     * Returns normalized name components used for header matching.
+     * Splits the registered name into words.
+     *
+     * @param student the student whose full name is used
+     * @return the words in lower case, so "TEO CHEE" gives teo and chee; empty if the name is blank
      */
     private static List<String> nameParts(Student student) {
         List<String> parts = new ArrayList<>();
@@ -231,7 +273,11 @@ public final class HeaderFixer {
     }
 
     /**
-     * Reports whether text contains every requested name component.
+     * Checks that every word appears in a text.
+     *
+     * @param text the text to search, already in lower case
+     * @param parts the lower-case words that must all be present
+     * @return true if every part occurs in the text; true as well when there are no parts
      */
     private static boolean containsAll(String text, List<String> parts) {
         for (String part : parts) {
@@ -244,7 +290,11 @@ public final class HeaderFixer {
 
     // The file content with a header block at the top (same format as the exam's), using the file's own line endings.
     /**
-     * Returns source content with a corrected student header prepended.
+     * Puts a header block at the top of the file, in the same format as the exam's and using the file's own line endings. A leading byte order mark stays first.
+     *
+     * @param content the file text that has no header
+     * @param student the student to name in the header
+     * @return the content with the header block inserted
      */
     private static String withHeader(String content, Student student) {
         String newline = content.contains("\r\n") ? "\r\n" : "\n";
@@ -258,7 +308,10 @@ public final class HeaderFixer {
 
     // The scoresheet writes names in capitals (TEO CHEE); the exam header looks like "Teo Chee".
     /**
-     * Returns the preferred human-readable name for a student.
+     * Gives the name as the exam header writes it. The scoresheet writes names in capitals (TEO CHEE); the header looks like "Teo Chee".
+     *
+     * @param student the student whose full name is used
+     * @return the full name with each word capitalised, or the username if the full name is empty
      */
     private static String displayName(Student student) {
         if (student.fullName().isEmpty()) {
@@ -277,7 +330,10 @@ public final class HeaderFixer {
     }
 
     /**
-     * Returns the final path component used as a display name.
+     * Gets the last part of a path as text.
+     *
+     * @param path the path to name
+     * @return the file or folder name, or the whole path text if it has no name part
      */
     private static String nameOf(Path path) {
         Path name = path.getFileName();

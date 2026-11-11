@@ -11,7 +11,9 @@ import java.util.LinkedHashMap;
 public record ScoresheetRecord(String username, LinkedHashMap<String, Integer> marks) {
  
     /**
-     * Returns the sum of all marks recorded for the student.
+     * Adds up the student's marks.
+     *
+     * @return the sum of all marks in {@code marks}; 0 when the student has no marks
      */
     public int finalScore() {
         // Running total of the marks.

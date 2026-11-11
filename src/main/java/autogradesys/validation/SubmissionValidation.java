@@ -23,7 +23,11 @@ public class SubmissionValidation {
     private final TemplateResourceSynchronizer resourceSynchronizer;
 
     /**
-     * Initializes validation with the cache, registered students, and optional restoration template.
+     * Creates a validation without a starter template, so missing files cannot be restored and non-Java resources cannot be synchronised.
+     *
+     * @param students the registered students from the scoresheet
+     * @param confirm asks the instructor a yes/no question about a proposed repair; returns true for yes
+     * @param cache the working-copy cache, used to find a submission's original zip and to record renamed folders
      */
     public SubmissionValidation(
             List<Student> students,
@@ -33,7 +37,12 @@ public class SubmissionValidation {
     }
 
     /**
-     * Initializes validation with the cache, registered students, and optional restoration template.
+     * Creates a validation that can restore missing files and synchronise resources from the starter template.
+     *
+     * @param students the registered students from the scoresheet
+     * @param confirm asks the instructor a yes/no question about a proposed repair; returns true for yes
+     * @param cache the working-copy cache, used to find a submission's original zip and to record renamed folders
+     * @param templateDir the starter template folder; passed on to the restorer and the resource synchroniser
      */
     public SubmissionValidation(
             List<Student> students,
@@ -49,7 +58,13 @@ public class SubmissionValidation {
     }
 
     /**
-     * Validates the working submissions and returns their events grouped with resolved student paths.
+     * Repairs the working copy in this order: restore missing files, flatten wrapper folders, synchronise
+     * non-Java resources with the template, then match each folder to a registered student (renaming a typo
+     * after confirmation) and fix its Java headers. Events are listed under the folder's final name.
+     *
+     * @param submissions the working copy folder holding one folder per student
+     * @param preflight the check report that says which folders have problems; the template folder is never modified
+     * @return every event, plus each identified student's username mapped to their folder
      */
     public ValidationReport run(Path submissions, PreflightReport preflight) {
 

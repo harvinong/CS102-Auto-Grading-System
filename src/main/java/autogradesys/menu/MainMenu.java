@@ -22,7 +22,11 @@ public class MainMenu {
     private MainCtrl ctrl;
 
     /**
-     * Initializes the main menu with its input scanner and configuration controller.
+     * Creates the main menu, prints the title banner, and loads the saved configuration. If there is none
+     * (a new user) the welcome text is shown and the instructor is asked for the paths and limits straight away.
+     *
+     * @param sc the scanner that reads the instructor's answers
+     * @param ctrl the controller that loads, holds and saves the configuration
      */
     public MainMenu(Scanner sc, MainCtrl ctrl) {
         this.sc = sc;
@@ -40,7 +44,10 @@ public class MainMenu {
     }
 
     /**
-     * Reads the instructor’s menu choice and dispatches the selected action.
+     * Shows the main menu repeatedly and runs the chosen action: view or edit the configuration, grade,
+     * view the recent report, clear the cache, or quit. The loop ends when the instructor chooses 0.
+     *
+     * @throws autogradesys.cli.InputEndedException if the input ends while an option is awaited
      */
     public void readOption() {
         int menuOption;
@@ -75,13 +82,15 @@ public class MainMenu {
 
     // -- Displays --
     /**
-     * Prints the title and context for the current menu.
+     * Prints the heading line of the main menu.
      */
     private void displayMenuTitle() {
         System.out.println("+== Auto-Grading System ==+");
     }
 
-    /** Display the options and the "Enter option" prompt. */
+    /**
+     * Prints the six main-menu choices ahead of the option prompt.
+     */
     private void displayMenu() {
         displayMenuTitle();
         System.out.println("1. View configuration paths");
@@ -92,7 +101,9 @@ public class MainMenu {
         System.out.println("0. Quit Application");
     }
 
-    /** display the new view for new user, while setting the config files. */
+    /**
+     * Shows the welcome text for a first-time user and asks for all the configuration values, with no defaults.
+     */
     private void newView() {
         System.out.println(getText("./assets/welcome.md"));
         System.out.println();
@@ -101,7 +112,9 @@ public class MainMenu {
     }
 
     // -- Menu Actions --
-    /** Menu Option 1: shows all the configurations set */
+    /**
+     * Menu option 1: prints the three configured paths and the grading time and output limits that grading will really use.
+     */
     private void viewConfig() {
         System.out.println();
         System.out.println("__ Configuration __");
@@ -115,15 +128,19 @@ public class MainMenu {
         System.out.println();
     }
 
-    /** Menu Option 2: edit the configurations */
+    /**
+     * Menu option 2: asks for the configuration again, offering the current values as defaults.
+     */
     private void editConfig() {
         inputConfig(false);
     }
 
-    /**Menu option 3: the full grade-students flow. */
     // Set to public to be used non-interactively.
     /**
-     * Runs grading after preparing, validating, and displaying the working submissions.
+     * Menu option 3: clears the cache so the working copy is fresh, then runs the full grade-students flow
+     * (setup, then the grader options). It is public so it can be used without the main menu.
+     *
+     * @throws autogradesys.cli.InputEndedException if the input ends while the flow is waiting for an answer
      */
     public void runGrader() {
         // clear the cache folder before grading, so the working copy is always fresh.
@@ -134,7 +151,10 @@ public class MainMenu {
         innerMenu.readOption();
     }
 
-    /** Menu Option 4: open the recent html report */
+    /**
+     * Menu option 4: opens the latest HTML report in the default browser. If there is no report, or no
+     * desktop is available, a message says what to do instead; failures to open are shown and never end the program.
+     */
     private void viewRecentReport() {
         // Announce the action first, so the instructor sees something even if opening fails.
         System.out.printf("%n%s Viewing recent report...%n", TextColor.INFO.getActionTag());
@@ -166,7 +186,9 @@ public class MainMenu {
         }
     }
 
-    /** Menu Option 5: clear the cache folder */
+    /**
+     * Menu option 5: deletes the folder that holds the working copies of submissions, and reports whether that succeeded.
+     */
     private void clearCache() {
         // Where the working copies of the submissions are kept.
         Path cachePath = AppSettings.load().getCacheDir();
@@ -195,7 +217,10 @@ public class MainMenu {
 
     // Helper functions
     /**
-     * Prompts for configuration paths and persists the selected values.
+     * Asks for the starting folder, testers folder, scoresheet, timeout and output limit, then saves them
+     * and prints whether saving worked.
+     *
+     * @param askNewFiles true for a first-time setup, where the three paths have no default; false to offer the saved paths so that pressing Enter keeps them
      */
     private void inputConfig(boolean askNewFiles) {
         File startingFolder = Input.promptFile(
@@ -239,7 +264,10 @@ public class MainMenu {
     }
 
     /**
-     * Reads and returns the text resource used by the menu display.
+     * Reads a text resource, such as the title banner, for display. It is read as UTF-8 so box-drawing characters survive on Windows.
+     *
+     * @param textPathString the file path, relative to the working directory, e.g. {@code ./assets/title.txt}
+     * @return the file's lines with blank lines trimmed from both ends, or a short "not found" notice if the file cannot be read
      */
     private static String getText(String textPathString) {
         // Read as UTF-8 so the box-drawing title survives a platform default such as windows-1252 (JDK 17 on Windows).

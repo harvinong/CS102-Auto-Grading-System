@@ -17,16 +17,20 @@ public enum TextColor {
 
     // Each constant above passes its own colour code in here.
     /**
-     * Stores the ANSI prefix used to format one category of terminal text.
+     * Creates one colour style.
+     *
+     * @param prefixEscapeCode the terminal escape sequence that switches this colour on, e.g. bold green
      */
     private TextColor(String prefixEscapeCode) {
         this.prefixEscapeCode = prefixEscapeCode;
     }
 
-    /**Apply color to string when printed out to console.
-     * 
-     * @param s String to be colored
-     * @return Colored string
+    /**
+     * Colours some text for the terminal, but only when colour is useful: output that is piped, redirected
+     * or run without a console, or any run with the {@code NO_COLOR} environment variable set, stays plain.
+     *
+     * @param s the text to colour
+     * @return the text wrapped in this colour's start code and the reset code, or {@code s} unchanged when colour is off
      */
     public String apply(String s) {
         // Colour only a real terminal: piped output, log files and tests get plain text, and NO_COLOR turns colour off.
@@ -35,19 +39,20 @@ public enum TextColor {
         return this.prefixEscapeCode + s + SUFFIX_ESCAPE_CODE;
     }
 
-    /** 
-     * Get action tag such as [INFO] with its color
-     * using the enum's own name (SUCCESS, INFO, ...) as the tag text.
-     * @return the text in square brackets, then colored.
+    /**
+     * Builds a coloured tag using this constant's own name as the label, e.g. {@code [INFO]}.
+     *
+     * @return the name in square brackets, coloured as {@link #apply} does
      */
     public String getActionTag() {
         return getActionTag(this.toString());
     }
 
     /**
-     * Get action tag such as [INFO] with its color
-     * @param s text to be put inside the square brackets
-     * @return the text in square brackets, then colored.
+     * Builds a coloured tag with custom label text, e.g. {@code [DONE]}.
+     *
+     * @param s the text to place inside the square brackets
+     * @return the bracketed text, coloured as {@link #apply} does
      */
     public String getActionTag(String s) {
         return apply("[" + s + "]");

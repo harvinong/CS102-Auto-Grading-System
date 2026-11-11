@@ -7,7 +7,10 @@ package autogradesys.cli;
 public class InputEndedException extends IllegalStateException {
 
     /**
-     * @param waitingFor What the prompt was asking for, e.g. "Starting Folder".
+     * Creates the exception for a prompt that found no more input.
+     *
+     * @param waitingFor what the prompt was asking for, e.g. "Starting Folder"; it becomes part of the message,
+     *         which reads "Input ended while waiting for ..."
      */
     public InputEndedException(String waitingFor) {
         super("Input ended while waiting for " + waitingFor);

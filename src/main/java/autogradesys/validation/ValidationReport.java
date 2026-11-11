@@ -22,7 +22,9 @@ public record ValidationReport(List<ValidationEvent> events, Map<String, Path> s
 
     // How many problems were fixed automatically.
     /**
-     * Counts validation events that were fixed automatically.
+     * Counts the problems that were repaired automatically.
+     *
+     * @return the number of events marked as fixed
      */
     public long fixedCount() {
         return events.stream().filter(ValidationEvent::fixed).count();
@@ -30,7 +32,9 @@ public record ValidationReport(List<ValidationEvent> events, Map<String, Path> s
 
     // How many problems still need the instructor.
     /**
-     * Counts validation events that still require user attention.
+     * Counts the problems that still need the instructor.
+     *
+     * @return the number of events that were not fixed
      */
     public long attentionCount() {
         return events.size() - fixedCount();
@@ -38,7 +42,10 @@ public record ValidationReport(List<ValidationEvent> events, Map<String, Path> s
 
     // Writes the report to the given stream (the console in the real program).
     /**
-     * Writes the current report or diagnostic information to the supplied output stream.
+     * Writes the validation outcome: each student's events grouped under their name (students sorted by
+     * name), then how many submissions were identified and how many problems were fixed or still need attention.
+     *
+     * @param out where to print, normally {@code System.out}
      */
     public void print(PrintStream out) {
         out.println();

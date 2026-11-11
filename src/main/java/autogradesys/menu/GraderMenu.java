@@ -46,28 +46,35 @@ public class GraderMenu {
     private Path gradingPath;
 
     /**
-     * Initializes the grading menu with its input scanner and grading controller.
+     * Creates the grading menu. Nothing is asked or checked until {@link #setup()} is called.
+     *
+     * @param sc the scanner that reads the instructor's answers
+     * @param ctrl the controller that holds the configuration and performs the working-copy, check and repair steps
      */
     public GraderMenu(Scanner sc, GraderCtrl ctrl) {
         this.sc = sc;
         this.ctrl = ctrl;
     }
     /**
-     * Returns the working directory currently selected for grading.
+     * Gives the folder that checking and grading work on.
+     *
+     * @return the working copy of the submissions, or null if {@link #setup()} has not run or could not build a usable copy
      */
     public Path getGradingPath() {
         return this.gradingPath;
     }
-    /**<p> 
+    /**
+     * <p>
      * Process run after the main menu and before the grader (inner) menu
      * </p><p>
      * Process:
      * </p>
      * <ol>
-        * <li>ask for the submissions folder and build the working copy (copy folders, extract zips);</li>
-        * <li>run the read-only preflight check on the copy, recording ignored junk quietly and stopping if the setup is fatal;</li>
+     * <li>ask for the submissions folder and build the working copy (copy folders, extract zips);</li>
+     * <li>run the read-only preflight check on the copy, recording ignored junk quietly and stopping if the setup is fatal;</li>
      * </ol>
-     * @throws IllegalStateException if this method is called twice or more.
+     *
+     * @throws IllegalStateException if this method is called twice or more
      */
     public void setup() {
         if (this.submissions != null) {
@@ -128,8 +135,10 @@ public class GraderMenu {
     }
 
     /**
-     * Open a menu for the user (instructor). 
-     * Let the instructor fix the copy, re-check it, or start grading;
+     * Shows the grader options repeatedly and runs the chosen action: fix common mistakes, check the
+     * working copy again, or start grading. Choosing grading or cancelling ends the loop.
+     *
+     * @throws autogradesys.cli.InputEndedException if the input ends while an option is awaited
      */
     public void readOption() {
         int menuOption;
@@ -151,13 +160,15 @@ public class GraderMenu {
 
     // -- Displays --
     /**
-     * Prints the title and context for the current menu.
+     * Prints the heading line of the grader options menu.
      */
     private void displayMenuTitle() {
         System.out.println("--- Grader Options ---");
     }
     
-    /** Display the options and the "Enter option" prompt. */
+    /**
+     * Prints the four grader choices (fix, re-check, start grading, cancel) ahead of the option prompt.
+     */
     private void displayMenu() {
         // The four choices offered after each preflight report.
         displayMenuTitle();
@@ -168,7 +179,11 @@ public class GraderMenu {
     }
 
     // -- Menu Actions --
-    /** Automatically fix common mistakes, and then report preflight. */
+    /**
+     * Runs a fresh check, applies the automatic fixes to the working copy (asking yes/no where a fix is a
+     * guess), and prints the check report again so the instructor sees the result. An I/O failure during the
+     * fixes is shown as an error line and the re-check still runs.
+     */
     private void fixSubmissions() {
         // The fixes follow the findings, so start from a fresh check in case files were edited by hand since the last one.
         preflight = ctrl.checkSubmissions(gradingPath);
@@ -186,7 +201,9 @@ public class GraderMenu {
         preflight.print(System.out);
     }
     
-    /** Re-check only: useful after the instructor edited the working copy by hand. */
+    /**
+     * Re-checks the working copy and prints the new report, useful after the instructor edited files by hand.
+     */
     private void checkSubmissions() {
         // Run the layout check again so the report reflects the edits.
         preflight = ctrl.checkSubmissions(gradingPath);
@@ -194,13 +211,17 @@ public class GraderMenu {
         preflight.print(System.out);
     }
 
-    /**<p>
+    /**
+     * <p>
      * The next logical step of the whole program, which is to batch-grade students' submissions.
      * </p>
      * <ol>
-        * <li>grade every student with JavaGrader (compile, run the testers, compare output), then save the marks in a dated copy of the scoresheet through ScoreRecorder;</li>
-        * <li>write the HTML report from the result and the recorded errors, and print a summary.</li>
+     * <li>grade every student with JavaGrader (compile, run the testers, compare output), then save the marks in a dated copy of the scoresheet through ScoreRecorder;</li>
+     * <li>write the HTML report from the result and the recorded errors, and print a summary.</li>
      * </ol>
+     * <p>Working-copy failures are recorded first so those students appear in the report. If grading ends with
+     * a fatal error, no marks are saved. A failure to write the report or the score export is shown as a
+     * message and does not end the program.</p>
      */
     private void startGrading() {
         // Separate the preflight report from the grading output with a blank line and a banner.

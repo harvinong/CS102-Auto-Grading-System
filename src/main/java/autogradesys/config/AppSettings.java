@@ -14,26 +14,37 @@ public final class AppSettings {
     private final Path cacheDir;
     private final Pattern zipNamePattern;
     /**
-     * Stores the cache location and archive filename pattern used by the application.
+     * Creates a settings object with the given values.
+     *
+     * @param cacheDir folder under which submission working copies are cached
+     * @param zipNamePattern regular expression that a submission archive's file name must match; its first group captures the student's username
      */
     public AppSettings(Path cacheDir, Pattern zipNamePattern) {
         this.cacheDir = cacheDir;
         this.zipNamePattern = zipNamePattern;
     }
     /**
-     * Loads the persisted configuration or scoresheet data into this object.
+     * Gets the settings in effect. Nothing is read from disk yet, so this is the same as {@link #defaultSettings()}.
+     *
+     * @return the default settings
      */
     public static AppSettings load() { return defaultSettings(); }
     /**
-     * Returns the application settings used when no custom configuration is available.
+     * Builds the built-in settings: a {@code cache} folder and the pattern {@code yyyy-yyyy-username.zip}, matched case-insensitively.
+     *
+     * @return a new settings object holding those defaults
      */
     public static AppSettings defaultSettings() { return new AppSettings(DEFAULT_CACHE_DIR, DEFAULT_ZIP_NAME_PATTERN); }
     /**
-     * Returns the directory where reusable submission working copies are stored.
+     * Gives the folder where submission working copies are cached.
+     *
+     * @return the cache folder; relative to the working directory by default
      */
     public Path getCacheDir() { return cacheDir; }
     /**
-     * Returns the pattern used to recognize incoming submission archive names.
+     * Gives the pattern for recognising submission archive names.
+     *
+     * @return the pattern, whose first group captures the username in the file name
      */
     public Pattern getZipNamePattern() { return zipNamePattern; }
 }

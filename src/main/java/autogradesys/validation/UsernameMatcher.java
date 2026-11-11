@@ -19,7 +19,12 @@ public final class UsernameMatcher {
     private static final double SUBSTITUTION_COST = 1.0;
 
     /**
-     * Computes the normalized edit distance used to detect username typos.
+     * Measures how different two names are as a weighted edit distance: each insertion or deletion costs 1,
+     * a substitution costs 1, except that swapping the neighbouring keys {@code t} and {@code r} costs only 0.5.
+     *
+     * @param a the first name, already in a single letter case
+     * @param b the second name, already in the same letter case
+     * @return the lowest total cost to turn {@code a} into {@code b}; 0 when they are identical
      */
     private static double distance(String a, String b) {
         double[] d = new double[b.length() + 1];
@@ -39,17 +44,30 @@ public final class UsernameMatcher {
     }
 
     /**
-     * Initializes the stateless username matching utility.
+     * Prevents instantiation; matching is done through the static methods.
      */
     private UsernameMatcher() {
     }
 
-    /** The student whose username equals the name (ignoring case), if any. */
+    /**
+     * Finds the registered student with exactly this username.
+     *
+     * @param name the username to look for, e.g. taken from a folder name; compared ignoring letter case
+     * @param students the registered students from the scoresheet
+     * @return the first student whose username matches, or an empty result if none does
+     */
     public static Optional<Student> findExact(String name, List<Student> students) {
         return students.stream().filter(s -> s.username().equalsIgnoreCase(name)).findFirst();
     }
 
-    /** The student whose username is closest to the name, if any is close enough to be a typo. */
+    /**
+     * Finds the registered student whose username is the nearest to the given name, provided it is near
+     * enough to be a likely typo (a weighted distance below 3).
+     *
+     * @param name the possibly misspelled username; compared ignoring letter case
+     * @param students the registered students from the scoresheet
+     * @return the closest student (the earliest one when tied), or an empty result if every username is too different
+     */
     public static Optional<Student> findClosest(String name, List<Student> students) {
         Student closest = null;
         double closestDistance = MAX_DISTANCE;

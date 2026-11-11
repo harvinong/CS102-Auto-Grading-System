@@ -13,12 +13,16 @@ import autogradesys.menu.MainMenu;
 public final class App {
     // Entry-point class with only static methods; no instances.
     /**
-     * Initializes the command-line application state before opening the main menu.
+     * Prevents instantiation; this class only offers the static {@link #main} entry point.
      */
     private App() {}
 
     /**
-     * Runs the application entry point.
+     * Program entry point. Starts the interactive menu when run with no arguments or with the single
+     * argument {@code --debug}; any other argument list prints a usage line and exits without starting.
+     *
+     * @param args command-line arguments; empty for a normal run, or exactly {@code ["--debug"]} to show full
+     *         stack traces when startup fails. Any other content is rejected with a usage message.
      */
     public static void main(String[] args) {
         
@@ -30,7 +34,13 @@ public final class App {
         }
     }
 
-    /** Menu mode: the controller holds session state and the menu drives it. */ 
+    /**
+     * Menu mode: creates the main menu and controller on standard input and runs it until the user exits.
+     * Input that ends mid-prompt is reported as an info line, and an unexpected runtime failure is printed as an
+     * error line (with a stack trace only in debug mode) instead of crashing the program.
+     *
+     * @param debugMode true to print the full stack trace of an unexpected failure; false to print only its message
+     */
     private static void startApp(boolean debugMode) {
         try (Scanner scanner = new Scanner(System.in)) {
             MainMenu menu = new MainMenu(scanner, new MainCtrl());

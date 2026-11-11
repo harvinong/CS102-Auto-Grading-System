@@ -101,12 +101,13 @@ public record PreflightFinding(
 
     /**
      * <p>
-     * Get a tag like " [CATEGORY] " (padded with spaces)
-     * applied with TextColor based on its severity:
+     * Builds the label for this finding: the category name in square brackets, coloured by severity.
      * </p>
      * - NOTE is applied with TextColor.INFO;
      * - WARNING is applied with TextColor.WARNING;
      * - ERROR and FATAL is applied with TextColor.ERROR;
+     *
+     * @return the coloured tag, e.g. {@code [MISSING_FILE]}; colour is dropped when the terminal does not support it
      */
     public String getTagWithColor() {
         TextColor color;

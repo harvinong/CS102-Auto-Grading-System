@@ -32,24 +32,32 @@ public class GraderCtrl {
     public final Config config;
 
     /**
-     * Initializes grading and validation services from the supplied configuration.
+     * Creates a controller for one grading session.
+     *
+     * @param config the folders and limits chosen by the user; the starting folder and scoresheet are read from it when checking and validating
      */
     public GraderCtrl(Config config) {
         this.config = config;
     }
 
     /**
-     * Prepares or reuses a cache working copy for the supplied submissions folder.
+     * Gets a cached working copy of the submissions, so repairs never touch the originals.
+     *
+     * @param submissions the folder holding the students' original submissions
+     * @return a report naming the working copy folder and whether it was newly built or reused
      */
     public CacheReport prepareWorkingCopy(File submissions) {
         return cache.prepare(submissions.toPath());
     }
 
     /**
-     * Synchronises non-Java resources in the working copy with the Starting
-     * Folder template, then runs the preflight check on the updated copy.
-     *
+     * Synchronises non-Java resources in the working copy with the Starting Folder template, then runs the
+     * preflight check on the updated copy, adding username-typo and Java-header findings from the scoresheet.
      * Original submissions and the Starting Folder are never modified.
+     *
+     * @param workingDir the cached working copy that contains one folder per student
+     * @return the preflight report with the synchronisation findings added; if the scoresheet cannot be read,
+     *         the report is returned without the username and header findings
      */
     public PreflightReport checkSubmissions(Path workingDir) {
 
@@ -166,7 +174,13 @@ public class GraderCtrl {
     }
 
     /**
-     * Validates the working submissions and returns events describing repairs or remaining issues.
+     * Validates the working copy against the scoresheet and repairs what it can, asking for confirmation where needed.
+     *
+     * @param workingDir the cached working copy that contains one folder per student
+     * @param preflight the report from {@link #checkSubmissions}; it decides which students need repair
+     * @param confirm answers a yes/no question about a proposed repair; return true to go ahead
+     * @return events describing repairs made and issues that remain
+     * @throws IOException if the scoresheet cannot be read or a file operation during validation fails
      */
     public ValidationReport validateSubmissions(Path workingDir, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {
@@ -181,7 +195,13 @@ public class GraderCtrl {
     }
 
     /**
-     * Validates the working submissions and returns events describing repairs or remaining issues.
+     * Same as the {@link Path} version, for callers that hold a {@link File}.
+     *
+     * @param submissions the working copy folder with one folder per student
+     * @param preflight the report from {@link #checkSubmissions}
+     * @param confirm answers a yes/no question about a proposed repair; return true to go ahead
+     * @return events describing repairs made and issues that remain
+     * @throws IOException if the scoresheet cannot be read or a file operation during validation fails
      */
     public ValidationReport validateSubmissions(File submissions, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {

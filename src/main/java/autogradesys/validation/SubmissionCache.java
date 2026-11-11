@@ -53,22 +53,29 @@ public class SubmissionCache {
     private String sourceRecord;
 
     /**
-     * Initializes the persistent cache used to reuse and track working submission copies.
+     * Creates a cache that keeps working copies under one folder. Nothing is created until {@link #prepare}.
+     *
+     * @param cacheRoot the cache folder, e.g. {@link #DEFAULT_ROOT}; the working copy of each submissions folder is made inside it
      */
     public SubmissionCache(Path cacheRoot) {
         this.cacheRoot = cacheRoot;
     }
 
-    /** The working copy folder (valid after {@link #prepare}). */
+    /**
+     * Gives the working copy folder.
+     *
+     * @return the folder set by the latest {@link #prepare} call; null if {@code prepare} has not been called
+     */
     public Path workingDir() {
         return workingDir;
     }
 
     /**
-     * Makes sure every submission is in the working copy, adding the ones that are not there yet.
+     * Makes sure every submission is in the working copy, adding the ones that are not there yet. An existing
+     * student folder is never overwritten, so manual edits survive. Failures are reported in the result rather than thrown.
      *
-     * @param submissions The folder of original student submissions.
-     * @return Where the working copy is and what happened while preparing it.
+     * @param submissions the folder of original student submissions
+     * @return where the working copy is and what happened while preparing it; the report is marked unusable if the working copy could not be set up, for example because the cache folder holds a copy of a different submissions folder
      */
     public CacheReport prepare(Path submissions) {
         List<ValidationEvent> events = new ArrayList<>();
@@ -109,12 +116,22 @@ public class SubmissionCache {
         return new CacheReport(workingDir, events, created, reused, true);
     }
 
-    /** The original folder or zip that a working folder came from, if it is known. */
+    /**
+     * Finds where a working folder originally came from, even if validation renamed it.
+     *
+     * @param workingFolder the name of a student's folder inside the working copy
+     * @return the original folder or zip, or an empty result if it is not known
+     */
     public Optional<Path> sourceOf(String workingFolder) {
         return Optional.ofNullable(sources.get(renamed.getOrDefault(workingFolder, workingFolder)));
     }
 
-    /** Remembers that the validation renamed a working folder, so it is still matched to its original. */
+    /**
+     * Remembers that validation renamed a working folder, so it is still matched to its original and the next run does not extract the original again beside the fixed folder. A failure to save the note is ignored.
+     *
+     * @param from the folder's name before the rename
+     * @param to the folder's name after the rename
+     */
     public void renamed(String from, String to) {
         String originalName = renamed.getOrDefault(from, from);
         renamed.remove(from);
@@ -130,7 +147,13 @@ public class SubmissionCache {
 
     // Puts one submission into the working copy; returns an event, or null for a plain folder that copied fine.
     /**
-     * Builds a cache event describing the source and working copy for one student.
+     * Puts one submission into the working copy: a zip is extracted and a folder is copied. If that fails,
+     * whatever was partly created is removed.
+     *
+     * @param originals the folder of original submissions, used to show a short relative path
+     * @param student the student's name, which becomes the folder name in the working copy
+     * @param source the zip or folder to take the submission from
+     * @return an ARCHIVE_EXTRACTED event for a zip that extracted, an ARCHIVE_FAILED or COPY_FAILED event on failure, or null for a plain folder that copied fine
      */
     private ValidationEvent build(Path originals, String student, Path source) {
         Path destination = workingDir.resolve(student);
@@ -153,7 +176,12 @@ public class SubmissionCache {
 
     // Finds what each student's original is: a folder, or a zip (beside or inside the folder).
     /**
-     * Finds original submission folders and archives that can populate the cache.
+     * Finds what each student's original is: a folder, or a zip (beside or inside the folder). Junk is
+     * reported as an IGNORED_JUNK event, a symbolic link as a COPY_FAILED event, and a zip next to a folder of the same name is not counted as a separate student.
+     *
+     * @param originals the folder of original submissions
+     * @param events receives the junk and link events found
+     * @throws IOException if the submissions folder cannot be listed
      */
     private void findSources(Path originals, List<ValidationEvent> events) throws IOException {
         // Use the teammate iterator for the canonical named-archive discovery path.
@@ -201,7 +229,10 @@ public class SubmissionCache {
 
     // True if the student is already in the working copy (under its own name or a name the validation gave it).
     /**
-     * Reports whether the cache already contains a usable working folder for the student.
+     * Checks whether the student is already in the working copy, under their own name or a name that validation gave the folder.
+     *
+     * @param student the student's original name
+     * @return true if such a folder exists
      */
     private boolean hasWorkingFolder(String student) {
         if (Files.exists(workingDir.resolve(student), LinkOption.NOFOLLOW_LINKS)) {
@@ -214,7 +245,10 @@ public class SubmissionCache {
     // Reads the manifest. A working copy of a different submissions folder, or a folder this program did not
     // create, is refused so that old files are never graded by mistake.
     /**
-     * Loads the cache manifest that maps working folders to original submissions.
+     * Reads the manifest file saved beside the working copy. A working copy of a different submissions
+     * folder, or a folder this program did not create, is refused so that old files are never graded by mistake.
+     *
+     * @throws IOException if the manifest cannot be read, if the working folder has content but no manifest, or if the manifest names a different submissions folder
      */
     private void loadManifest() throws IOException {
         if (!Files.exists(manifestFile)) {
@@ -244,7 +278,9 @@ public class SubmissionCache {
     }
 
     /**
-     * Persists the cache manifest after working-folder changes.
+     * Writes the manifest, which records the submissions folder the copy came from and the folders that were renamed.
+     *
+     * @throws IOException if the cache folder or manifest file cannot be written
      */
     private void saveManifest() throws IOException {
         Properties properties = new Properties();
@@ -257,7 +293,11 @@ public class SubmissionCache {
     }
 
     /**
-     * Reports whether a directory contains usable submission content.
+     * Checks whether a folder already holds anything.
+     *
+     * @param dir the folder to look in
+     * @return true if it is a directory with at least one entry; false if it is empty or is not a directory
+     * @throws IOException if the folder cannot be listed
      */
     private static boolean hasContent(Path dir) throws IOException {
         if (!Files.isDirectory(dir)) {

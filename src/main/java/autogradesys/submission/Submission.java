@@ -8,7 +8,10 @@ public class Submission {
     private final Path zipPath;
 
     /**
-     * Associates a student username with the archive containing that submission.
+     * Creates a record of one student's submission.
+     *
+     * @param username the student's username, taken from the zip file name
+     * @param zipPath where the student's zip file is
      */
     public Submission(String username, Path zipPath) {
         this.username = username;
@@ -16,14 +19,18 @@ public class Submission {
     }
 
     /**
-     * Returns the username associated with this submission.
+     * Gives the student who made this submission.
+     *
+     * @return the username as it appeared in the zip file name
      */
     public String getUsername() {
         return username;
     }
 
     /**
-     * Returns the archive path associated with this submission.
+     * Gives the location of the student's zip file.
+     *
+     * @return the path to the zip
      */
     public Path getZipPath() {
         return zipPath;
@@ -31,7 +38,9 @@ public class Submission {
 
     @Override
     /**
-     * Returns a readable representation of the submission or configuration value.
+     * Describes the submission by its owner, which keeps it readable in lists and messages.
+     *
+     * @return the student's username
      */
     public String toString() {
         return username;

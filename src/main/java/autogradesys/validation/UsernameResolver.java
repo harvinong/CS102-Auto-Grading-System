@@ -41,8 +41,10 @@ public class UsernameResolver {
     private final Predicate<String> confirm;
 
     /**
-     * @param students The registered students from the scoresheet.
-     * @param confirm  Asks the instructor a yes/no question; true means yes.
+     * Creates a resolver for one validation run.
+     *
+     * @param students the registered students from the scoresheet
+     * @param confirm asks the instructor a yes/no question; returns true for yes
      */
     public UsernameResolver(List<Student> students, Predicate<String> confirm) {
         this.students = students;
@@ -50,12 +52,15 @@ public class UsernameResolver {
     }
 
     /**
-     * @param folder Name of the student's folder.
-     * @param dir    The student's folder.
-     * @param events Collects what happened.
-     * @param owners Registered username (lower case) mapped to the folder that already has that exact name;
-     *               updated when a folder is renamed.
-     * @return The identity, or empty if the folder could not be matched to a registered student.
+     * Works out which registered student a folder belongs to. An exact username match is used as it is. A
+     * close match is offered to the instructor as a typo and, if confirmed, the folder is renamed; if another
+     * folder already has that name the instructor is asked whether to replace it.
+     *
+     * @param folder the name of the student's folder
+     * @param dir the student's folder
+     * @param events receives an event for each rename, refusal or failure
+     * @param owners registered username (lower case) mapped to the folder that already has that exact name; updated when a folder is renamed
+     * @return the student and the folder's current location, or empty if the folder could not be matched, the instructor declined, or the rename failed
      */
     public Optional<Identity> resolve(String folder, Path dir, List<ValidationEvent> events,
             Map<String, String> owners) {
@@ -96,7 +101,16 @@ public class UsernameResolver {
 
     // Renames the folder to the registered username, first moving aside the folder that already used the name.
     /**
-     * Renames a working submission folder and records the replacement for later matching.
+     * Renames the folder to the registered username, first moving aside the folder that already used the
+     * name. If the rename fails the old folder is put back; on success the old folder is deleted.
+     *
+     * @param folder the current folder name, used in events
+     * @param dir the folder to rename
+     * @param match the registered student the folder is being renamed after
+     * @param owner the folder that already uses the name, or null if none does
+     * @param owners the owner table, updated with the new name
+     * @param events receives a FOLDER_RENAMED or FIX_FAILED event
+     * @return the student's identity at the new location, or empty if the rename failed
      */
     private Optional<Identity> rename(String folder, Path dir, Student match, String owner,
             Map<String, String> owners, List<ValidationEvent> events) {
@@ -132,16 +146,23 @@ public class UsernameResolver {
         return Optional.of(new Identity(match, renamed, owner));
     }
 
-    /** The username a folder name claims to be, with any term prefix removed. */
+    /**
+     * Reads the username a folder name stands for, dropping an optional term prefix such as {@code 2023-2024-}.
+     *
+     * @param folder a submission folder name
+     * @return the name with that prefix removed; the folder name itself if it has no prefix
+     */
     public static String claimedUsername(String folder) {
         Matcher matcher = FOLDER_NAME.matcher(folder);
         return matcher.matches() ? matcher.group(1) : folder;
     }
 
     /**
-     * Which folder already has each registered username as its (exact) name.
+     * Finds which folder already has each registered username as its exact name.
      *
-     * @return Registered username in lower case mapped to the folder name; the first folder wins.
+     * @param folders the submission folder names
+     * @param students the registered students from the scoresheet
+     * @return registered username in lower case mapped to the folder name; the first folder wins, and a name with no folder is absent
      */
     public static Map<String, String> owners(Collection<String> folders, List<Student> students) {
         Map<String, String> owners = new HashMap<>();

@@ -29,18 +29,19 @@ public final class ArchiveExtractor {
     private static final int BUFFER_SIZE = 8192;
 
     /**
-     * Initializes the safe ZIP extraction utility.
+     * Prevents instantiation; extraction is done through the static methods.
      */
     private ArchiveExtractor() {
     }
 
     /**
-     * Extracts the whole zip into a new folder.
+     * Extracts the whole zip into a new folder. Entries that would land outside the folder, archives with
+     * more than 5000 entries, and archives that unpack to more than 200 MB are refused.
      *
-     * @param zip         The zip file.
-     * @param destination The folder to create; it must not exist yet.
-     * @return How many files were written.
-     * @throws IOException If the zip is unreadable or unsafe, or the folder exists. Nothing is left behind.
+     * @param zip the zip file
+     * @param destination the folder to create; it must not exist yet
+     * @return how many files were written
+     * @throws IOException if the zip is unreadable or unsafe, or the folder exists; nothing is left behind
      */
     public static int extract(Path zip, Path destination) throws IOException {
         Path dest = destination.toAbsolutePath().normalize();
@@ -57,14 +58,14 @@ public final class ArchiveExtractor {
     }
 
     /**
-     * Puts one folder or file from the zip back into a project folder, skipping files that already
-     * exist. The zip may keep the work inside one extra folder; that is found automatically.
+     * Puts one folder or file from the zip back into a project folder, skipping files that already exist.
+     * The zip may keep the work inside one extra folder; that is found automatically.
      *
-     * @param zip        The zip file.
-     * @param projectDir The folder that should hold the item (the one with Q1, Q2, Q3 in it).
-     * @param item       The item inside the project folder, e.g. "Q2" or "Q1/Q1b.java".
-     * @return How many files were restored, or 0 if the zip does not contain the item.
-     * @throws IOException If the zip is unreadable or unsafe. Nothing is left behind.
+     * @param zip the zip file
+     * @param projectDir the folder that should hold the item (the one with Q1, Q2, Q3 in it)
+     * @param item the item inside the project folder, e.g. "Q2" or "Q1/Q1b.java"
+     * @return how many files were restored, or 0 if the zip does not contain the item
+     * @throws IOException if the zip is unreadable or unsafe; nothing is left behind
      */
     public static int restore(Path zip, Path projectDir, String item) throws IOException {
         Path dest = projectDir.toAbsolutePath().normalize();
@@ -87,7 +88,16 @@ public final class ArchiveExtractor {
     // Writes the wanted entries under dest and returns how many files were written.
     // stripPrefix is the extra folder to drop from entry names; onlyItem (or null for all) limits what is written.
     /**
-     * Extracts selected ZIP entries while preventing paths from escaping the destination.
+     * Writes the wanted entries under the destination, refusing any entry that would be written outside it. Junk entries are skipped.
+     *
+     * @param zip the open zip file
+     * @param dest the normalised destination folder
+     * @param created collects every file and folder made, so a failure can undo them
+     * @param stripPrefix the extra folder to drop from entry names; empty to keep names as they are
+     * @param onlyItem the one item to write, or null for all entries
+     * @param skipExisting true to leave a file alone when it already exists; false to treat that as an error
+     * @return how many files were written
+     * @throws IOException if an entry is unsafe, the unpacked size is over the limit, or writing fails
      */
     private static int unpack(ZipFile zip, Path dest, List<Path> created, String stripPrefix, String onlyItem,
             boolean skipExisting) throws IOException {
@@ -143,7 +153,11 @@ public final class ArchiveExtractor {
 
     // The folder inside the zip that holds the item: "" (top level) or one extra folder like "Wrapper/".
     /**
-     * Finds the common wrapper prefix used by entries in an archive.
+     * Finds the folder inside the zip that holds the item: the top level, or one extra wrapper folder such as {@code Wrapper/}.
+     *
+     * @param zip the open zip file
+     * @param item the item being looked for, e.g. "Q2"
+     * @return the prefix, empty for the top level; null if the zip contains the item nowhere
      */
     private static String findPrefix(ZipFile zip, String item) {
         List<String> names = new ArrayList<>();
@@ -172,14 +186,21 @@ public final class ArchiveExtractor {
 
     // True if the entry is the wanted item or is inside it.
     /**
-     * Reports whether an archive entry names the requested item.
+     * Checks whether an entry is the wanted item or is inside it.
+     *
+     * @param name an entry name from the zip, using forward slashes
+     * @param wanted the item's path
+     * @return true if {@code name} equals {@code wanted} or starts with {@code wanted} followed by a slash
      */
     private static boolean matches(String name, String wanted) {
         return name.equals(wanted) || name.startsWith(wanted + "/");
     }
 
     /**
-     * Rejects archives whose entry count exceeds the extraction safety limit.
+     * Refuses a zip that has too many entries, to stop a zip bomb.
+     *
+     * @param zip the open zip file
+     * @throws IOException if it has more than 5000 entries
      */
     private static void checkEntryCount(ZipFile zip) throws IOException {
         if (zip.size() > MAX_ENTRIES) {
@@ -189,7 +210,12 @@ public final class ArchiveExtractor {
 
     // Creates each missing folder from base down to dir, remembering them so a failure can undo it.
     /**
-     * Creates required destination directories and tracks them for rollback.
+     * Creates each missing folder from the base down to the given folder, remembering them so a failure can undo it.
+     *
+     * @param dir the folder that must exist; it must lie inside {@code base}
+     * @param base the folder the relative walk starts from, which already exists
+     * @param created receives every folder this call makes
+     * @throws IOException if a folder cannot be created
      */
     private static void makeDirectories(Path dir, Path base, List<Path> created) throws IOException {
         Path current = base;
@@ -204,7 +230,9 @@ public final class ArchiveExtractor {
 
     // Removes what a failed call created, newest first so files go before their folders.
     /**
-     * Removes directories created by a failed extraction attempt.
+     * Removes what a failed call created, newest first so files go before their folders. Best effort.
+     *
+     * @param created the files and folders made so far, in creation order
      */
     private static void undo(List<Path> created) {
         for (int i = created.size() - 1; i >= 0; i--) {
@@ -218,7 +246,11 @@ public final class ArchiveExtractor {
 
     // Opens the zip; older Windows zips can hold entry names that are not valid UTF-8.
     /**
-     * Opens a ZIP archive after validating that it is readable.
+     * Opens the zip, retrying with the ISO-8859-1 character set when entry names are not valid UTF-8, as in older Windows zips.
+     *
+     * @param zip the zip file
+     * @return the open archive; the caller closes it
+     * @throws IOException if the file is not a readable zip
      */
     private static ZipFile open(Path zip) throws IOException {
         try {
@@ -229,7 +261,10 @@ public final class ArchiveExtractor {
     }
 
     /**
-     * Converts an extraction failure into an IOException with its cause preserved.
+     * Turns any failure into an I/O failure so callers handle one type.
+     *
+     * @param e the failure that stopped extraction
+     * @return {@code e} itself if it is already an I/O failure, otherwise a new one that wraps it
      */
     private static IOException toIOException(Exception e) {
         return e instanceof IOException io ? io : new IOException(e.getMessage(), e);

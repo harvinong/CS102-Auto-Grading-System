@@ -21,22 +21,31 @@ public final class HtmlReportWriter {
 
     // Static-only utility class, so no instances are allowed.
     /**
-     * Initializes the utility that renders grading results as HTML.
+     * Prevents instantiation; the report is produced by the static {@code write} methods.
      */
     private HtmlReportWriter() {
     }
 
     /**
-     * Writes the supplied grading report and diagnostics to the requested output path.
+     * Writes the report to the default location, {@link #HTML_REPORT_PATH}, replacing any report already there.
+     *
+     * @param result the scores and counts to show
+     * @param errors the diagnostics to list under "Issues and guidance"; empty for none
+     * @throws IOException if the file or its folders cannot be written
      */
     public static void write(GradeResult result, List<ErrorRecord> errors) throws IOException {
         write(HTML_REPORT_PATH, result, errors);
     }
 
-    /** Writes only the supplied current run; existing reports are replaced. */
     // Entry point called by the menu after grading; IOException lets the menu report a write failure.
     /**
-     * Writes the supplied grading report and diagnostics to the requested output path.
+     * Writes the self-contained HTML report for this run only. An existing file at the path is replaced and
+     * missing folders are created. All student, question and error text is escaped before it is inserted.
+     *
+     * @param path where to save the report; null is rejected
+     * @param result the scores and counts to show
+     * @param errors the diagnostics to list under "Issues and guidance"; empty for none
+     * @throws IOException if {@code path} is null, or the file or its folders cannot be written
      */
     public static void write(Path path, GradeResult result, List<ErrorRecord> errors) throws IOException {
         // A missing destination is a caller bug, so fail loudly.
@@ -143,7 +152,9 @@ public final class HtmlReportWriter {
         private final String cell;
 
         /**
-         * Stores the display cell used for one report outcome.
+         * Creates one outcome style.
+         *
+         * @param cell the end of the table cell's class attribute plus its label, e.g. {@code pass">PASS}
          */
         Outcome(String cell) {
             // Keep the class-plus-label text for this outcome so the table row can append it directly.
@@ -152,7 +163,11 @@ public final class HtmlReportWriter {
 
         // Classifies marks earned against marks available; a question worth 0 can never be full marks.
         /**
-         * Maps a question score and available marks to the corresponding report outcome.
+         * Classifies one question result as full, partial or none.
+         *
+         * @param score the marks the student earned for the question
+         * @param available the marks the question is worth; a question worth 0 can never be full marks
+         * @return FULL if the question is worth something and the score reaches it; otherwise PARTIAL for any positive score; otherwise ZERO
          */
         static Outcome of(int score, int available) {
             // Full marks need a question that is worth something and a score that reaches it.
@@ -166,7 +181,11 @@ public final class HtmlReportWriter {
 
     // Number of student-question results in the run that fall in the given outcome.
     /**
-     * Counts how many questions have the requested outcome in the grading result.
+     * Counts student-question results that have a given outcome.
+     *
+     * @param result the grading result whose scores are examined
+     * @param outcome the outcome to count
+     * @return how many individual question results, across all students, have that outcome
      */
     private static int countOutcomes(GradeResult result, Outcome outcome) {
         // Walk each student's question marks and keep those whose outcome matches.
@@ -177,7 +196,10 @@ public final class HtmlReportWriter {
 
     // Builds the escaped "student=... submission=... question=..." text for one error.
     /**
-     * Returns the concise context shown for a diagnostic in the HTML report.
+     * Builds the text describing where an error happened, such as {@code student=ab question=Q1}.
+     *
+     * @param error the diagnostic to describe
+     * @return the student, submission and question that are present, escaped for HTML and separated by spaces; {@code run-level} if none is present
      */
     private static String context(ErrorRecord error) {
         // Collects the parts that are present.
@@ -194,7 +216,10 @@ public final class HtmlReportWriter {
 
     // Converts text to HTML-safe text, protecting the report from markup or script in student names or output.
     /**
-     * Escapes text so it can be inserted safely into HTML.
+     * Makes text safe to place in HTML, so markup or scripts in student names or program output are shown as text.
+     *
+     * @param value the text to escape; must not be null
+     * @return the text with {@code &}, {@code <}, {@code >}, {@code "} and {@code '} replaced by HTML entities
      */
     private static String escape(String value) {
         // Accumulates the safe version.

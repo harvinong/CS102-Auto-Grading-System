@@ -21,7 +21,9 @@ public record CacheReport(Path workingDir, List<ValidationEvent> events, int cre
 
     // How many archives or folders could not be put into the working copy.
     /**
-     * Counts cache preparation events that represent failures.
+     * Counts the archives or folders that could not be put into the working copy.
+     *
+     * @return the number of events that are not marked as fixed; 0 if every submission was prepared
      */
     public long failedCount() {
         return events.stream().filter(event -> !event.fixed()).count();
@@ -29,7 +31,10 @@ public record CacheReport(Path workingDir, List<ValidationEvent> events, int cre
 
     // Writes the report to the given stream (the console in the real program).
     /**
-     * Writes the current report or diagnostic information to the supplied output stream.
+     * Writes the working-copy summary: its location, each event except ignored junk, and the new, reused
+     * and failed counts (the counts only when the working copy is usable).
+     *
+     * @param out where to print, normally {@code System.out}
      */
     public void print(PrintStream out) {
         out.println();
