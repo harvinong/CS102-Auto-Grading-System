@@ -1,6 +1,9 @@
 package autogradesys.grading;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -8,6 +11,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.tools.JavaCompiler;
@@ -61,6 +65,19 @@ public class TesterRunner {
             copyCount == 1? "": "s"
         );
 
+        // Iterate for each student
+        List<Path> submissions = null;
+        try (Stream<Path> stream = Files.list(gradingPath)) {
+            submissions = stream.sorted().collect(Collectors.toList()); //naming order
+        }
+        if (submissions == null) {
+            reporter.error("test", "filesys", "ERROR", "missing extracted submissions", "please re-run the grading process", "", "", "", false);
+        }
+        Map<String, Map<String, Integer>> scores = new LinkedHashMap<>();
+        for (Path subPath : submissions) {
+            Map.Entry<String, Map<String, Integer>> overallScore = testAndGrade(subPath);
+        }
+
 
     }
 
@@ -107,6 +124,44 @@ public class TesterRunner {
             }
         }
         return copyCount;
+    }
+
+    private Map.Entry<String, Map<String, Integer>> testAndGrade(Path submission) throws IOException {
+        // Get identity info
+        String username = submission.getFileName().toString();
+
+        // Walk through the folder
+        try (Stream<Path> path = Files.walk(submission)) {
+            Iterator<Path> pathIterator = path.iterator();
+
+            while (pathIterator.hasNext()) {
+                Path p = pathIterator.next();
+
+                if (!p.getFileName().toString().endsWith(TESTER_SUFFIX)) {
+                    continue;
+                }
+
+                compile(p, username);
+            }
+        }
+        return null;
+    }
+
+    // https://stackoverflow.com/questions/2946338/how-do-i-programmatically-compile-and-instantiate-a-java-class
+    private boolean compile(Path testerFile, String student) throws IOException {
+        String question = testerFile.getFileName().toString();
+        question = question.substring(0, question.length() - TESTER_SUFFIX.length());
+
+        StringBuilder errLogs = new StringBuilder();
+        try (OutputStream errStream = new ByteArrayOutputStream()) {
+            compiler.run(null, null, errStream, testerFile.toAbsolutePath().toString());
+            errLogs.append(errStream);
+        }
+        if (errLogs.length() > 0) {
+            reporter.error("test", "compile", "ERROR", "Cannot compile", errLogs.toString(), student, testerFile.toAbsolutePath().toString(), question, true);
+            return false;
+        }
+        return true;
     }
 
 }
