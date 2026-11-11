@@ -9,11 +9,9 @@ This program requires three configuration parameters:
      your tester files (QxTester.java). For example, if there is 
      "AppleStore.java", there should be "AppleStoreTester.java".
 
-2. Tester Files Folder
-   - A folder containing your tester files.
-   - One folder per question, each holding "QxTester.java" classes 
-     and the "QxTester.expected.txt" output each must print. Every 
-     matching tester earns one mark.
+2. Tester File
+   - It is a java source extending autogradesys.tester.QuestionTests.
+   - It is compiled in runtime and run along the program.
 
 3. Scoresheet File
    - A csv file containing a list of your students along with 
