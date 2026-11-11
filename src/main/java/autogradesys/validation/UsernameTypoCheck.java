@@ -20,16 +20,17 @@ import autogradesys.preflight.PreflightReport;
 public final class UsernameTypoCheck {
 
     /**
-     * Initializes the check that suggests registered students for misspelled folder names.
+     * Prevents instantiation; the check is run through {@link #addFindings}.
      */
     private UsernameTypoCheck() {
     }
 
     /**
-     *         or the same report if no folder name looks like a typo.
-     * @param report the argument supplied to this operation.
-     * @param students the registered student identities used for matching.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Adds a finding for each student folder whose claimed username is not registered but is close to a registered one.
+     *
+     * @param report the preflight report of the working copy; folders that are copies of the template are skipped
+     * @param students the registered students from the scoresheet
+     * @return a report with the extra findings placed first (so each shows right under its student), or the same report if no folder name looks like a typo
      */
     public static PreflightReport addFindings(PreflightReport report, List<Student> students) {
         Map<String, String> owners = UsernameResolver.owners(report.students(), students);
@@ -59,12 +60,13 @@ public final class UsernameTypoCheck {
 
     // One USERNAME_TYPO finding; owner is the folder that already uses the correct name, or null.
     /**
-     * Creates a preflight finding describing a likely username typo and its owner.
-     * @param folder the directory whose contents are processed.
-     * @param claimed the argument supplied to this operation.
-     * @param match the argument supplied to this operation.
-     * @param owner the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Builds one USERNAME_TYPO finding, naming the likely registered username and, if another folder already uses it, that folder.
+     *
+     * @param folder the submission folder with the suspicious name
+     * @param claimed the username taken from the folder name
+     * @param match the registered student whose username is closest
+     * @param owner the folder that already uses the matched username, or null if none does
+     * @return the error finding, whose suggested fix depends on whether the correct name is already taken
      */
     private static PreflightFinding finding(String folder, String claimed, Student match, String owner) {
         String message = "'" + match.username() + "' is the closest registered name to '" + claimed

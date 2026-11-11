@@ -10,14 +10,19 @@ import java.util.Map;
  * <p>The menu uses it to print totals and to feed {@link HtmlReportWriter}; {@code scores} maps each
  * student to a map of question name to the marks earned, and {@code availableMarks} maps each
  * question to the marks it is worth (its number of testers, or 1 for the {@code Main.java} layout).</p>
- * @param studentCount the argument supplied to this operation.
- * @param issueCount the argument supplied to this operation.
- * @param fatal the argument supplied to this operation.
- * @param scores student scores keyed by username and question.
- * @param availableMarks the argument supplied to this operation.
  */
 public record GradeResult(int studentCount, int issueCount, boolean fatal, Map<String, Map<String, Integer>> scores,
         Map<String, Integer> availableMarks) {
+    /**
+     * Stores read-only copies of the maps, so later changes by the grader cannot alter this result.
+     *
+     * @param studentCount how many submissions were graded
+     * @param issueCount how many problems were reported during grading
+     * @param fatal true if a run-level problem stopped grading
+     * @param scores each student's marks per question; copied, keeping student order
+     * @param availableMarks the marks each question is worth; copied
+     * @throws NullPointerException if {@code scores} or {@code availableMarks} (or an inner map) is null
+     */
     // Compact constructor: makes a defensive, read-only copy before the fields are assigned.
     public GradeResult {
         // Build a new outer map; LinkedHashMap preserves the student order used by the CSV and report.
@@ -31,20 +36,24 @@ public record GradeResult(int studentCount, int issueCount, boolean fatal, Map<S
         availableMarks = Collections.unmodifiableMap(new LinkedHashMap<>(availableMarks));
     }
 
-    /** Result where every question is worth one mark, as in the {@code Main.java} and {@code expected.txt} layout.
-     * @param studentCount the argument supplied to this operation.
-     * @param issueCount the argument supplied to this operation.
-     * @param fatal the argument supplied to this operation.
-     * @param scores student scores keyed by username and question.
+    /**
+     * Builds a result in which every question is worth one mark, as in the {@code Main.java} and {@code expected.txt} layout.
+     *
+     * @param studentCount how many submissions were graded
+     * @param issueCount how many problems were reported during grading
+     * @param fatal true if a run-level problem stopped grading
+     * @param scores each student's marks per question; every question named in it is taken to be worth 1
      */
     public GradeResult(int studentCount, int issueCount, boolean fatal, Map<String, Map<String, Integer>> scores) {
         // Collect every question that appears in any student's scores and make each worth 1.
         this(studentCount, issueCount, fatal, scores, oneMarkEach(scores));
     }
 
-    /** Marks the question is worth; a question this result does not know is treated as worth one mark.
-     * @param question the question name being graded or looked up.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+    /**
+     * Looks up what a question is worth.
+     *
+     * @param question the question name, e.g. "Q1"
+     * @return the marks the question is worth; 1 if this result has no entry for the question
      */
     public int marksFor(String question) {
         // getOrDefault covers results built without an entry for the question.
@@ -53,9 +62,10 @@ public record GradeResult(int studentCount, int issueCount, boolean fatal, Map<S
 
     // Builds question name -> 1 for every question named in the scores, in first-seen order.
     /**
-     * Creates a score map assigning one available mark to each question.
-     * @param scores student scores keyed by username and question.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Lists every question named in any student's scores and makes each worth one mark.
+     *
+     * @param scores each student's marks per question
+     * @return a map from question name to 1, in the order the questions were first seen
      */
     private static Map<String, Integer> oneMarkEach(Map<String, Map<String, Integer>> scores) {
         // LinkedHashMap keeps the order the questions were first seen.

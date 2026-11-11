@@ -24,18 +24,20 @@ import java.util.concurrent.atomic.AtomicLong;
 final class ProcessRunner {
     // Static utility class: the private constructor stops anyone creating an instance.
     /**
-     * Initializes the stateless utility used to run bounded grading processes.
+     * Prevents instantiation; processes are started through the static {@code run} methods.
      */
     private ProcessRunner() {
     }
 
-    /** Runs a command with no working-directory override.
-     * @param command the argument supplied to this operation.
-     * @param input the process input or source text.
-     * @param timeout the maximum process duration.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IOException when the operation cannot complete.
-     * @throws InterruptedException when the operation cannot complete.
+    /**
+     * Runs a command in the current working directory with the default output cap of 1 MiB.
+     *
+     * @param command the program and its arguments, one list element each (no shell is involved)
+     * @param input text written to the program's standard input; null for none
+     * @param timeout how long the program may run before it is killed
+     * @return how the run ended; see {@link Result}
+     * @throws IOException if the program cannot be started, e.g. {@code javac} is not found
+     * @throws InterruptedException if the calling thread is interrupted while waiting; the program is killed first
      */
     static Result run(List<String> command, String input, Duration timeout)
             throws IOException, InterruptedException {
@@ -44,17 +46,18 @@ final class ProcessRunner {
     }
 
     /**
-     * Runs a command, captures both output streams, and enforces a deadline.
+     * Runs a command in a chosen folder with the default output cap of 1 MiB.
      *
      * <p>Output is drained concurrently so a noisy child cannot block waiting
      * for a pipe that the parent has not yet read.</p>
-     * @param command the argument supplied to this operation.
-     * @param input the process input or source text.
-     * @param timeout the maximum process duration.
-     * @param workingDirectory the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IOException when the operation cannot complete.
-     * @throws InterruptedException when the operation cannot complete.
+     *
+     * @param command the program and its arguments, one list element each (no shell is involved)
+     * @param input text written to the program's standard input; null for none
+     * @param timeout how long the program may run before it is killed
+     * @param workingDirectory the folder to run in, e.g. the one holding the compiled classes; null to inherit the current one
+     * @return how the run ended; see {@link Result}
+     * @throws IOException if the program cannot be started
+     * @throws InterruptedException if the calling thread is interrupted while waiting; the program is killed first
      */
     static Result run(List<String> command, String input, Duration timeout, java.nio.file.Path workingDirectory)
             throws IOException, InterruptedException {
@@ -63,16 +66,18 @@ final class ProcessRunner {
     }
 
     /**
-     * Full implementation: start the process, feed it stdin, collect stdout and stderr, and kill it
-     * if it exceeds the timeout or the output cap. Returns a {@link Result} describing how it ended.
-     * @param command the argument supplied to this operation.
-     * @param input the process input or source text.
-     * @param timeout the maximum process duration.
-     * @param workingDirectory the argument supplied to this operation.
-     * @param outputLimitBytes the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IOException when the operation cannot complete.
-     * @throws InterruptedException when the operation cannot complete.
+     * Starts the process, feeds it standard input, collects standard output and standard error, and kills
+     * the process if it exceeds the timeout or the combined output cap.
+     *
+     * @param command the program and its arguments, one list element each (no shell is involved)
+     * @param input text written to the program's standard input and then closed; null for none
+     * @param timeout how long the program may run; a zero or negative value is treated as 1 millisecond
+     * @param workingDirectory the folder to run in; null to inherit the current one
+     * @param outputLimitBytes the most bytes kept from standard output and standard error together; must be positive
+     * @return how the run ended; see {@link Result}. If the process was killed its exit code is -1
+     * @throws IllegalArgumentException if {@code outputLimitBytes} is zero or negative
+     * @throws IOException if the program cannot be started
+     * @throws InterruptedException if the calling thread is interrupted while waiting; the program is killed first
      */
     static Result run(List<String> command, String input, Duration timeout,
             java.nio.file.Path workingDirectory, long outputLimitBytes)
@@ -170,12 +175,15 @@ final class ProcessRunner {
                 capture.stdout.toString(StandardCharsets.UTF_8), capture.stderr.toString(StandardCharsets.UTF_8));
     }
 
-    /** Starts a daemon thread that copies one of the child's output streams into a shared capture buffer.
-     * @param input the process input or source text.
-     * @param output the destination stream or output buffer.
-     * @param capture the argument supplied to this operation.
-     * @param name the name used for lookup or display.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+    /**
+     * Starts a background thread that copies one of the child's output streams into a shared capture buffer
+     * and stops early once the output cap is reached.
+     *
+     * @param input the child's stream to read; it is closed when reading ends
+     * @param output the buffer that receives the bytes kept from this stream
+     * @param capture the shared budget that both streams count against
+     * @param name the thread's name, to identify it in thread dumps
+     * @return the already started daemon thread, so the caller can wait for it after the process ends
      */
     private static Thread copyAsync(InputStream input, ByteArrayOutputStream output,
             Capture capture, String name) {
@@ -204,9 +212,11 @@ final class ProcessRunner {
         return reader;
     }
 
-    /** Stops a process and everything it spawned, escalating from a polite request to a forced kill.
-     * @param process the argument supplied to this operation.
-     * @throws InterruptedException when the operation cannot complete.
+    /**
+     * Stops a process and everything it started, first asking politely and then forcing a kill after 200 ms.
+     *
+     * @param process the child to stop
+     * @throws InterruptedException if the thread is interrupted while waiting for the process to exit
      */
     private static void terminate(Process process) throws InterruptedException {
         // First kill grandchildren (e.g. processes the student's code launched) so they cannot be orphaned.
@@ -238,8 +248,9 @@ final class ProcessRunner {
         private final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 
         /**
-         * Initializes an output capture with the configured byte limit.
-         * @param limit the argument supplied to this operation.
+         * Creates an empty capture with a size cap.
+         *
+         * @param limit the most bytes to keep from standard output and standard error together
          */
         Capture(long limit) {
             // Remember the cap chosen by the caller of run().
@@ -248,10 +259,11 @@ final class ProcessRunner {
 
         // synchronized: stdout and stderr threads share the byte budget, so the check and update must be atomic.
         /**
-         * Appends one diagnostic record to the JSON Lines error history.
-         * @param output the destination stream or output buffer.
-         * @param bytes the output byte limit.
-         * @param count the argument supplied to this operation.
+         * Stores as much of a chunk as still fits in the combined budget and raises the exceeded flag when part of it is dropped.
+         *
+         * @param output the stdout or stderr buffer that receives the kept bytes
+         * @param bytes the buffer holding the chunk just read
+         * @param count how many bytes at the start of {@code bytes} are valid
          */
         synchronized void append(ByteArrayOutputStream output, byte[] bytes, int count) {
             // How many bytes we may still keep before hitting the cap.
@@ -274,8 +286,9 @@ final class ProcessRunner {
 
         // True once any output has been discarded because of the size cap.
         /**
-         * Reports whether captured process output has reached its configured limit.
-         * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+         * Tells whether any output has been thrown away because of the size cap.
+         *
+         * @return true once a chunk was cut short; the wait loop and the reader threads use this to stop early
          */
         boolean limitExceeded() {
             // Read the flag that append() sets; the run() wait loop and both reader threads poll it to stop early.

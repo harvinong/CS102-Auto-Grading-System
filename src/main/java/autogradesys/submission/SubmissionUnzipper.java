@@ -8,18 +8,20 @@ import autogradesys.validation.ArchiveExtractor;
 // Unzips one student's zip file into a folder, and refuses files that would end up outside it
 public final class SubmissionUnzipper {
     /**
-     * Initializes the utility that extracts submission archives.
+     * Prevents instantiation; extraction is done through the static {@link #unzip} method.
      */
     private SubmissionUnzipper() {
     }
 
     // ArchiveExtractor is the sole extraction implementation, returns how many files were written
     /**
-     * Extracts the submission archive into the requested target folder.
-     * @param zipFile the argument supplied to this operation.
-     * @param targetFolder the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IOException when the operation cannot complete.
+     * Unzips one student's zip into a folder, refusing entries that would land outside it. An existing
+     * empty target folder is removed first so that extraction can create it fresh.
+     *
+     * @param zipFile the student's zip file
+     * @param targetFolder where to extract; it may be absent or an empty folder
+     * @return how many files were written
+     * @throws IOException if the target folder already contains anything, or the zip cannot be read or extracted safely
      */
     public static int unzip(Path zipFile, Path targetFolder) throws IOException {
         if (java.nio.file.Files.isDirectory(targetFolder)) { 

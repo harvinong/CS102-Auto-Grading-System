@@ -8,9 +8,10 @@ public class Submission {
     private final Path zipPath;
 
     /**
-     * Associates a student username with the archive containing that submission.
-     * @param username the student username used for lookup.
-     * @param zipPath the argument supplied to this operation.
+     * Creates a record of one student's submission.
+     *
+     * @param username the student's username, taken from the zip file name
+     * @param zipPath where the student's zip file is
      */
     public Submission(String username, Path zipPath) {
         this.username = username;
@@ -18,16 +19,18 @@ public class Submission {
     }
 
     /**
-     * Returns the username associated with this submission.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gives the student who made this submission.
+     *
+     * @return the username as it appeared in the zip file name
      */
     public String getUsername() {
         return username;
     }
 
     /**
-     * Returns the archive path associated with this submission.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gives the location of the student's zip file.
+     *
+     * @return the path to the zip
      */
     public Path getZipPath() {
         return zipPath;
@@ -35,8 +38,9 @@ public class Submission {
 
     @Override
     /**
-     * Returns a readable representation of the submission or configuration value.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Describes the submission by its owner, which keeps it readable in lists and messages.
+     *
+     * @return the student's username
      */
     public String toString() {
         return username;

@@ -34,7 +34,7 @@ public class ConfigDAO {
     private long outputLimitBytes = DEFAULT_OUTPUT_LIMIT_BYTES;
 
     /**
-     * Initializes access to the JSON configuration file.
+     * Creates a DAO that reads and writes {@code config.json} in the current working directory.
      */
     public ConfigDAO() {
         this(DEF_CONFIG_FILE);
@@ -42,16 +42,20 @@ public class ConfigDAO {
 
     // Lets tests point the DAO at a temporary file instead of the developer's ./config.json.
     /**
-     * Initializes access to the JSON configuration file.
-     * @param configFile the argument supplied to this operation.
+     * Creates a DAO for a specific configuration file, which lets tests avoid touching the real {@code config.json}.
+     *
+     * @param configFile the JSON file to read and write; it need not exist yet
      */
     public ConfigDAO(File configFile) {
         this.configFile = configFile;
     }
 
     /**
-     * Loads the persisted configuration or scoresheet data into this object.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Reads the three paths and the two optional grading limits from the configuration file. A missing,
+     * non-integer or out-of-range limit silently falls back to its default instead of failing the load.
+     *
+     * @return true if the file was read and the three paths were present; false if the file does not exist or cannot be parsed
+     * @throws NullPointerException if the file parses but lacks one of the three required path keys; this is not caught
      */
     public boolean load() {
         if (!configFile.exists()) {
@@ -80,8 +84,11 @@ public class ConfigDAO {
     }
 
     /**
-     * Persists the current configuration or scoresheet data to its configured file.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Writes the current folders and grading limits to the configuration file as pretty-printed JSON, with
+     * the paths made absolute. The limits are always written, even when they are the defaults.
+     *
+     * @return true if the file was written; false if it could not be opened or written
+     * @throws NullPointerException if any of the three folders or files has not been set
      */
     public boolean save() {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -106,64 +113,72 @@ public class ConfigDAO {
     }
 
     /**
-     * Returns the root folder selected for locating submissions and grading inputs.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gives the blank starter template folder.
+     *
+     * @return the folder, or null if none has been loaded or set
      */
     public File getStartingFolder() {
         return startingFolder;
     }
 
     /**
-     * Returns the folder holding the instructor tester files.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gives the folder of instructor tester files.
+     *
+     * @return the folder, or null if none has been loaded or set
      */
     public File getTestersFolder() {
         return testersFolder;
     }
 
     /**
-     * Returns the CSV file used by this scoresheet data access object.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gives the course scoresheet CSV.
+     *
+     * @return the CSV file, or null if none has been loaded or set
      */
     public File getScoresheetFile() {
         return scoresheetFile;
     }
 
     /**
-     * Returns the maximum number of seconds allowed for one grading process.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gives the time limit for one compile or run.
+     *
+     * @return seconds from 1 to {@link #MAX_TIMEOUT_SECONDS}; {@link #DEFAULT_TIMEOUT_SECONDS} if never set
      */
     public long getTimeoutSeconds() {
         return timeoutSeconds;
     }
 
     /**
-     * Returns the maximum number of process-output bytes retained during grading.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gives the cap on output captured from one process.
+     *
+     * @return bytes from 1 to {@link #MAX_OUTPUT_LIMIT_BYTES}; {@link #DEFAULT_OUTPUT_LIMIT_BYTES} if never set
      */
     public long getOutputLimitBytes() {
         return outputLimitBytes;
     }
 
     /**
-     * Stores the folder from which grading inputs are selected.
-     * @param startingFolder the argument supplied to this operation.
+     * Sets the blank starter template folder. It is not saved until {@link #save()}.
+     *
+     * @param startingFolder the template folder; nothing checks that it exists
      */
     public void setStartingFolder(File startingFolder) {
         this.startingFolder = startingFolder;
     }
 
     /**
-     * Stores the folder containing instructor tester projects.
-     * @param testersFolder the argument supplied to this operation.
+     * Sets the folder of instructor tester files. It is not saved until {@link #save()}.
+     *
+     * @param testersFolder the testers folder; nothing checks that it exists
      */
     public void setTestersFolder(File testersFolder) {
         this.testersFolder = testersFolder;
     }
 
     /**
-     * Stores the CSV file used to read and write student scores.
-     * @param scoresheetFile the argument supplied to this operation.
+     * Sets the course scoresheet CSV. It is not saved until {@link #save()}.
+     *
+     * @param scoresheetFile the CSV file; nothing checks that it exists
      */
     public void setScoresheetFile(File scoresheetFile) {
         this.scoresheetFile = scoresheetFile;
@@ -171,8 +186,10 @@ public class ConfigDAO {
 
     // Rejects out-of-range limits here too, so a caller that skips the menu prompt cannot save a value that would stop every process at once or crash grading.
     /**
-     * Stores the maximum duration allowed for a grading process.
-     * @param timeoutSeconds the argument supplied to this operation.
+     * Sets the time limit for one compile or run. It is not saved until {@link #save()}.
+     *
+     * @param timeoutSeconds seconds from 1 to {@link #MAX_TIMEOUT_SECONDS}
+     * @throws IllegalArgumentException if the value is zero, negative or above {@link #MAX_TIMEOUT_SECONDS}
      */
     public void setTimeoutSeconds(long timeoutSeconds) {
         // A limit of 0 or less would kill every compile and run immediately; above the maximum it could hang or overflow.
@@ -184,8 +201,10 @@ public class ConfigDAO {
     }
 
     /**
-     * Stores the maximum process output retained during grading.
-     * @param outputLimitBytes the argument supplied to this operation.
+     * Sets the cap on output captured from one process. It is not saved until {@link #save()}.
+     *
+     * @param outputLimitBytes bytes from 1 to {@link #MAX_OUTPUT_LIMIT_BYTES}
+     * @throws IllegalArgumentException if the value is zero, negative or above {@link #MAX_OUTPUT_LIMIT_BYTES}
      */
     public void setOutputLimitBytes(long outputLimitBytes) {
         // A cap of 0 or less could not hold any output, and JavaGrader would reject it as a fatal setup error; above the maximum it risks running out of memory.
@@ -198,11 +217,12 @@ public class ConfigDAO {
 
     // Reads an optional JSON number: only a whole number from 1 to max counts, everything else (absent, text, 1.5, 0, -3, too big) gives the default.
     /**
-     * Returns the JSON integer when it is within bounds, otherwise the supplied default.
-     * @param node the argument supplied to this operation.
-     * @param max the argument supplied to this operation.
-     * @param defaultValue the value returned when input is blank or invalid.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Reads an optional JSON number, accepting only a whole number from 1 to {@code max}.
+     *
+     * @param node the JSON value for the key; null when the key is absent
+     * @param max the largest value accepted (inclusive)
+     * @param defaultValue what to return when the value is absent or not acceptable
+     * @return the number in {@code node}, or {@code defaultValue} if it is absent, text, a decimal, zero, negative or above {@code max}
      */
     private static long integerInRangeOrDefault(JsonNode node, long max, long defaultValue) {
         // node is null when the key is missing, and isIntegralNumber() is false for strings and decimals; a long-sized value is required.

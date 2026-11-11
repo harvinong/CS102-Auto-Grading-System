@@ -16,9 +16,10 @@ public class unpacker {
     
     //just a checker if current file is a zip
     /**
-     * Reports whether a filename has a ZIP extension.
-     * @param f the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Checks whether a file really is a zip by reading its first four bytes, not by its name.
+     *
+     * @param f the file to test
+     * @return true if the file starts with a zip signature; false if it does not, or if it cannot be read
      */
     private static boolean isZip(File f){
         int fileSig = 0;
@@ -31,8 +32,10 @@ public class unpacker {
     }
     // gets all zipped files of submission final arraylist will not include anything that is not a zip
     /**
-     * Returns the ZIP files discovered in the configured source directory.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Finds the zip files in the {@code student-submission} folder under the current working directory.
+     * The folder path is built with Windows backslashes.
+     *
+     * @return the full path of each zip file found; empty if the folder is missing or holds no zip
      */
     public static ArrayList<String> getAllZip() {
         ArrayList<String> nameOfAllFile = new ArrayList<>();
@@ -52,8 +55,10 @@ public class unpacker {
     //unpacks the zip file and creates a folder with the zip's name
     // can do error checking here for like fucked up zip or smth
     /**
-     * Extracts selected ZIP entries while preventing paths from escaping the destination.
-     * @param srcPath the argument supplied to this operation.
+     * Extracts a zip into a sibling folder named after it (the name without {@code .zip}), overwriting
+     * files that already exist there. Problems are printed rather than thrown, so a bad entry does not stop the rest.
+     *
+     * @param srcPath the path to the zip file; if it does not end in {@code .zip} the same text is used as the folder name
      */
     public static void unpack(String srcPath){
         try {

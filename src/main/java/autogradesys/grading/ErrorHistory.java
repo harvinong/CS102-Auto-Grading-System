@@ -27,37 +27,41 @@ public final class ErrorHistory {
     public static final Path DEFAULT_PATH = Path.of(".grader-error-history.jsonl");
     private final Path path;
 
-    /** Creates history storage at the default JSONL path <code>DEFAULT_PATH</code>. */
+    /**
+     * Creates history storage at {@link #DEFAULT_PATH}. The file is only touched when {@link #append} is called.
+     */
     public ErrorHistory() {
         // Remember the file location; the file itself is only touched by append().
         this.path = DEFAULT_PATH;
     }
 
-    /** Creates history storage at the supplied JSONL path.
-     * @param path the file or directory path being inspected or written.
+    /**
+     * Creates history storage at a chosen file. The file is only touched when {@link #append} is called.
+     *
+     * @param path where the JSON Lines history is kept; it and its folders are created on the first append
      */
     public ErrorHistory(Path path) {
         // Remember the file location; the file itself is only touched by append().
         this.path = path;
     }
 
-    /** Returns the configured history path for diagnostics and callers.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+    /**
+     * Names the history file, for example in a message when writing to it fails.
+     *
+     * @return the path given to the constructor, or {@link #DEFAULT_PATH}
      */
     public Path path() {
         // Lets ErrorReporter name the file in a message when writing to it fails.
         return path;
     }
 
-    /**
-     * Appends one complete JSON object followed by a newline.
-     *
-     */
     // Called by ErrorReporter after each error; failures propagate so the reporter can mark the history as failed.
     /**
-     * Appends one diagnostic record to the JSON Lines error history.
-     * @param record the diagnostic or scoresheet record to store.
-     * @throws IOException when the operation cannot complete.
+     * Appends one error as a single JSON line, creating the file and any missing folders on first use.
+     * Earlier sessions' records are kept. Failures are passed on so the reporter can mark the history as failed.
+     *
+     * @param record the error to persist; its optional fields are written as JSON null
+     * @throws IOException if the folders cannot be created or the file cannot be written
      */
     public void append(ErrorRecord record) throws IOException {
         // Resolve to a clean absolute path so relative inputs like "logs/../history.jsonl" behave predictably.

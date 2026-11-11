@@ -32,33 +32,32 @@ public class GraderCtrl {
     public final Config config;
 
     /**
-     * Initializes grading and validation services from the supplied configuration.
-     * @param config the application configuration to use.
+     * Creates a controller for one grading session.
+     *
+     * @param config the folders and limits chosen by the user; the starting folder and scoresheet are read from it when checking and validating
      */
     public GraderCtrl(Config config) {
         this.config = config;
     }
 
     /**
-     * Prepares or reuses a cache working copy for the supplied submissions folder.
-     * @param submissions the folder containing submitted student work.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gets a cached working copy of the submissions, so repairs never touch the originals.
+     *
+     * @param submissions the folder holding the students' original submissions
+     * @return a report naming the working copy folder and whether it was newly built or reused
      */
     public CacheReport prepareWorkingCopy(File submissions) {
         return cache.prepare(submissions.toPath());
     }
 
     /**
-     * Synchronises non-Java resources in the working copy with the Starting
-     * Folder template, then runs the preflight check on the updated copy.
-     *
+     * Synchronises non-Java resources in the working copy with the Starting Folder template, then runs the
+     * preflight check on the updated copy, adding username-typo and Java-header findings from the scoresheet.
      * Original submissions and the Starting Folder are never modified.
-     * Runs the preflight check on the working copy and adds a USERNAME_TYPO finding
-     * for every folder whose
-     * name looks like a mistyped username, so the instructor is alerted before any
-     * fix is run.
-     * @param workingDir the cached working directory containing submissions.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     *
+     * @param workingDir the cached working copy that contains one folder per student
+     * @return the preflight report with the synchronisation findings added; if the scoresheet cannot be read,
+     *         the report is returned without the username and header findings
      */
     public PreflightReport checkSubmissions(Path workingDir) {
 
@@ -175,12 +174,13 @@ public class GraderCtrl {
     }
 
     /**
-     * Validates the working submissions and returns events describing repairs or remaining issues.
-     * @param workingDir the cached working directory containing submissions.
-     * @param preflight the preflight findings used to guide validation.
-     * @param confirm the callback used to confirm a proposed rename.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IOException when the operation cannot complete.
+     * Validates the working copy against the scoresheet and repairs what it can, asking for confirmation where needed.
+     *
+     * @param workingDir the cached working copy that contains one folder per student
+     * @param preflight the report from {@link #checkSubmissions}; it decides which students need repair
+     * @param confirm answers a yes/no question about a proposed repair; return true to go ahead
+     * @return events describing repairs made and issues that remain
+     * @throws IOException if the scoresheet cannot be read or a file operation during validation fails
      */
     public ValidationReport validateSubmissions(Path workingDir, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {
@@ -195,12 +195,13 @@ public class GraderCtrl {
     }
 
     /**
-     * Validates the working submissions and returns events describing repairs or remaining issues.
-     * @param submissions the folder containing submitted student work.
-     * @param preflight the preflight findings used to guide validation.
-     * @param confirm the callback used to confirm a proposed rename.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IOException when the operation cannot complete.
+     * Same as the {@link Path} version, for callers that hold a {@link File}.
+     *
+     * @param submissions the working copy folder with one folder per student
+     * @param preflight the report from {@link #checkSubmissions}
+     * @param confirm answers a yes/no question about a proposed repair; return true to go ahead
+     * @return events describing repairs made and issues that remain
+     * @throws IOException if the scoresheet cannot be read or a file operation during validation fails
      */
     public ValidationReport validateSubmissions(File submissions, PreflightReport preflight,
             Predicate<String> confirm) throws IOException {

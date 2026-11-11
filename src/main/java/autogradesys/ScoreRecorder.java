@@ -24,6 +24,17 @@ public class ScoreRecorder {
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSSSSSSSS");
 
 
+    /**
+     * Writes the grading results to a new timestamped CSV in the working directory. The columns are the
+     * username, one column per question graded (sorted by name), and {@code final_score}; the last row gives the
+     * percentage of students who earned full marks on each question. The file is never overwritten.
+     *
+     * @param result the grading outcome; its per-student scores supply the rows and its available marks decide
+     *         what counts as full marks on a question (a question worth 0 never counts as full marks)
+     * @return the path of the CSV that was created, named after the current date and time
+     * @throws IOException if the file cannot be created or written, including when a file with the same
+     *         timestamp name already exists
+     */
     // Input: the GradeResult that JavaGrader.grade returns. It holds
     //        scores():         student -> (question -> marks earned), e.g. "alice" -> {"Q1" -> 2, "Q2" -> 0}
     //        availableMarks(): question -> marks it is worth,          e.g. "Q1" -> 3
@@ -31,12 +42,6 @@ public class ScoreRecorder {
     //           username, one column per question (sorted), final_score, then a "% full marks" row.
     //           A student has full marks on a question when marks earned == marks it is worth.
     // Output: Path to the newly created CSV file
-    /**
-     * Exports the grading result and diagnostics to the configured report files.
-     * @param result the completed grading result to export.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IOException when the operation cannot complete.
-     */
     public static Path exportResults(GradeResult result) throws IOException {
         Map<String, Map<String, Integer>> scores = result.scores(); // student -> (question -> marks)
 
@@ -94,14 +99,16 @@ public class ScoreRecorder {
         return file;
     }
 
+    /**
+     * Makes a text value safe to place in a CSV cell by wrapping it in double quotes.
+     *
+     * @param value the cell text, such as a username or question name; must not be null
+     * @return the value in double quotes with each embedded double quote doubled, e.g. {@code chee"teo}
+     *         becomes {@code "chee""teo"}
+     */
     // Input: A text value to put in the CSV, e.g. a username or sub-question name
     // Function: Wraps the value in double quotes and doubles any quotes inside it, so commas cannot break the CSV
     // Output: The quoted value, e.g. chee"teo becomes "chee""teo"
-    /**
-     * Escapes a value for safe inclusion in a CSV field.
-     * @param value the value to quote or convert.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     */
     private static String quote(String value) {
         return "\"" + value.replace("\"", "\"\"") + "\"";
     }

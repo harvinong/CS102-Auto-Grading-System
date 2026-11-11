@@ -5,26 +5,22 @@ import autogradesys.cli.TextColor;
 /**
  * One thing the preflight noticed about a submission.
  *
+ * @param student  The submission folder (or archive) name; empty for findings
  *                 about the
  *                 submissions folder or the template as a whole.
+ * @param category What kind of problem this is.
+ * @param severity How much it matters.
+ * @param path     Where it was found, relative to the submissions folder (or
  *                 the template name).
+ * @param message  What is wrong.
+ * @param fix      What the instructor or student can do about it; empty when
  *                 nothing is needed.
- *                 submissions folder or the template as a whole.
  */
 // A record is an immutable value holder: Java generates the constructor,
 // getters and equals for us.
 // Describes one submission or setup defect found before compilation begins.
 /**
  * Stores the category, severity, location, message, and suggested fix for one finding.
- * @param student the registered student identity.
- * @param problem the argument supplied to this operation.
- * @param category the argument supplied to this operation.
- * @param is the argument supplied to this operation.
- * @param severity the argument supplied to this operation.
- * @param is the argument supplied to this operation.
- * @param path the file or directory path being inspected or written.
- * @param message the argument supplied to this operation.
- * @param fix the argument supplied to this operation.
  */
 public record PreflightFinding(
         // Which submission this belongs to ("" means it is about the whole run, not one
@@ -105,13 +101,13 @@ public record PreflightFinding(
 
     /**
      * <p>
-     * Get a tag like " [CATEGORY] " (padded with spaces)
-     * applied with TextColor based on its severity:
+     * Builds the label for this finding: the category name in square brackets, coloured by severity.
      * </p>
      * - NOTE is applied with TextColor.INFO;
      * - WARNING is applied with TextColor.WARNING;
      * - ERROR and FATAL is applied with TextColor.ERROR;
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     *
+     * @return the coloured tag, e.g. {@code [MISSING_FILE]}; colour is dropped when the terminal does not support it
      */
     public String getTagWithColor() {
         TextColor color;

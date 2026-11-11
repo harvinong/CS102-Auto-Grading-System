@@ -22,8 +22,9 @@ public enum Field {
 
     // A folder field: no extensions are allowed.
     /**
-     * Describes one prompted input field, including its type and accepted extensions.
-     * @param field the argument supplied to this operation.
+     * Creates a field that asks for a folder.
+     *
+     * @param field the words shown to the user when this field is requested, e.g. "Starting Folder"
      */
     private Field(String field) {
         this.name = field;
@@ -32,9 +33,10 @@ public enum Field {
 
     // A file field: only the listed extensions are accepted.
     /**
-     * Describes one prompted input field, including its type and accepted extensions.
-     * @param field the argument supplied to this operation.
-     * @param extensions the argument supplied to this operation.
+     * Creates a field that asks for a file with one of the given extensions.
+     *
+     * @param field the words shown to the user when this field is requested
+     * @param extensions the accepted file extensions without a dot, e.g. {@code "csv"}
      */
     private Field(String field, String... extensions) {
         this.name = field;
@@ -42,16 +44,18 @@ public enum Field {
     }
 
     /**
-     * Returns the prompt name used when displaying this field.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gives the wording used to ask for this field.
+     *
+     * @return the display name, such as "Scoresheet File"
      */
     public String getName() {
         return this.name;
     }
 
     /**
-     * Reports whether this field expects a directory rather than a regular file.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Tells whether this field is a folder rather than a file.
+     *
+     * @return true if no file extensions are required (a folder); false if it expects a file
      */
     public boolean isDir() {
         // A field with no extensions is a folder.
@@ -59,16 +63,19 @@ public enum Field {
     }
 
     /**
-     * Returns the file extensions accepted by this input field.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gives the file extensions this field accepts.
+     *
+     * @return the accepted extensions without a dot; an empty array for a folder field. The array is the field's own, so callers must not modify it
      */
     public String[] getExtensions() {
         return this.extensions;
     }
 
     /**
-     * Returns the human-readable prompt description for this field.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Builds a short phrase naming what the field expects, for use in messages.
+     *
+     * @return {@code "folder"} for a folder field, otherwise the extensions followed by "file", e.g.
+     *         {@code "csv file"} or {@code "csv and txt file"}
      */
     public String getDescription() {
         // Folders are described with one word.

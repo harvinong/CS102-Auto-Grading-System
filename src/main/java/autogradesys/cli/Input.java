@@ -18,31 +18,30 @@ import autogradesys.io.FileManager;
 public class Input {
 
     /**
-     * Initializes the stateless command-line input utility.
+     * Prevents instantiation; every prompt is a static method.
      */
     private Input() {} // disable instancing
 
-    /**<p>
-     * Ask user for the path of the file/directory and returns the file object.
+    /**
+     * <p>
+     * Asks the user for the absolute path of a file or folder and returns it as a {@link File}.
      * </p><p>
-     * When this method is called, the terminal will show a prompt, then the user
-     * inputs the
-     * absolute path of the file/directory.
-     * </p><p>
-     * The method will ask the user to re-enter the path if:
+     * The prompt is repeated, with an error line, until the answer is acceptable. It is rejected if:
      * </p>
      * <ul>
-        * <li>the user enters a non-absolute (relative) path;</li>
-        * <li>the file/directory does not exist;</li>
-        * <li>the prompt ask for directory and user inputs a file, and vice versa; and</li>
-        * <li>the file extension is invalid.</li>
+     * <li>the path is relative, or blank when there is no default;</li>
+     * <li>the file or folder does not exist;</li>
+     * <li>a folder was asked for and a file was given, or the other way round; or</li>
+     * <li>a file was asked for and its extension is not one the field accepts.</li>
      * </ul>
      *
-     *         defaultFile.
-     * @param fileField the argument supplied to this operation.
-     * @param defaultFile the argument supplied to this operation.
-     * @param sc the scanner used to read interactive input.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @param fileField which input is being asked for; supplies the prompt name, whether a folder or file is
+     *         expected, and the accepted extensions
+     * @param defaultFile the answer used when the user just presses Enter, and shown by name in the prompt;
+     *         null when there is no default (a blank answer is then rejected)
+     * @param sc the scanner that reads the user's answers
+     * @return an existing file or folder that satisfies {@code fileField}; never null
+     * @throws InputEndedException if the input ends before an acceptable answer is read
      */
     public static File promptFile(Field fileField, File defaultFile, Scanner sc) {
         File file = null;
@@ -81,17 +80,20 @@ public class Input {
         return file;
     }
 
-    /**<p>
-     * Ask the user for a positive whole number no larger than a maximum, such as the grading timeout in seconds.
+    /**
+     * <p>
+     * Asks the user for a whole number from 1 up to a maximum, such as the grading timeout in seconds.
      * </p><p>
      * Re-prompts when the line is not a whole number, is zero or negative, or is above the maximum,
      * the same way {@link #promptFile} re-prompts on a bad path.
      * </p>
-     * @param label the prompt or display label.
-     * @param defaultValue the value returned when input is blank or invalid.
-     * @param maxValue the largest permitted numeric value.
-     * @param sc the scanner used to read interactive input.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     *
+     * @param label name shown in the prompt and in the error message, e.g. "Grading timeout in seconds"
+     * @param defaultValue the current value, shown in brackets and returned when the user just presses Enter
+     * @param maxValue the largest value accepted (inclusive)
+     * @param sc the scanner that reads the user's answers
+     * @return the number typed (from 1 to {@code maxValue}), or {@code defaultValue} if the line was blank
+     * @throws InputEndedException if the input ends before an answer is read
      */
     public static long promptPositiveLong(String label, long defaultValue, long maxValue, Scanner sc) {
         // One message for every kind of bad line, naming the accepted range so the user knows what to type.
@@ -127,13 +129,14 @@ public class Input {
     }
 
     /**
-     * Prompt an option, which is a number from <code>min</code> to <code>max</code>
-     * with 0 usually used to go to the previous menu or exit the program.
-     * 
-     * @param min the argument supplied to this operation.
-     * @param max the argument supplied to this operation.
-     * @param sc the scanner used to read interactive input.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Asks for a menu option, which is a number from {@code min} to {@code max}, with 0 usually used to go
+     * back to the previous menu or exit the program. Anything else prints an error line and asks again.
+     *
+     * @param min the lowest number accepted (inclusive)
+     * @param max the highest number accepted (inclusive)
+     * @param sc the scanner that reads the user's answers
+     * @return the option the user chose, between {@code min} and {@code max}
+     * @throws InputEndedException if the input ends before a valid option is read
      */
     public static int promptOption(int min, int max, Scanner sc) {
         while (true) {
@@ -148,11 +151,13 @@ public class Input {
         }
     }
 
-    /** 
-     * Ask a yes/no question, retrying until a valid answer is entered.
-     * @param question the question name being graded or looked up.
-     * @param sc the scanner used to read interactive input.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+    /**
+     * Asks a yes/no question and keeps asking until the answer is Y or N, in either letter case.
+     *
+     * @param question the question text; " (Y/N): " is appended to it
+     * @param sc the scanner that reads the user's answers
+     * @return true if the user answered Y; false if the user answered N
+     * @throws InputEndedException if the input ends before a Y or N is read
      */
     public static boolean promptYesNo(String question, Scanner sc) {
         while (true) {
@@ -168,15 +173,16 @@ public class Input {
     // Helper Functions
 
     /**
-     * Ask user for the filepath.
+     * Prints a prompt and reads one path from the user. Surrounding quotes are removed, backslash escapes
+     * from dragging a file into the terminal are undone on Mac and Linux, and a leading {@code ~} becomes the home folder.
      *
-     *         it returns <code>defaultFilePath</code>.
-     * @param prompt the argument supplied to this operation.
-     * @param label the prompt or display label.
-     * @param defaultFilePath the argument supplied to this operation.
-     * @param sc the scanner used to read interactive input.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IllegalArgumentException when the operation cannot complete.
+     * @param prompt the full text printed before waiting for the answer
+     * @param label what is being asked for, used in the message if the input ends
+     * @param defaultFilePath the path returned when the line is blank; null if a blank line is not allowed
+     * @param sc the scanner that reads the answer
+     * @return the absolute path the user entered, or {@code defaultFilePath} for a blank line
+     * @throws IllegalArgumentException if the line is blank and there is no default, or the path is not absolute
+     * @throws InputEndedException if the input ends before a line is read
      */
     private static Path promptPath(String prompt, String label, Path defaultFilePath, Scanner sc)
             throws IllegalArgumentException {

@@ -25,8 +25,9 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
 
     @Override
     /**
-     * Records the start of a JUnit test plan so score collection can begin.
-     * @param testPlan the argument supplied to this operation.
+     * Keeps the JUnit test plan so each finished test can later be traced back to its parent groups.
+     *
+     * @param testPlan the plan JUnit is about to execute, which holds the tree of tests and their ancestors
      */
     public void testPlanExecutionStarted(TestPlan testPlan) {
         this.testPlan = testPlan; //this is just a callback that has the whole tree of what to run where what where why whatever
@@ -34,9 +35,11 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
 
     @Override
     /**
-     * Records the completed test execution and updates the corresponding score totals.
-     * @param testIdentifier the argument supplied to this operation.
-     * @param result the completed grading result to export.
+     * Counts one finished test towards every level of its path (student, question, sub-question), and prints
+     * the name and reason of a test that did not pass. Containers such as classes and groups are ignored.
+     *
+     * @param testIdentifier the test that just finished; non-leaf nodes are skipped
+     * @param result whether the test passed, failed or was aborted, and the exception if there was one
      */
     public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult result) {
         if (!testIdentifier.isTest()) return; // only count leaf DynamicTests
@@ -66,9 +69,12 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
     }
 
     /**
-     * Groups each recorded sub-question score under its student and question identifiers.
-     * @param scores student scores keyed by username and question.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Turns the flat path tallies into per-student sub-question scores. Only paths exactly five levels deep
+     * are sub-questions; shallower paths (totals for a student or a question) are skipped.
+     *
+     * @param scores tallies keyed by the full path joined with " > ", each value being {passed, total}
+     * @return a map from student folder name to (sub-question name to its {@link Score}), in the order first
+     *         seen; empty when no sub-question results were recorded
      */
     public static Map<String, Map<String, Score>> getSubQuestionScoresByStudent(Map<String, int[]> scores) {
     Map<String, Map<String, Score>> result = new LinkedHashMap<>();
@@ -87,9 +93,10 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
 
 
     /**
-     * Collects the display names of the test identifier and its ancestors.
-     * @param leaf the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Lists the display names of the groups a test sits in, outermost first, leaving out the engine-level root.
+     *
+     * @param leaf the test whose ancestors are wanted
+     * @return the ancestor names from outermost to innermost; empty if the test has no ancestor below the root
      */
     private List<String> collectAncestorDisplayNames(TestIdentifier leaf) {
         LinkedList<String> names = new LinkedList<>();
@@ -105,9 +112,10 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
     }
 
     /**
-     * Removes the grading prefix from a display name when one is present.
-     * @param displayName the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Removes the academic-year prefix from a name so paths show only the student.
+     *
+     * @param displayName a JUnit display name, which may start with {@code 2023-2024-}
+     * @return the name without that prefix, or the name unchanged when it does not start with it
      */
     private String stripPrefix(String displayName) {
         return displayName.startsWith("2023-2024-")
@@ -116,7 +124,7 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
     }
 
     /**
-     * Prints the accumulated student scores in the grading report format.
+     * Prints every collected path with its passed and total counts to standard output, one {@code path: passed/total} line each.
      */
     public void printScores() {
         scores.forEach((path, s) ->
@@ -124,8 +132,9 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
     }
 
     /**
-     * Returns the scores collected during the current grading run.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Exposes the tallies gathered so far.
+     *
+     * @return the live map from a full path (joined with " > ") to {passed, total}; changes made to it affect this listener
      */
     public Map<String, int[]> getScores() {
         return scores;
@@ -134,8 +143,11 @@ class PerStudentListener implements TestExecutionListener { //listens to the tes
 public class GradingEntry {
     
     /**
-     * Runs the configured grading flow and returns scores grouped by student.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Runs the {@link StudentFileExec} test class through the JUnit launcher, waits for it to finish, and
+     * collects the sub-question scores.
+     *
+     * @return a map from student folder name to (sub-question name to its {@link Score}); empty if no
+     *         sub-question results were produced
      */
     public static Map<String, Map<String, Score>> runGrading() {
         LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
@@ -150,8 +162,9 @@ public class GradingEntry {
         return PerStudentListener.getSubQuestionScoresByStudent(listener.getScores());
     }
     /**
-     * Runs the application entry point.
-     * @param args the arguments supplied to the invoked method.
+     * Runs the grading and prints one {@code student -> scores} line per student.
+     *
+     * @param args unused; command-line arguments are ignored
      */
     public static void main(String[] args) {
         Map<String, Map<String, Score>> results = runGrading();

@@ -73,8 +73,9 @@ public class ScoresheetDAO {
     // Input: the scoresheet CSV file to read from and save to.
     // Output: a new ScoresheetDAO.
     /**
-     * Opens the configured CSV scoresheet for loading, lookup, and updates.
-     * @param scoresheetFile the argument supplied to this operation.
+     * Creates a DAO for one scoresheet. The file is not read until {@link #load()}.
+     *
+     * @param scoresheetFile the CSV to read from and save to; may be null, in which case {@link #load()} and the save methods return false
      */
     public ScoresheetDAO(File scoresheetFile) {
         this.scoresheetFile = scoresheetFile;
@@ -85,10 +86,9 @@ public class ScoresheetDAO {
      * question columns) stored under its username, and the row's other cells are kept so they
      * can be written back unchanged. An empty mark cell means "not graded" and is left out.
      * 
+     * @return true if the file was read; false if it is missing, unreadable, badly quoted, has no
      *         Username (or student) column, repeats a column, has a row longer than the header, lists a student
      *         twice, or has a mark that is not a whole number. On false, whatever was loaded before is kept.
-     * Loads the persisted configuration or scoresheet data into this object.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public boolean load() {
         if (scoresheetFile == null) {
@@ -203,9 +203,8 @@ public class ScoresheetDAO {
      * writes every record back to the scoresheet file it was loaded from. The file is first
      * written to a temporary file and then swapped in, so a failed save never leaves a broken file.
      * 
+     * @return true if the file was written; false if nothing has been loaded or the write failed
      *         (the original file is left as it was).
-     * Persists the current configuration or scoresheet data to its configured file.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
      */
     public boolean save() {
         if (!loaded || scoresheetFile == null) {
@@ -233,16 +232,19 @@ public class ScoresheetDAO {
         }
     }
 
+    /**
+     * writes every record to a new file and leaves the original scoresheet unchanged. It never overwrites
+     * an existing file.
+     *
+     * @param newFile the file to create, e.g. {@code IS442-ScoreSheet_2026-11-11_11-04-00.csv}; null is rejected
+     * @return true if the file was written; false if nothing has been loaded, {@code newFile} is null, the file
+     *         already exists, or the write failed
+     */
     // Input: the new file to write, e.g. IS442-ScoreSheet_2026-11-11_11-04-00.csv
     // Function: writes every record to that file, leaving the original scoresheet unchanged.
     //           It never overwrites an existing file.
     // Output: true if the file was written; false if nothing has been loaded, the file already
     //         exists, or the write failed.
-    /**
-     * Save as.
-     * @param newFile the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     */
     public boolean saveAs(File newFile) {
         if (!loaded || newFile == null) {
             return false;
@@ -261,9 +263,10 @@ public class ScoresheetDAO {
     // Function: looks the student up in the map (Read).
     // Output: that student's record, or null if the username is not in the scoresheet.
     /**
-     * Returns the scoresheet record for the requested username, or null when absent.
-     * @param username the student username used for lookup.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Looks a student up (Read).
+     *
+     * @param username the student's username, e.g. "ping.lee.2023"; a leading "#" and surrounding spaces are ignored, and the match is case-sensitive; null is allowed
+     * @return that student's record, or null if the username is null or not in the scoresheet
      */
     public ScoresheetRecord get(String username) {
         if (username == null) {
@@ -278,10 +281,13 @@ public class ScoresheetDAO {
     //           added, because the DAO only reads and updates (no create or delete).
     // Output: true if the record was replaced; false if the username is not in the scoresheet or the record is null.
     /**
-     * Stores or replaces the scoresheet record for the supplied username.
-     * @param username the student username used for lookup.
-     * @param record the diagnostic or scoresheet record to store.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Replaces a student's record in memory (Update). The file is not changed until {@link #save()} or
+     * {@link #saveAs} is called. A student who is not already in the scoresheet is not added, because the DAO only
+     * reads and updates.
+     *
+     * @param username the student's username; a leading "#" and surrounding spaces are ignored
+     * @param record the new record to keep for that student
+     * @return true if the record was replaced; false if either argument is null or the username is not in the scoresheet
      */
     public boolean set(String username, ScoresheetRecord record) {
         if (username == null || record == null) {
@@ -300,8 +306,9 @@ public class ScoresheetDAO {
     // Function: lists every student's username, so a caller can go through all the records with get().
     // Output: the usernames in scoresheet order (empty before load()).
     /**
-     * Returns the usernames currently represented in the loaded scoresheet.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Lists every student so a caller can go through all records with {@link #get}.
+     *
+     * @return a new list of usernames in scoresheet order; empty before {@link #load()} succeeds. Changing the list does not affect the DAO
      */
     public ArrayList<String> getUsernames() {
         return new ArrayList<>(records.keySet());
@@ -311,23 +318,28 @@ public class ScoresheetDAO {
     // Function: gives back the file this DAO reads and saves to.
     // Output: the scoresheet file.
     /**
-     * Returns the CSV file used by this scoresheet data access object.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gives back the file this DAO reads from and saves to.
+     *
+     * @return the scoresheet file passed to the constructor, which may be null
      */
     public File getScoresheetFile() {
         return scoresheetFile;
     }
 
+    /**
+     * Builds the whole CSV text from the loaded columns and the current records. The question columns are
+     * the loaded ones plus any new ones found in the records, sorted, placed just before "End-of-Line Indicator".
+     * A student with marks gets their total in "Calculated Final Grade Numerator"; a student with no marks keeps
+     * empty question cells and the original total cell.
+     *
+     * @return the CSV text, ready to write to a file, using the line ending the original file used
+     */
     // Input: nothing (uses the loaded columns and records).
     // Function: builds the whole CSV text. The question columns are the loaded ones plus any new ones
     //           in the records, sorted (Q1, Q2, Q3), placed just before "End-of-Line Indicator".
     //           A student with marks gets their total in "Calculated Final Grade Numerator";
     //           a student with no marks keeps empty question cells and their original total cell.
     // Output: the CSV text, ready to write to a file.
-    /**
-     * To text.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     */
     private String toText() {
         // Start from the loaded question columns and add new ones from the records
         ArrayList<String> allQuestions = new ArrayList<>(questions);
@@ -376,10 +388,11 @@ public class ScoresheetDAO {
     // Function: looks for the column, ignoring spaces and upper/lower case.
     // Output: the column's position, or -1 if it is not there.
     /**
-     * Returns the index of a named CSV column, or the absent-column sentinel.
-     * @param columns the argument supplied to this operation.
-     * @param name the name used for lookup or display.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Looks for a column by name, ignoring surrounding spaces and upper/lower case.
+     *
+     * @param columns the column names to search, in file order
+     * @param name the column title to find
+     * @return the zero-based position of the first match, or -1 if the column is not there
      */
     private static int columnOf(List<String> columns, String name) {
         for (int i = 0; i < columns.size(); i++) {
@@ -390,15 +403,17 @@ public class ScoresheetDAO {
         return -1;
     }
 
+    /**
+     * Joins the cells of one row with commas, quoting a cell only when it holds a comma, a quote or a line
+     * break, so the rest of the sheet keeps its original look.
+     *
+     * @param row the cells of one row, none of them null
+     * @return one CSV line without a line ending, e.g. {@code #01400001,#ping.lee.2023,_,PING LEE}
+     */
     // Input: the cells of one row
     // Function: joins them with commas, quoting a cell only when it holds a comma, a quote or a line
     //           break, so the rest of the sheet keeps its original look
     // Output: one CSV line, e.g. #01400001,#ping.lee.2023,_,PING LEE
-    /**
-     * Join line.
-     * @param row the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     */
     private static String joinLine(List<String> row) {
         String line = "";
         for (int i = 0; i < row.size(); i++) {
@@ -421,10 +436,13 @@ public class ScoresheetDAO {
     // Output: a list of rows, each a list of cells.
     // Throws IOException if a quoted cell is never closed.
     /**
-     * Parses CSV text into rows while preserving quoted fields and line structure.
-     * @param text the text to parse, render, or escape.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IOException when the operation cannot complete.
+     * Splits CSV text into rows and cells one character at a time. Inside quotes, commas and line breaks are
+     * part of the cell and two quotes mean one quote character. Blank lines are skipped, and both Windows
+     * ({@code \r\n}) and Unix ({@code \n}) line endings are accepted.
+     *
+     * @param text the full contents of a CSV file
+     * @return the rows in order, each a list of cells
+     * @throws IOException if a quoted cell is never closed
      */
     private static ArrayList<ArrayList<String>> parse(String text) throws IOException {
         // All finished rows.
@@ -492,9 +510,10 @@ public class ScoresheetDAO {
     // Function: adds the row unless it is a blank line (a single empty cell).
     // Output: nothing; "result" is changed directly.
     /**
-     * Adds a parsed row when it contains at least one non-blank value.
-     * @param result the completed grading result to export.
-     * @param row the argument supplied to this operation.
+     * Adds a row to the result unless it is a blank line (a single empty cell).
+     *
+     * @param result the finished rows so far; modified directly
+     * @param row the row just completed
      */
     private static void addRowIfNotBlank(ArrayList<ArrayList<String>> result, ArrayList<String> row) {
         boolean blank = row.size() == 1 && row.get(0).trim().isEmpty();

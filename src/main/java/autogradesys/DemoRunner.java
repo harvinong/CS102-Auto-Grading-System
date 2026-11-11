@@ -26,18 +26,21 @@ import java.time.Duration;
 public final class DemoRunner {
     // Static entry point only; no instances.
     /**
-     * Initializes the utility used to run the checked-in demonstration fixtures.
+     * Prevents instantiation; the demo is started through the static {@link #run} method.
      */
     private DemoRunner() {
     }
 
     /**
-     * Grades the fixtures below {@code demoRoot} and writes generated artifacts
-     * beneath its target directory.
+     * Grades the sample submissions below {@code demoRoot} and writes generated artifacts beneath its
+     * {@code target/run} directory (scoresheet copy, error history and HTML report). The checked-in fixtures are
+     * never edited.
      *
-     * @param demoRoot the argument supplied to this operation.
-     * @param output the destination stream or output buffer.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @param demoRoot the demo folder; it must contain {@code fixtures/} with the submissions, questions and
+     *         {@code scores.template.csv}
+     * @param output where progress and grading messages are printed; must not be null
+     * @return 0 when grading finished without a fatal error; 1 when grading hit a fatal error or the HTML report
+     *         could not be written; 2 when the output folder or scoresheet copy could not be prepared
      */
     public static int run(Path demoRoot, PrintStream output) {
         // Checked-in sample data: demo/fixtures.

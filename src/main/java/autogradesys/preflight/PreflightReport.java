@@ -9,13 +9,13 @@ import autogradesys.preflight.PreflightFinding.Severity;
  * The outcome of a {@link SubmissionPreflight} run. Holds every discovered submission and
  * every finding, and prints them in a fixed, deterministic order.
  *
+ * @param templateName Name of the starter template folder the submissions were compared with.
+ * @param students     Every discovered submission, sorted by name.
+ * @param findings     All findings, in the order they were discovered.
  */
 // An immutable record: the report is just these three values plus helper methods.
 /**
  * Stores all findings and student statuses produced by the submission preflight.
- * @param templateName the argument supplied to this operation.
- * @param students the registered student identities used for matching.
- * @param findings the argument supplied to this operation.
  */
 public record PreflightReport(String templateName, List<String> students, List<PreflightFinding> findings) {
 
@@ -25,8 +25,9 @@ public record PreflightReport(String templateName, List<String> students, List<P
     // True when the check could not run at all (bad template or submissions folder).
     // Treat any fatal finding as a setup failure that must stop grading before compilation.
     /**
-     * Reports whether the findings contain a fatal condition.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Tells whether the check could not run at all (bad template or submissions folder). Any fatal finding is a setup failure that must stop grading before compilation.
+     *
+     * @return true if at least one finding has FATAL severity
      */
     public boolean fatal() {
         // Any single FATAL finding is enough.
@@ -35,9 +36,10 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // True when this student has at least one ERROR finding.
     /**
-     * Reports whether the specified student has a finding requiring intervention.
-     * @param student the registered student identity.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Tells whether a student has a problem the instructor must look at.
+     *
+     * @param student the submission folder name
+     * @return true if at least one finding for that student has ERROR severity; warnings and notes do not count
      */
     public boolean needsAttention(String student) {
         // Look through every finding of the run for one that belongs to this student and has ERROR severity.
@@ -48,9 +50,10 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // True when this folder carries the template's name; grading skips it, so it is neither ready nor needing attention.
     /**
-     * Reports whether the student appears to have submitted a copy of the template.
-     * @param student the registered student identity.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Tells whether a folder is an untouched copy of the starter template, which grading skips.
+     *
+     * @param student the submission folder name
+     * @return true if a TEMPLATE_COPY finding exists for that folder
      */
     public boolean templateCopy(String student) {
         // A TEMPLATE_COPY finding for this folder marks it as an untouched copy of the starter template.
@@ -60,8 +63,9 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // How many students have no ERROR finding (template copies are not graded, so they are not counted).
     /**
-     * Counts students whose submissions are ready for grading.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Counts the students that are ready to grade. Template copies are not graded, so they are not counted.
+     *
+     * @return the number of folders with no ERROR finding that are not template copies
      */
     public long readyCount() {
         // Count the students who do not need attention.
@@ -70,8 +74,9 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // How many folders are template copies that grading skips.
     /**
-     * Counts students whose submissions cannot be graded as submitted.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Counts the folders that grading will skip because they are copies of the template.
+     *
+     * @return the number of folders with a TEMPLATE_COPY finding
      */
     public long notGradedCount() {
         // Count the folders carrying a TEMPLATE_COPY finding; JavaGrader is told to skip exactly these.
@@ -80,9 +85,10 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // How many findings have the given severity (used for the summary line).
     /**
-     * Counts findings having the requested severity.
-     * @param severity the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Counts findings of one severity, for the summary line.
+     *
+     * @param severity the severity to count
+     * @return how many findings have that severity
      */
     public long count(Severity severity) {
         // Count the findings whose severity matches.
@@ -91,8 +97,11 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // Writes the whole report to the given stream (the console in the real program).
     /**
-     * Writes the current report or diagnostic information to the supplied output stream.
-     * @param out the argument supplied to this operation.
+     * Writes the whole report: findings about the whole run first, then one block per student with its
+     * status (ready, needs attention or not graded) and findings, then a summary line. A fatal report prints
+     * only its findings and says that no submissions were scanned.
+     *
+     * @param out where to print, normally {@code System.out}
      */
     public void print(PrintStream out) {
         // Blank line to separate the report from the menu text above it.
@@ -157,9 +166,10 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // Pads a name with dots so the status words line up: "alice ........ ready".
     /**
-     * Pads a student name to the report column width.
-     * @param name the name used for lookup or display.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Pads a name with dots so the status words line up, e.g. {@code alice ........ ready}.
+     *
+     * @param name the submission folder name
+     * @return the name, then dots up to the column width (28 characters), then a space; a longer name gets only the trailing space
      */
     private static String pad(String name) {
         // Start with the name and one space.
@@ -174,9 +184,10 @@ public record PreflightReport(String templateName, List<String> students, List<P
 
     // Prints one finding as "  [CATEGORY] path - message -> fix".
     /**
-     * Prints one preflight finding with its severity and suggested action.
-     * @param out the argument supplied to this operation.
-     * @param f the argument supplied to this operation.
+     * Prints one finding as {@code   [CATEGORY] path - message -> fix}. The message and fix parts are left out when empty, and ignored clutter (IGNORED_JUNK) is never printed.
+     *
+     * @param out where to print
+     * @param f the finding to print
      */
     private static void printFinding(PrintStream out, PreflightFinding f) {
         // Ignored clutter (IGNORED_JUNK) is never printed; AutoGradeMenu.runGrader records each one with ErrorReporter.ignored instead.

@@ -31,9 +31,10 @@ public class MissingRestorer {
     private final Path templateDir;
 
     /**
-     * Initializes restoration with the submission cache and optional template fallback.
-     * @param cache the argument supplied to this operation.
-     * @param templateDir the template directory used as a fallback.
+     * Creates a restorer that tries the original submission first and the starter template second.
+     *
+     * @param cache the working-copy cache, used to find a student's original folder or zip
+     * @param templateDir the starter template folder used as the fallback source; null to disable the fallback (the path is made absolute and normalised)
      */
     public MissingRestorer(SubmissionCache cache, Path templateDir) {
         this.cache = cache;
@@ -43,18 +44,21 @@ public class MissingRestorer {
     }
 
     /**
-     * Backwards-compatible constructor.
-     * @param cache the argument supplied to this operation.
+     * Creates a restorer without a template fallback, so only the original submission can supply missing items.
+     *
+     * @param cache the working-copy cache, used to find a student's original folder or zip
      */
     public MissingRestorer(SubmissionCache cache) {
         this(cache, null);
     }
 
     /**
-     * Restores missing submission items from the original archive or template and returns the resulting validation events.
-     * @param workingDir the cached working directory containing submissions.
-     * @param preflight the preflight findings used to guide validation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Tries to put back every missing question folder, Java file and resource that the check reported,
+     * skipping findings about the blank template.
+     *
+     * @param workingDir the working copy folder holding one folder per student
+     * @param preflight the check report whose MISSING_QUESTION, MISSING_FILE and MISSING_RESOURCE findings are handled
+     * @return one event per missing item: ITEM_RESTORED if it was put back, ITEM_MISSING if it could not be
      */
     public List<ValidationEvent> restore(
             Path workingDir,
@@ -88,11 +92,13 @@ public class MissingRestorer {
     }
 
     /**
-     * Restores one missing question folder or file.
-     * @param workingDir the cached working directory containing submissions.
-     * @param finding the argument supplied to this operation.
-     * @param parts the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Restores one missing question folder or file: first from the student's original submission, then from
+     * the template, and otherwise reports it as missing. Paths that would leave the working copy or the template are refused.
+     *
+     * @param workingDir the working copy folder
+     * @param finding the finding naming the student and the missing path
+     * @param parts how many trailing path names make up the item: 1 for a question folder such as Q1, 2 for a file such as Q1/Q1a.java
+     * @return ITEM_RESTORED with the source and file count, or ITEM_MISSING with the reason
      */
     private ValidationEvent restoreOne(
             Path workingDir,
@@ -255,12 +261,13 @@ public class MissingRestorer {
     }
 
     /**
-     * Creates an event describing a missing item that was restored successfully.
-     * @param finding the argument supplied to this operation.
-     * @param item the argument supplied to this operation.
-     * @param restored the argument supplied to this operation.
-     * @param source the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Creates the event for a missing item that was put back.
+     *
+     * @param finding the finding that reported the item missing
+     * @param item the restored item, e.g. "Q2" or "Q1/Q1b.java"
+     * @param restored how many files were copied
+     * @param source where the item came from, in words, e.g. "the original submission"
+     * @return an ITEM_RESTORED event under the finding's student and path
      */
     private static ValidationEvent restoredEvent(
             PreflightFinding finding,
@@ -279,10 +286,11 @@ public class MissingRestorer {
     }
 
     /**
-     * Creates an event describing a missing item that could not be restored.
-     * @param finding the argument supplied to this operation.
-     * @param message the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Creates the event for a missing item that could not be put back.
+     *
+     * @param finding the finding that reported the item missing
+     * @param message why it could not be restored
+     * @return an ITEM_MISSING event under the finding's student and path
      */
     private static ValidationEvent missing(
             PreflightFinding finding,
@@ -297,13 +305,14 @@ public class MissingRestorer {
     }
 
     /**
-     * Copies the missing item from the original submission,
-     * even if the original submission contains multiple wrappers.
-     * @param originalFolder the argument supplied to this operation.
-     * @param projectDir the argument supplied to this operation.
-     * @param item the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IOException when the operation cannot complete.
+     * Copies the missing item from the original submission folder, even if the submission keeps its work
+     * inside one or more wrapper folders. Existing files are not overwritten.
+     *
+     * @param originalFolder the student's original submission folder
+     * @param projectDir the working copy folder that should hold the item
+     * @param item the item to copy, e.g. "Q2" or "Q1/Q1b.java"
+     * @return how many files were copied; 0 if the original does not contain the item
+     * @throws IOException if the folder cannot be listed or a file cannot be copied
      */
     private static int restoreFromFolder(
             Path originalFolder,
@@ -332,11 +341,12 @@ public class MissingRestorer {
     }
 
     /**
-     * Searches recursively for the requested item inside the original submission.
-     * @param folder the directory whose contents are processed.
-     * @param item the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IOException when the operation cannot complete.
+     * Searches the folder, then its sub-folders in name order, for the requested item. Junk folders and links are not entered.
+     *
+     * @param folder the folder to search from
+     * @param item the relative path of the item, e.g. "Q2"
+     * @return the first matching path found, or null if the item is nowhere below the folder
+     * @throws IOException if a folder cannot be listed
      */
     private static Path findOriginalItem(
             Path folder,

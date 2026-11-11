@@ -21,16 +21,16 @@ public final class SubmissionFiles {
     private static final String ZIP_EXTENSION = ".zip";
 
     /**
-     * Initializes the file-tree utilities used while repairing submissions.
+     * Prevents instantiation; every helper is static.
      */
     private SubmissionFiles() {
     }
 
     /**
-     * Hidden files (e.g. macOS "._Q1a.java") and __MACOSX are clutter, not student work.
+     * Tells whether a path is clutter rather than student work: a hidden file such as the macOS {@code ._Q1a.java}, or the {@code __MACOSX} folder.
      *
-     * @param relative the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * @param relative a path inside a submission; every part of it is checked, so a file inside a hidden folder is junk too
+     * @return true if any part starts with "." or is {@code __MACOSX}
      */
     public static boolean isJunk(Path relative) {
         for (Path part : relative) {
@@ -42,35 +42,43 @@ public final class SubmissionFiles {
         return false;
     }
 
-    /** True for a real file (not a link) whose name ends in .zip in any letter case.
-     * @param path the file or directory path being inspected or written.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+    /**
+     * Tells whether a path is a zip archive. Symbolic links never count.
+     *
+     * @param path the path to test
+     * @return true for a regular file (not a link) whose name ends in .zip in any letter case
      */
     public static boolean isZipFile(Path path) {
         return Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)
                 && nameOf(path).toLowerCase(Locale.ROOT).endsWith(ZIP_EXTENSION);
     }
 
-    /** "frank.zip" gives "frank".
-     * @param zipName the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+    /**
+     * Removes the {@code .zip} ending from an archive name, so "frank.zip" gives "frank".
+     *
+     * @param zipName a file name that ends with a four-character {@code .zip} extension; this is not checked
+     * @return the name without its last four characters
      */
     public static String stem(String zipName) {
         return zipName.substring(0, zipName.length() - ZIP_EXTENSION.length());
     }
 
-    /** The last part of the path as text.
-     * @param path the file or directory path being inspected or written.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+    /**
+     * Gets the last part of a path as text.
+     *
+     * @param path the path to name
+     * @return the file or folder name, or the whole path text if it has no name part (for example a root)
      */
     public static String nameOf(Path path) {
         Path name = path.getFileName();
         return name == null ? path.toString() : name.toString();
     }
 
-    /** The one zip a folder contains, if that zip is the folder's only content; otherwise null.
-     * @param folder the directory whose contents are processed.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+    /**
+     * Finds the single zip that makes up a folder's entire content, ignoring junk files.
+     *
+     * @param folder the folder to look inside
+     * @return that zip, if it is the folder's only non-junk item; null if there are more or fewer items, the item is not a zip, or the folder cannot be listed
      */
     public static Path onlyContentIsZip(Path folder) {
         try (Stream<Path> stream = Files.list(folder)) {
@@ -82,24 +90,24 @@ public final class SubmissionFiles {
     }
 
     /**
-     * Copies a file or folder to the target, skipping junk and links and never overwriting a file
-     * that already exists there.
+     * Copies a file or folder to the target, skipping junk and links and never overwriting a file that already exists there.
      *
-     * @param source the argument supplied to this operation.
-     * @param target the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IOException when the operation cannot complete.
+     * @param source the file or folder to copy from
+     * @param target the file or folder to copy into; missing folders are created
+     * @return how many files were copied
+     * @throws IOException if a folder cannot be created or a file cannot be copied
      */
     public static int copyMissing(Path source, Path target) throws IOException {
         int[] copied = {0};
         Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
             @Override
             /**
-             * Creates missing target directories while copying a submission file tree.
-             * @param dir the directory to scan or compile.
-             * @param attrs the argument supplied to this operation.
-             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-             * @throws IOException when the operation cannot complete.
+             * Creates the matching folder in the target before its contents are copied, and skips a junk folder together with everything below it.
+             *
+             * @param dir the source folder about to be visited
+             * @param attrs the folder's attributes, unused
+             * @return SKIP_SUBTREE for a junk folder, otherwise CONTINUE
+             * @throws IOException if the matching target folder cannot be created
              */
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 if (isJunk(source.relativize(dir))) {
@@ -111,11 +119,12 @@ public final class SubmissionFiles {
 
             @Override
             /**
-             * Copies a file when it is missing from the target submission tree.
-             * @param file the file being validated or processed.
-             * @param attrs the argument supplied to this operation.
-             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-             * @throws IOException when the operation cannot complete.
+             * Copies one source file into the target unless it is junk, not a regular file, or already present there.
+             *
+             * @param file the source file being visited
+             * @param attrs the file's attributes, used to skip links and other non-regular files
+             * @return CONTINUE, so the copy moves on to the next entry whether or not this file was copied
+             * @throws IOException if the copy fails
              */
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 Path destination = target.resolve(source.relativize(file));
@@ -130,19 +139,22 @@ public final class SubmissionFiles {
         return copied[0];
     }
 
-    /** Deletes a folder and everything in it (links are removed, never followed). Best effort.
-     * @param root the argument supplied to this operation.
+    /**
+     * Deletes a folder and everything in it (links are removed, never followed). Best effort: if something cannot be deleted, the rest is left in place and no error is reported.
+     *
+     * @param root the folder to delete
      */
     public static void deleteTree(Path root) {
         try {
             Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
                 @Override
                 /**
-                 * Copies a file when it is missing from the target submission tree.
-                 * @param file the file being validated or processed.
-                 * @param attrs the argument supplied to this operation.
-                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-                 * @throws IOException when the operation cannot complete.
+                 * Deletes one file during the walk.
+                 *
+                 * @param file the file being visited
+                 * @param attrs the file's attributes, unused
+                 * @return CONTINUE, so the walk goes on to the next entry after each file is deleted
+                 * @throws IOException if the file cannot be deleted, which stops the walk
                  */
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     Files.delete(file);
@@ -151,11 +163,12 @@ public final class SubmissionFiles {
 
                 @Override
                 /**
-                 * Completes directory traversal while propagating any copy failure.
-                 * @param dir the directory to scan or compile.
-                 * @param exc the argument supplied to this operation.
-                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-                 * @throws IOException when the operation cannot complete.
+                 * Deletes a folder once everything inside it has been deleted.
+                 *
+                 * @param dir the folder whose contents were just visited
+                 * @param exc the failure that occurred while visiting its contents, or null if there was none
+                 * @return CONTINUE, so the walk goes on after the empty folder is deleted
+                 * @throws IOException if the folder cannot be deleted, which stops the walk
                  */
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
                     Files.delete(dir);

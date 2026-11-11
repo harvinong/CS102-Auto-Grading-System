@@ -40,17 +40,19 @@ public final class HeaderPreflightCheck {
             "(?im)^[ \\t]*(?:\\*+|//+)?[ \\t]*(?:name|email(?:[ \\t]*id)?)[ \\t]*:");
 
     /**
-     * Initializes the read-only checker for student source-file headers.
+     * Prevents instantiation; the check is run through {@link #addFindings}.
      */
     private HeaderPreflightCheck() {
     }
 
     /**
-     * Adds missing/incomplete header findings to an existing preflight report.
-     * @param report the argument supplied to this operation.
-     * @param submissionsDir the argument supplied to this operation.
-     * @param students the registered student identities used for matching.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Checks the Java file headers of every student folder and adds a MISSING_HEADER or INCOMPLETE_HEADER error for each file that needs repair. Files are only read.
+     * Template copies, folders that match no registered student, and typo folders whose correct name is already used by another folder are skipped.
+     *
+     * @param report the existing preflight report; its findings are kept
+     * @param submissionsDir the working copy folder holding the student folders
+     * @param students the registered students from the scoresheet
+     * @return a report with the header findings appended, or the same report if there are none
      */
     public static PreflightReport addFindings(
             PreflightReport report,
@@ -114,11 +116,12 @@ public final class HeaderPreflightCheck {
     }
 
     /**
-     * Scans one submission against the expected folder and file layout.
-     * @param folder the directory whose contents are processed.
-     * @param studentDir the directory containing one student submission.
-     * @param student the registered student identity.
-     * @param findings the argument supplied to this operation.
+     * Checks the header of every Java file below a student's folder, in sorted order. Junk, links and non-Java files are skipped. A folder that cannot be walked adds nothing, because the normal scan reports unreadable folders.
+     *
+     * @param folder the submission folder name, used in the findings
+     * @param studentDir the student's folder
+     * @param student the registered student the folder is matched to
+     * @param findings receives the new findings
      */
     private static void scanStudent(
             String folder,
@@ -140,12 +143,13 @@ public final class HeaderPreflightCheck {
     }
 
     /**
-     * Checks one source file header against the registered student identity.
-     * @param folder the directory whose contents are processed.
-     * @param studentDir the directory containing one student submission.
-     * @param file the file being validated or processed.
-     * @param student the registered student identity.
-     * @param findings the argument supplied to this operation.
+     * Checks one source file's header against the registered student. It is missing when no Name or Email ID label is in the first ten lines, and incomplete when Name lacks every part of the registered name or Email ID lacks the username. An unreadable file adds nothing.
+     *
+     * @param folder the submission folder name, used in the findings
+     * @param studentDir the student's folder, used to show a short path
+     * @param file the Java file to check
+     * @param student the registered student the folder is matched to
+     * @param findings receives a MISSING_HEADER or INCOMPLETE_HEADER error if the header is wrong
      */
     private static void checkFile(
             String folder,
@@ -204,10 +208,11 @@ public final class HeaderPreflightCheck {
     }
 
     /**
-     * Returns the first requested lines of a source file for diagnostic messages.
-     * @param content the argument supplied to this operation.
-     * @param maxLines the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Takes the beginning of a file for header checking.
+     *
+     * @param content the whole file text
+     * @param maxLines how many lines to keep
+     * @return the text up to and including the line break of line {@code maxLines}, or all of it if it is shorter
      */
     private static String firstLines(String content, int maxLines) {
         int end = 0;
@@ -224,10 +229,11 @@ public final class HeaderPreflightCheck {
     }
 
     /**
-     * Reports whether a header name identifies the expected student.
-     * @param headerName the argument supplied to this operation.
-     * @param fullName the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Checks a typed name against the registered one.
+     *
+     * @param headerName the text after "Name:" in the header
+     * @param fullName the registered full name, e.g. "TEO CHEE"
+     * @return true if every word of the registered name appears in the header text, in any order and letter case
      */
     private static boolean nameMatches(String headerName, String fullName) {
         String[] expectedParts = fullName.toLowerCase(Locale.ROOT).trim().split("\\s+");
@@ -243,9 +249,10 @@ public final class HeaderPreflightCheck {
     }
 
     /**
-     * Reports whether a path is a generated or otherwise ignored submission file.
-     * @param relativePath the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Tells whether a path is clutter rather than student work.
+     *
+     * @param relativePath a path inside a submission; every part is checked
+     * @return true if any part starts with "." or is {@code __MACOSX}
      */
     private static boolean isJunk(Path relativePath) {
         for (Path part : relativePath) {

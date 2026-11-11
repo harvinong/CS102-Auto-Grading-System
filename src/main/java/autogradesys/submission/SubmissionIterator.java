@@ -22,10 +22,15 @@ public class SubmissionIterator implements Iterable<Submission> {
     private final List<String> duplicates = new ArrayList<>();
 
     /**
-     * Scans a folder for matching submission archives and indexes their statuses.
-     * @param folder the directory whose contents are processed.
-     * @param zipNamePattern the argument supplied to this operation.
-     * @throws IOException when the operation cannot complete.
+     * Scans a folder and sorts its entries into accepted submissions, skipped entries and duplicates.
+     * Names are visited in sorted order; names starting with "." (system junk such as macOS files) are ignored
+     * completely. A regular file whose name matches the pattern is accepted; everything else is recorded as skipped.
+     * If two zips belong to the same username (compared ignoring case), the later one in sorted order is used.
+     *
+     * @param folder the folder holding the students' zip files
+     * @param zipNamePattern pattern the whole file name must match; its first group captures the username
+     * @throws IOException if the folder cannot be listed
+     * @throws IllegalArgumentException if {@code folder} is not a directory
      */
     public SubmissionIterator(Path folder, Pattern zipNamePattern) throws IOException {
         if (!Files.isDirectory(folder)) {
@@ -53,8 +58,9 @@ public class SubmissionIterator implements Iterable<Submission> {
     }
 
     /**
-     * Adds a submission unless its username duplicates one already indexed.
-     * @param submission the argument supplied to this operation.
+     * Adds a submission, replacing an earlier one with the same username (ignoring case) and recording that as a duplicate.
+     *
+     * @param submission the accepted submission to index
      */
     private void addSubmission(Submission submission) {
         String key = submission.getUsername().toLowerCase();
@@ -69,32 +75,36 @@ public class SubmissionIterator implements Iterable<Submission> {
 
     @Override
     /**
-     * Returns an iterator over the accepted submissions.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Lets the accepted submissions be used in a for-each loop.
+     *
+     * @return an iterator over the accepted submissions, one per username, in the order they were first found
      */
     public Iterator<Submission> iterator() {
         return submissions.values().iterator();
     }
 
     /**
-     * Returns the number of accepted submissions.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Counts the accepted submissions.
+     *
+     * @return the number of distinct usernames accepted, not counting skipped entries or replaced duplicates
      */
     public int size() {
         return submissions.size();
     }
 
     /**
-     * Returns the archive names skipped because they did not match the configured pattern.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Lists the entries that were not taken as submissions.
+     *
+     * @return the file names that were not regular files or did not match the pattern; the live list, empty if none
      */
     public List<String> getSkipped() {
         return skipped;
     }
 
     /**
-     * Returns the archive names skipped because their usernames were duplicates.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Lists the duplicate-username warnings.
+     *
+     * @return one human-readable message per replaced zip, saying which file is used; the live list, empty if there were none
      */
     public List<String> getDuplicates() {
         return duplicates;

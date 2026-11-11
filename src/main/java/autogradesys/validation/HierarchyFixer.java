@@ -17,17 +17,18 @@ import autogradesys.validation.ValidationEvent.Type;
 public final class HierarchyFixer {
 
     /**
-     * Initializes the utility that removes unnecessary wrapper directories.
+     * Prevents instantiation; the fix is run through {@link #flattenWrappers}.
      */
     private HierarchyFixer() {
     }
 
     /**
-     * Moves the contents of every wrapper folder up into its student folder.
-     * Nested wrappers are processed from the innermost folder outward.
-     * @param submissions the folder containing submitted student work.
-     * @param preflight the preflight findings used to guide validation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Moves the contents of every wrapper folder up into its student folder. Nested wrappers are processed
+     * from the innermost folder outward, and the template's own folder is left alone.
+     *
+     * @param submissions the working copy folder holding one folder per student
+     * @param preflight the check report whose WRAPPED_FOLDER findings name the wrappers
+     * @return one event per wrapper: FOLDER_FLATTENED if its contents were moved up, FIX_FAILED if not; a wrapper already removed by an earlier step gives none
      */
     public static List<ValidationEvent> flattenWrappers(
             Path submissions,
@@ -62,20 +63,22 @@ public final class HierarchyFixer {
     }
 
     /**
-     * Returns the number of path components in a wrapper path.
-     * @param path the file or directory path being inspected or written.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Measures how deeply a wrapper is nested.
+     *
+     * @param path a wrapper's path relative to the submissions folder
+     * @return the number of names in the path
      */
     private static int pathDepth(String path) {
         return Path.of(path).getNameCount();
     }
 
     /**
-     * Moves the wrapper's children into its parent, then attempts to remove
-     * the now-empty wrapper.
-     * @param wrapper the argument supplied to this operation.
-     * @param finding the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Moves the wrapper's children into its parent, then attempts to remove the now empty wrapper. Nothing
+     * already in the student folder is overwritten.
+     *
+     * @param wrapper the wrapper folder to empty
+     * @param finding the WRAPPED_FOLDER finding, which supplies the student and path shown in the event
+     * @return FOLDER_FLATTENED if the contents moved up (also when the empty wrapper itself could not be deleted); FIX_FAILED if a move failed, a name already existed in the student folder, or the wrapper could not be checked or removed
      */
     private static ValidationEvent flatten(
             Path wrapper,

@@ -45,9 +45,10 @@ public class StudentFileExec {
 
     record CompileResult(Map<String, List<String>> errorsByFile) {
     /**
-     * Compiles the supplied source file and returns any compiler errors.
-     * @param javaFile the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gives the compiler messages recorded for one source file.
+     *
+     * @param javaFile the source file; only its file name is used to look up the messages
+     * @return the file's compiler messages joined by line breaks, or a note that no specific diagnostic was captured when none were recorded for it (its error may come from a file it depends on)
      */
     String errorsForFile(Path javaFile) {
         String fileName = javaFile.getFileName().toString();
@@ -62,9 +63,10 @@ public class StudentFileExec {
     //entry point from GradingEntry
     @TestFactory
     /**
-     * Builds dynamic tests for every discovered student submission.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws Exception when the operation cannot complete.
+     * Entry point for JUnit: builds one test container per student folder found directly inside the configured starting folder, each named with the {@code 2023-2024-} prefix.
+     *
+     * @return the dynamic student containers, which hold the question and sub-question tests
+     * @throws Exception if the starting folder cannot be listed or the configuration has none set
      */
     Stream<DynamicNode> testAllSubmissions() throws Exception {
         Path submissionsRoot = Paths.get(mc.getStartingFolder().getPath());
@@ -82,11 +84,12 @@ public class StudentFileExec {
 
         // Recursively turns ObjSpec / List into real objects using the student's classloader
     /**
-     * Resolves a serialized argument into the runtime type expected by the student method.
-     * @param arg the argument to resolve or convert.
-     * @param loader the class loader used to resolve student classes.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws Exception when the operation cannot complete.
+     * Turns a test argument into a real object using the student's class loader: an {@link ObjSpec} is built by calling the matching constructor of the student's class, a list is resolved element by element, and any other value passes through unchanged.
+     *
+     * @param arg the argument from the test case: an {@code ObjSpec}, a list that may contain them, or a plain value such as a String or Integer
+     * @param loader the class loader that can load the student's classes
+     * @return the object to pass to the student's method
+     * @throws Exception if a class cannot be loaded or no constructor accepts the arguments
      */
     private Object resolveArg(Object arg, ClassLoader loader) throws Exception {
         if (arg instanceof ObjSpec spec) {
@@ -106,11 +109,12 @@ public class StudentFileExec {
     }
 
     /**
-     * Resolves every serialized test argument using the supplied class loader.
-     * @param args the arguments supplied to the invoked method.
-     * @param loader the class loader used to resolve student classes.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws Exception when the operation cannot complete.
+     * Resolves every argument of one test case with {@link #resolveArg}.
+     *
+     * @param args the arguments listed in the test case
+     * @param loader the class loader that can load the student's classes
+     * @return a new array of the same length holding the resolved arguments
+     * @throws Exception if any argument cannot be resolved
      */
     private Object[] resolveArgs(Object[] args, ClassLoader loader) throws Exception {
         Object[] out = new Object[args.length];
@@ -120,11 +124,13 @@ public class StudentFileExec {
 
     // Finds a constructor whose parameters can accept the args (allows int -> double widening)
     /**
-     * Constructs an object using the matching student constructor and resolved arguments.
-     * @param cls the argument supplied to this operation.
-     * @param args the arguments supplied to the invoked method.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws Exception when the operation cannot complete.
+     * Creates an instance by finding a public constructor whose parameters can accept the arguments (an int may be widened to a double or other number type).
+     *
+     * @param cls the student's class to instantiate
+     * @param args the already resolved constructor arguments
+     * @return the new instance made by the first constructor that fits
+     * @throws NoSuchMethodException if no public constructor accepts these arguments
+     * @throws Exception if the chosen constructor itself fails
      */
     private Object construct(Class<?> cls, Object[] args) throws Exception {
         for (java.lang.reflect.Constructor<?> c : cls.getConstructors()) {
@@ -145,10 +151,11 @@ public class StudentFileExec {
     private static final Object NO_MATCH = new Object();
 
     /**
-     * Converts an argument to the target primitive or reference type when possible.
-     * @param arg the argument to resolve or convert.
-     * @param target the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Converts a number or other value to the type a parameter needs when that is possible without losing meaning.
+     *
+     * @param arg the value from the test case; null is accepted
+     * @param target the parameter type to fit
+     * @return the value converted to the target type, the same value if it already fits, null for a null argument on a non-primitive parameter, or {@code NO_MATCH} if it cannot fit (a null for a primitive, a non-integer number for an int, or an unrelated type)
      */
     private Object coerce(Object arg, Class<?> target) {
         if (arg instanceof Number n) {
@@ -163,9 +170,10 @@ public class StudentFileExec {
     }
     // this is the MAIN question container
     /**
-     * Builds dynamic test containers for each question in a student directory.
-     * @param studentDir the directory containing one student submission.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Builds one test container for each question folder (such as Q1) inside a student's folder.
+     *
+     * @param studentDir the student's folder
+     * @return the question containers; a single failing test describing the problem if the folder cannot be listed
      */
     private Stream<DynamicNode> buildQuestionContainers(Path studentDir) {
         try {
@@ -189,9 +197,10 @@ public class StudentFileExec {
 
     // this is the SUB QUESTION (1a, 1b, 1c etc) container 
     /**
-     * Builds dynamic test containers for each Java sub-question in a question directory.
-     * @param questionDir the directory containing one question.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Compiles the Java files of one question folder and builds a container for each sub-question (such as Q1a) that has a test definition. Java files with no definition are ignored.
+     *
+     * @param questionDir the question folder inside a student's folder
+     * @return one container per defined sub-question; a single failing test if compiling or loading the folder fails
      */
     private Stream<DynamicNode> buildSubQuestionContainers(Path questionDir) {
     try {
@@ -223,12 +232,13 @@ public class StudentFileExec {
 
 //actual like dir where question is. so can test
 /**
- * Builds the dynamic container and tests associated with one sub-question source file.
- * @param javaFile the argument supplied to this operation.
- * @param questionDir the directory containing one question.
- * @param compileResult the argument supplied to this operation.
- * @param loader the class loader used to resolve student classes.
- * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+ * Builds the container for one sub-question source file. If the compiler produced no class file for it, the container holds one failing test with the compiler messages.
+ *
+ * @param javaFile the sub-question's source file; its name without {@code .java} is the class name
+ * @param questionDir the folder holding the source and compiled classes
+ * @param compileResult the compiler messages gathered for the folder
+ * @param loader the class loader that can load the student's classes
+ * @return the container, holding the test cases, or a failing test if it could not be compiled or set up
  */
 private DynamicNode buildOneSubQuestionContainer(Path javaFile, Path questionDir,
                                                    CompileResult compileResult, URLClassLoader loader) {
@@ -270,11 +280,12 @@ private DynamicNode buildOneSubQuestionContainer(Path javaFile, Path questionDir
     // each test case within the subquestion yes
     //dynamicnode cos its what junit thing is for test generated at runtime like instead of @test function {} or whatever
 /**
- * Creates dynamic tests from the configured cases for one sub-question class.
- * @param className the argument supplied to this operation.
- * @param loader the class loader used to resolve student classes.
- * @param questionDir the directory containing one question.
- * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+ * Creates one dynamic test for each test case of a sub-question, after loading the student's class and finding the method to call.
+ *
+ * @param className the sub-question's class name, e.g. Q1a
+ * @param loader the class loader that can load the student's classes
+ * @param questionDir the folder holding the class and its resource files
+ * @return one test per case; a single failing test if there is no definition for the class, the method is missing, or the class cannot be loaded
  */
 private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLClassLoader loader, Path questionDir) {
         MethodSpec spec = SPECS_BY_CLASS.get(className);
@@ -307,10 +318,11 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
 }
     // compiling student .java to .class if they didnt do so
     /**
-     * Compiles all Java sources in the supplied directory and reports the compilation result.
-     * @param dir the directory to scan or compile.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws Exception when the operation cannot complete.
+     * Compiles all Java files in a folder. If the whole set fails, the files that had no errors are compiled again so they still produce class files.
+     *
+     * @param dir the question folder
+     * @return the compiler messages by file name; empty when there are no Java files or everything compiled
+     * @throws Exception if the compiler cannot be run
      */
     private CompileResult compileAll(Path dir) throws Exception {
     javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
@@ -346,15 +358,16 @@ private Stream<DynamicNode> buildTestCasesForSubQuestion(String className, URLCl
 }
 //the fun begins
 /**
- * Invokes one student method and records whether its result matches the test case.
- * @param className the argument supplied to this operation.
- * @param spec the argument supplied to this operation.
- * @param tc the argument supplied to this operation.
- * @param studentClass the argument supplied to this operation.
- * @param method the argument supplied to this operation.
- * @param loader the class loader used to resolve student classes.
- * @param questionDir the directory containing one question.
- * @throws Throwable when the operation cannot complete.
+ * Runs one test case on a fresh instance of the student's class, with the resource files copied in and removed again afterwards. The call runs on its own thread with the configured timeout. A value case must equal the expected value (lists are compared as text) and fit the configured size limit; an exception case must throw an exception of the expected simple name.
+ *
+ * @param className the sub-question's class name, used in failure messages
+ * @param spec the method definition being tested
+ * @param tc the test case: label, arguments and expected value or exception
+ * @param studentClass the student's loaded class
+ * @param method the method to invoke
+ * @param loader the class loader that can load the student's classes
+ * @param questionDir the folder whose resource files are copied in
+ * @throws Throwable an {@link AssertionError} when the test fails, times out, returns too much, throws unexpectedly, or does not throw an expected exception; or any error raised while preparing the call
  */
 private void runTestCase(String className, MethodSpec spec, TestCase tc,
                          Class<?> studentClass, Method method,
@@ -439,12 +452,13 @@ private void runTestCase(String className, MethodSpec spec, TestCase tc,
 }
 //try compile, if cant compile all java, compile all again without said fail java 
 /**
- * Attempts compilation with the available compiler settings and captures diagnostics.
- * @param compiler the argument supplied to this operation.
- * @param sourceFiles the Java source files to compile.
- * @param questionDir the directory containing one question.
- * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
- * @throws Exception when the operation cannot complete.
+ * Compiles the given files in one compiler run and sorts the messages by file.
+ *
+ * @param compiler the system Java compiler
+ * @param sourceFiles the files to compile together
+ * @param questionDir the folder put on the class path so the files can see each other's classes
+ * @return whether compilation succeeded and the messages by file name
+ * @throws Exception if the compiler cannot be run
  */
 private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles, Path questionDir) throws Exception {
     DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
@@ -474,10 +488,12 @@ private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles,
 
 
     /**
-     * Copies non-Java resources needed by the submission into its working directory.
-     * @param questionDir the directory containing one question.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws Exception when the operation cannot complete.
+     * Copies the question's non-Java, non-class files, such as {@code persons.txt}, into the program's working directory so the student's code can open them by name. Nothing is overwritten.
+     *
+     * @param questionDir the folder holding the resource files
+     * @return the paths of the copies, so they can be removed later
+     * @throws IllegalStateException if a file of the same name already exists in the working directory; any copies already made are removed first
+     * @throws Exception if a file cannot be listed or copied
      */
     private List<Path> copyResourceFilesToWorkingDir(Path questionDir) throws Exception {
         Path workingDir = Paths.get("").toAbsolutePath();
@@ -511,8 +527,9 @@ private CompileAttempt tryCompile(JavaCompiler compiler, List<Path> sourceFiles,
     }
     //cleanup after each test case run to prevent contaminatioon
     /**
-     * Removes the temporary resource copies created for compilation.
-     * @param copiedFiles the argument supplied to this operation.
+     * Deletes the resource copies made for a test case, to prevent one test affecting the next. Each file is tried three times, and a file that still cannot be deleted gives a warning.
+     *
+     * @param copiedFiles the paths returned by {@link #copyResourceFilesToWorkingDir}
      */
     private void cleanupCopiedFiles(List<Path> copiedFiles) {
         for (Path p : copiedFiles) {

@@ -9,8 +9,10 @@ import java.util.Map;
 public class QuestionTests {
 
     /**
-     * Returns the configured test specifications indexed by student class name.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Gives access to the built-in test definitions, one per question class.
+     *
+     * @return the fixed map from a question's class name (such as {@code Q1a}) to the method and test cases to
+     *         run against it; it is unmodifiable
      */
     public static Map<String, MethodSpec> getSPECS_BY_CLASS() {
         return SPECS_BY_CLASS;

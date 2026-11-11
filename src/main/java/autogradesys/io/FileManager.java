@@ -5,10 +5,10 @@ import java.io.File;
 public class FileManager {
 
     /**
-     * Validate the file object if it is a directory.
+     * Checks that a path the user supplied is a folder.
      *
-     * @param file the file being validated or processed.
-     * @throws IllegalArgumentException when the operation cannot complete.
+     * @param file the path to check; it should already exist
+     * @throws IllegalArgumentException if {@code file} is not a directory (including when it is a regular file)
      */
     public static void validateDirectory(File file) throws IllegalArgumentException {
         if (!file.isDirectory()) {
@@ -17,12 +17,13 @@ public class FileManager {
     }
 
     /**
-     * Validate the file object if it is a file with correct extensions.
+     * Checks that a path the user supplied is a regular file whose name ends with one of the allowed extensions.
+     * The comparison is a case-sensitive {@code endsWith}, so the extensions must be written exactly as they
+     * appear in file names.
      *
-     *                                  invalid extensions.
-     * @param file the file being validated or processed.
-     * @param fileExtensions the argument supplied to this operation.
-     * @throws IllegalArgumentException when the operation cannot complete.
+     * @param file the path to check; it should already exist
+     * @param fileExtensions the accepted endings in lowercase, e.g. {@code "csv"}; with none given every file is rejected
+     * @throws IllegalArgumentException if {@code file} is not a regular file, or its name ends with none of the extensions
      */
     public static void validateFile(File file, String... fileExtensions) throws IllegalArgumentException {
         if (!file.isFile()) {

@@ -34,8 +34,9 @@ public class TemplateResourceSynchronizer {
     private final Path templateDir;
 
     /**
-     * Creates a template resource synchronizer instance.
-     * @param templateDir the template directory used as a fallback.
+     * Creates a synchroniser for one starter template.
+     *
+     * @param templateDir the Starting Folder template (made absolute and normalised); null disables synchronisation, so {@link #synchronize} does nothing
      */
     public TemplateResourceSynchronizer(Path templateDir) {
         this.templateDir = templateDir == null
@@ -44,10 +45,13 @@ public class TemplateResourceSynchronizer {
     }
 
     /**
-     * Synchronises one student's working submission with the template.
-     * @param student the registered student identity.
-     * @param studentDir the directory containing one student submission.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Makes one student's non-Java files match the template: template files replace or restore the
+     * student's versions, extra non-Java files and empty folders are removed, and Java files are never changed or deleted.
+     * Only the working submission is modified. Successful changes are summarised in one event, while each failure keeps its own event.
+     *
+     * @param student the student's folder name, used in the events
+     * @param studentDir the student's folder in the working copy; it must contain the question folders directly
+     * @return a RESOURCES_SYNCHRONISED summary if anything changed, plus one RESOURCE_SYNC_FAILED event per failure; empty if the template is null or nothing needed changing
      */
     public List<ValidationEvent> synchronize(
             String student,
@@ -82,10 +86,11 @@ public class TemplateResourceSynchronizer {
 
                 @Override
                 /**
-                 * Pre visit directory.
-                 * @param dir the directory to scan or compile.
-                 * @param attrs the argument supplied to this operation.
-                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+                 * Records each template folder, except junk folders, which are skipped together with everything inside them.
+                 *
+                 * @param dir the template folder being entered
+                 * @param attrs the folder's attributes, unused
+                 * @return SKIP_SUBTREE for a junk folder, otherwise CONTINUE
                  */
                 public FileVisitResult preVisitDirectory(
                         Path dir,
@@ -106,10 +111,11 @@ public class TemplateResourceSynchronizer {
 
                 @Override
                 /**
-                 * Visit file.
-                 * @param file the file being validated or processed.
-                 * @param attrs the argument supplied to this operation.
-                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+                 * Records each template file that is a resource: a regular, non-junk file that is not Java source.
+                 *
+                 * @param file the template file being visited
+                 * @param attrs the file's attributes, used to ignore anything that is not a regular file
+                 * @return CONTINUE, so the scan of the template goes on whether or not this file counted as a resource
                  */
                 public FileVisitResult visitFile(
                         Path file,
@@ -243,11 +249,12 @@ public class TemplateResourceSynchronizer {
 
                 @Override
                 /**
-                 * Visit file.
-                 * @param file the file being validated or processed.
-                 * @param attrs the argument supplied to this operation.
-                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-                 * @throws IOException when the operation cannot complete.
+                 * Deletes a non-Java file from the student's folder unless the template supplies it. Java files are always kept.
+                 *
+                 * @param file the student's file being visited
+                 * @param attrs the file's attributes, unused
+                 * @return CONTINUE, so the walk goes on to the next student file whether or not this one was deleted
+                 * @throws IOException if the file cannot be deleted, which stops the walk
                  */
                 public FileVisitResult visitFile(
                         Path file,
@@ -275,11 +282,12 @@ public class TemplateResourceSynchronizer {
 
                 @Override
                 /**
-                 * Post visit directory.
-                 * @param dir the directory to scan or compile.
-                 * @param exc the argument supplied to this operation.
-                 * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-                 * @throws IOException when the operation cannot complete.
+                 * Deletes a student's folder that is empty and not in the template. The submission root and expected template folders always stay.
+                 *
+                 * @param dir the student's folder whose contents were just visited
+                 * @param exc the failure that occurred while visiting its contents, or null if there was none
+                 * @return CONTINUE, so the walk goes on to the next folder, which is deleted only if it was empty and unexpected
+                 * @throws IOException if {@code exc} is not null (it is rethrown), or the folder cannot be listed or deleted
                  */
                 public FileVisitResult postVisitDirectory(
                         Path dir,
@@ -324,10 +332,10 @@ public class TemplateResourceSynchronizer {
     }
 
     /**
-     * Checks whether a path represents a Java source file.
-     * Case-insensitive so files such as Example.JAVA are also preserved.
-     * @param path the file or directory path being inspected or written.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Checks whether a path is a Java source file. The check is case-insensitive so files such as Example.JAVA are also preserved.
+     *
+     * @param path the file path or relative path to test
+     * @return true if the file name ends with {@code .java} in any letter case
      */
     private static boolean isJavaFile(Path path) {
 
@@ -338,9 +346,10 @@ public class TemplateResourceSynchronizer {
 
     /**
      * Checks recursively for Java files without following symbolic links.
-     * @param folder the directory whose contents are processed.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-     * @throws IOException when the operation cannot complete.
+     *
+     * @param folder the folder to search
+     * @return true if a regular Java file exists anywhere below the folder
+     * @throws IOException if the folder tree cannot be walked
      */
     private static boolean containsJavaFile(Path folder) throws IOException {
 
@@ -350,10 +359,11 @@ public class TemplateResourceSynchronizer {
 
             @Override
             /**
-             * Visit file.
-             * @param file the file being validated or processed.
-             * @param attrs the argument supplied to this operation.
-             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+             * Stops the search as soon as a regular Java file is found.
+             *
+             * @param file the file being visited
+             * @param attrs the file's attributes, used to ignore anything that is not a regular file
+             * @return TERMINATE when a Java file is found, otherwise CONTINUE
              */
             public FileVisitResult visitFile(
                     Path file,
@@ -372,10 +382,10 @@ public class TemplateResourceSynchronizer {
     }
 
     /**
-     * Deletes a folder recursively without following symbolic links.
-     * Unlike SubmissionFiles.deleteTree(), this method reports failures.
-     * @param root the argument supplied to this operation.
-     * @throws IOException when the operation cannot complete.
+     * Deletes a folder recursively without following symbolic links. Unlike {@code SubmissionFiles.deleteTree}, failures are reported.
+     *
+     * @param root the folder to delete
+     * @throws IOException if any file or folder cannot be deleted
      */
     private static void deleteTreeStrict(Path root) throws IOException {
 
@@ -383,11 +393,12 @@ public class TemplateResourceSynchronizer {
 
             @Override
             /**
-             * Visit file.
-             * @param file the file being validated or processed.
-             * @param attrs the argument supplied to this operation.
-             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-             * @throws IOException when the operation cannot complete.
+             * Deletes one file during the walk.
+             *
+             * @param file the file being visited
+             * @param attrs the file's attributes, unused
+             * @return CONTINUE, so every file below the folder is deleted in turn
+             * @throws IOException if the file cannot be deleted
              */
             public FileVisitResult visitFile(
                     Path file,
@@ -399,11 +410,12 @@ public class TemplateResourceSynchronizer {
 
             @Override
             /**
-             * Post visit directory.
-             * @param dir the directory to scan or compile.
-             * @param exc the argument supplied to this operation.
-             * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
-             * @throws IOException when the operation cannot complete.
+             * Deletes a folder once everything inside it has been deleted.
+             *
+             * @param dir the folder whose contents were just visited
+             * @param exc the failure that occurred while visiting its contents, or null if there was none
+             * @return CONTINUE, so the walk climbs on to the parent folder after this one is deleted
+             * @throws IOException if {@code exc} is not null (it is rethrown), or the folder cannot be deleted
              */
             public FileVisitResult postVisitDirectory(
                     Path dir,
@@ -420,11 +432,12 @@ public class TemplateResourceSynchronizer {
     }
 
     /**
-     * Removed.
-     * @param student the registered student identity.
-     * @param relative the argument supplied to this operation.
-     * @param message the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Creates the event for something deleted from the student's folder.
+     *
+     * @param student the student's folder name
+     * @param relative the removed item's path relative to the student's folder
+     * @param message why it was removed
+     * @return a RESOURCE_REMOVED event whose path is {@code student/relative}
      */
     private static ValidationEvent removed(
             String student,
@@ -439,11 +452,12 @@ public class TemplateResourceSynchronizer {
     }
 
     /**
-     * Failed.
-     * @param student the registered student identity.
-     * @param path the file or directory path being inspected or written.
-     * @param message the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Creates the event for a step that could not be completed.
+     *
+     * @param student the student's folder name
+     * @param path the path the problem concerns, shown as given
+     * @param message what went wrong
+     * @return a RESOURCE_SYNC_FAILED event
      */
     private static ValidationEvent failed(
             String student,
@@ -458,11 +472,11 @@ public class TemplateResourceSynchronizer {
     }
 
     /**
-     * Combines all successful resource changes into one summary event,
-     * while keeping individual failures visible.
-     * @param student the registered student identity.
-     * @param events the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Combines all successful resource changes into one summary event, while keeping individual failures visible.
+     *
+     * @param student the student's folder name
+     * @param events every event collected while synchronising
+     * @return the failures and any other events, preceded by one RESOURCES_SYNCHRONISED event with the replaced, restored and removed counts if at least one change succeeded
      */
     private static List<ValidationEvent> summarise(
             String student,

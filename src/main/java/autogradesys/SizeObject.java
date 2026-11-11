@@ -7,9 +7,10 @@ public class SizeObject {
 
     // premain method to initialize the Instrumentation instance
     /**
-     * Runs the application entry point.
-     * @param agentArgs the argument supplied to this operation.
-     * @param inst the argument supplied to this operation.
+     * Java agent hook, called by the JVM before {@code main} when the program is started with the agent. It keeps the instrumentation handle used by {@link #getObjectSize}.
+     *
+     * @param agentArgs the option string given to the agent on the command line; unused
+     * @param inst the instrumentation handle supplied by the JVM
      */
     public static void premain(String agentArgs, Instrumentation inst) 
     {
@@ -18,9 +19,11 @@ public class SizeObject {
 
     // Method to get the size of an object
     /**
-     * Returns the shallow JVM-reported size of the supplied object.
-     * @param object the argument supplied to this operation.
-     * @return the result of this operation; an empty, absent, or false result indicates that no matching value or successful update was available.
+     * Measures an object with the JVM's instrumentation. The size is shallow: objects it refers to are not counted.
+     *
+     * @param object the object to measure
+     * @return the object's size in bytes as reported by the JVM
+     * @throws IllegalStateException if the agent was not started, so no instrumentation handle exists
      */
     public static long getObjectSize(Object object) {
         if (globalInstrumentation == null) {
